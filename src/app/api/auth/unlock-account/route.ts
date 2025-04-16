@@ -44,20 +44,25 @@ export async function POST(request: NextRequest) {
     await user.save();
 
     // Send unlock email
-    const unlockLink = `${process.env.NEXT_PUBLIC_APP_URL}/reset-password/${unlockToken}`;
+    const unlockUrl = `${process.env.NEXT_PUBLIC_APP_URL}/unlock-account?token=${unlockToken}`;
+    
+    // Get the username from email (everything before @)
+    const username = user.email.split('@')[0];
+    
+    const emailContent = `
+      <h1>Account Unlock Request</h1>
+      <p>Hi <strong>${username}</strong>,</p>
+      <p>Your account has been locked due to multiple failed login attempts. Click the link below to unlock your account:</p>
+      <p><a href="${unlockUrl}">Unlock Account</a></p>
+      <p>If you didn't request this, please ignore this email.</p>
+      <p>This link will expire in 1 hour.</p>
+      <p>Best regards,<br>Your App Team</p>
+    `;
+
     await sendEmail(
       user.email,
-      'Account Unlock Instructions',
-      `
-        <h1>Account Unlock Instructions</h1>
-        <p>Hello ${user.firstName},</p>
-        <p>Your account has been locked due to multiple failed login attempts.</p>
-        <p>To unlock your account, please click the link below to reset your password:</p>
-        <p><a href="${unlockLink}">${unlockLink}</a></p>
-        <p>This link will expire in 1 hour.</p>
-        <p>If you did not request this, please ignore this email.</p>
-        <p>Best regards,<br>Your Security Team</p>
-      `
+      'Account Unlock Request',
+      emailContent
     );
 
     console.log('Account unlock email sent', {

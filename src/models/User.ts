@@ -14,11 +14,8 @@ export interface APIKey {
 }
 
 export interface UserDocument extends Document {
-  firstName: string;
-  lastName: string;
   email: string;
   password: string | null;
-  displayName: string;
   googleId?: string;
   isActive: boolean;
   resetToken?: string;
@@ -27,6 +24,8 @@ export interface UserDocument extends Document {
   magicTokenExpiration?: Date;
   magicCode?: string;
   role: string;
+  school_id?: mongoose.Types.ObjectId;
+  pilot_id?: mongoose.Types.ObjectId;
   failedLoginAttempts: number;
   lastFailedLogin?: Date;
   lockUntil?: Date;
@@ -76,16 +75,6 @@ export interface UserDocument extends Document {
 // User schema
 const UserSchema = new Schema<UserDocument>(
   {
-    firstName: {
-      type: String,
-      required: [true, 'First name is required'],
-      trim: true,
-    },
-    lastName: {
-      type: String,
-      required: [true, 'Last name is required'],
-      trim: true,
-    },
     email: {
       type: String,
       required: [true, 'Email is required'],
@@ -97,11 +86,6 @@ const UserSchema = new Schema<UserDocument>(
     password: {
       type: String,
       default: null,
-    },
-    displayName: {
-      type: String,
-      required: [true, 'Display name is required'],
-      trim: true,
     },
     googleId: {
       type: String,
@@ -134,8 +118,16 @@ const UserSchema = new Schema<UserDocument>(
     },
     role: {
       type: String,
-      enum: ['user', 'admin'],
-      default: 'user',
+      enum: ['sys_admin', 'school_admin', 'instructor', 'student'],
+      default: 'student',
+    },
+    school_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      required: false,
+    },
+    pilot_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      required: false,
     },
     // Account lockout fields
     failedLoginAttempts: {

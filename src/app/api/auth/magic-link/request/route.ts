@@ -48,46 +48,25 @@ export async function POST(request: NextRequest) {
     console.log('Generated magic token and code for', user.email);
 
     // Send magic link email
-    const magicLink = `${process.env.NEXT_PUBLIC_APP_URL}/magic-login/${token}`;
+    const magicLinkUrl = `${process.env.NEXT_PUBLIC_APP_URL}/auth/verify?token=${token}`;
+    
+    // Get the username from email (everything before @)
+    const username = user.email.split('@')[0];
+    
+    const emailContent = `
+      <h1>Your Magic Link</h1>
+      <p>Dear <strong>${username}</strong>,</p>
+      <p>Click the link below to sign in to your account:</p>
+      <p><a href="${magicLinkUrl}">Sign In</a></p>
+      <p>If you didn't request this, please ignore this email.</p>
+      <p>This link will expire in 15 minutes.</p>
+      <p>Best regards,<br>Your App Team</p>
+    `;
+
     await sendEmail(
       user.email,
       'Your Magic Login Link',
-        `
-          <!DOCTYPE html>
-          <html>
-            <head>
-              <meta charset="UTF-8" />
-              <title>Your Magic Login Link</title>
-            </head>
-            <body style="font-family: Arial, sans-serif; background-color: #f9f9f9; padding: 20px; color: #333;">
-              <div style="max-width: 600px; margin: auto; background-color: #ffffff; padding: 30px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.05);">
-                <h2 style="color: #2c3e50;">Your Magic Login Link</h2>
-                <p>Dear <strong>${user.firstName}</strong>,</p>
-                <p>You requested a magic login link. Click the button below to log in immediately:</p>
-          
-                <p style="text-align: center; margin: 30px 0;">
-                  <a href="${magicLink}" style="background-color: #28a745; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold;">Log In Now</a>
-                </p>
-          
-                <p style="text-align: center; font-size: 16px; margin: 20px 0;">
-                  Or use this one-time code:
-                  <br />
-                  <span style="font-size: 24px; font-weight: bold; letter-spacing: 2px;">${code}</span>
-                </p>
-          
-                <p style="text-align: center; font-size: 14px; color: #666; margin: 15px 0;">
-                  If the button above doesn't work, copy and paste this link into your browser:<br />
-                  <a href="${magicLink}" style="color: #007BFF; word-break: break-all;">${magicLink}</a>
-                </p>
-          
-                <p>This link and code are valid for 1 hour.</p>
-                <p>If you did not request this, please ignore this email.</p>
-                <p>Best regards,<br>Your Security Team</p>
-              </div>
-            </body>
-          </html>
-          `
-
+      emailContent
     );
 
     return NextResponse.json({

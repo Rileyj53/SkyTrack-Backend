@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
 
     await connectDB();
 
-    const { email, password, firstName = '', lastName = '', displayName = '' } = await req.json();
+    const { email, password, role = 'student', school_id, pilot_id } = await req.json();
 
     // Validate required fields
     if (!email || !password) {
@@ -49,6 +49,15 @@ export async function POST(req: NextRequest) {
         {
           error: 'Password must be at least 8 characters long and contain uppercase, lowercase, numbers, and special characters',
         },
+        { status: 400 }
+      );
+    }
+
+    // Validate role
+    const validRoles = ['sys_admin', 'school_admin', 'instructor', 'student'];
+    if (!validRoles.includes(role)) {
+      return NextResponse.json(
+        { error: 'Invalid role specified' },
         { status: 400 }
       );
     }
@@ -71,10 +80,9 @@ export async function POST(req: NextRequest) {
     const userData = {
       email,
       password: hashedPassword,
-      firstName: firstName || email.split('@')[0], // Use email username as default
-      lastName: lastName || '',
-      displayName: displayName || (firstName ? `${firstName} ${lastName}`.trim() : email.split('@')[0]),
-      role: 'user',
+      role,
+      school_id,
+      pilot_id,
       isActive: true,
       failedLoginAttempts: 0,
       mfaEnabled: false,
@@ -116,12 +124,12 @@ export async function POST(req: NextRequest) {
     });
 
     // Set CSRF token cookie
-    response.cookies.set('csrf-token', JSON.stringify(csrfToken), {
+    response.cookies.set('csrf-token', csrfToken.token, {
       httpOnly: false, // Allow JavaScript to read this cookie
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
       path: '/',
-      maxAge: 7 * 24 * 60 * 60 // 7 days
+      maxAge: Math.floor((csrfToken.expires - Date.now()) / 1000)
     });
 
     return response;

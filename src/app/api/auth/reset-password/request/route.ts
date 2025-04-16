@@ -63,35 +63,24 @@ export async function POST(request: NextRequest) {
 
     // Send reset email
     const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL}/reset-password?token=${resetToken}`;
+    
+    // Get the username from email (everything before @)
+    const username = user.email.split('@')[0];
+    
+    const emailContent = `
+      <h1>Password Reset Request</h1>
+      <p>Hi <strong>${username}</strong>,</p>
+      <p>You requested a password reset for your account. Click the link below to reset your password:</p>
+      <p><a href="${resetUrl}">Reset Password</a></p>
+      <p>If you didn't request this, please ignore this email.</p>
+      <p>This link will expire in 1 hour.</p>
+      <p>Best regards,<br>Your App Team</p>
+    `;
+
     await sendEmail(
       user.email,
       'Reset Your Password',
-      `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <meta charset="UTF-8" />
-          <title>Reset Your Password</title>
-        </head>
-        <body style="font-family: Arial, sans-serif; background-color: #f9f9f9; padding: 20px; color: #333;">
-          <div style="max-width: 600px; margin: auto; background-color: #ffffff; padding: 30px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.05);">
-            <h2 style="color: #2c3e50;">Reset Your Password</h2>
-            <p>Hi <strong>${user.firstName}</strong>,</p>
-            <p>You requested a password reset. Click the button below to set a new password:</p>
-            <p style="text-align: center; margin: 30px 0;">
-              <a href="${resetUrl}" style="background-color: #007BFF; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold;">Reset Password</a>
-            </p>
-            <p style="text-align: center; margin: 15px 0; font-size: 14px; color: #666;">
-              If the button above doesn't work, copy and paste this link into your browser:<br/>
-              <a href="${resetUrl}" style="color: #007BFF; word-break: break-all;">${resetUrl}</a>
-            </p>
-            <p>This link will expire in 1 hour.</p>
-            <p>If you didn't request this, you can safely ignore this email.</p>
-            <p>Riley Jacobson</p>
-          </div>
-        </body>
-      </html>
-      `
+      emailContent
     );
 
     // Track password reset request in history

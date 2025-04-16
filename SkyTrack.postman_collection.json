@@ -1,0 +1,1875 @@
+{
+    "info": {
+        "_postman_id": "5137cb87-aa2c-4c72-aad0-66dbb24e8b8b",
+        "name": "SkyTrack",
+        "description": "API collection for the personal site backend",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+        "_exporter_id": "27151473"
+    },
+    "item": [{
+            "name": "System",
+            "item": [{
+                    "name": "Health Check",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/health",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "health"
+                            ]
+                        },
+                        "description": "Check the health status of the system"
+                    },
+                    "response": [{
+                        "name": "200 OK",
+                        "originalRequest": {
+                            "method": "GET",
+                            "header": [],
+                            "url": {
+                                "raw": "http://localhost:3000/api/health",
+                                "protocol": "http",
+                                "host": [
+                                    "localhost"
+                                ],
+                                "port": "3000",
+                                "path": [
+                                    "api",
+                                    "health"
+                                ]
+                            }
+                        },
+                        "status": "OK",
+                        "code": 200,
+                        "_postman_previewlanguage": "json",
+                        "header": [{
+                                "key": "Accept-Ranges",
+                                "value": "bytes"
+                            },
+                            {
+                                "key": "Access-Control-Allow-Origin",
+                                "value": "*"
+                            },
+                            {
+                                "key": "Age",
+                                "value": "1317"
+                            },
+                            {
+                                "key": "Cache-Control",
+                                "value": "public, max-age=0, must-revalidate"
+                            },
+                            {
+                                "key": "Content-Disposition",
+                                "value": "inline"
+                            },
+                            {
+                                "key": "Content-Length",
+                                "value": "317"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Date",
+                                "value": "Tue, 15 Apr 2025 22:19:32 GMT"
+                            },
+                            {
+                                "key": "Etag",
+                                "value": "\"be315451d0898b9ec44a1ef9d418a328\""
+                            },
+                            {
+                                "key": "Server",
+                                "value": "Vercel"
+                            },
+                            {
+                                "key": "Strict-Transport-Security",
+                                "value": "max-age=63072000"
+                            },
+                            {
+                                "key": "X-Matched-Path",
+                                "value": "/api/health"
+                            },
+                            {
+                                "key": "X-Vercel-Cache",
+                                "value": "HIT"
+                            },
+                            {
+                                "key": "X-Vercel-Id",
+                                "value": "pdx1::dgbzh-1744755572184-5ba91d028260"
+                            }
+                        ],
+                        "cookie": [],
+                        "body": "{\n    \"status\": \"ok\",\n    \"timestamp\": \"2025-04-15T21:51:46.129Z\",\n    \"uptime\": 2.675077508,\n    \"environment\": \"production\",\n    \"database\": {\n        \"status\": \"ok\",\n        \"connectionState\": 2,\n        \"responseTime\": 1\n    },\n    \"memory\": {\n        \"used\": 29,\n        \"total\": 45,\n        \"percentage\": 65\n    },\n    \"system\": {\n        \"platform\": \"linux\",\n        \"nodeVersion\": \"v22.14.0\",\n        \"cpus\": 2\n    },\n    \"api\": {\n        \"responseTime\": 1,\n        \"status\": \"ok\"\n    }\n}"
+                    }]
+                },
+                {
+                    "name": "Security headers test",
+                    "request": {
+                        "method": "GET",
+                        "header": [{
+                            "key": "X-CSRF-Token",
+                            "value": "{{csrfToken}}",
+                            "type": "text"
+                        }],
+                        "url": {
+                            "raw": "{{baseUrl}}/security-headers-test",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "security-headers-test"
+                            ]
+                        }
+                    },
+                    "response": [{
+                        "name": "200 OK",
+                        "originalRequest": {
+                            "method": "GET",
+                            "header": [{
+                                "key": "X-CSRF-Token",
+                                "value": "",
+                                "type": "text"
+                            }],
+                            "url": {
+                                "raw": "http://localhost:3000/api/security-headers-test",
+                                "protocol": "http",
+                                "host": [
+                                    "localhost"
+                                ],
+                                "port": "3000",
+                                "path": [
+                                    "api",
+                                    "security-headers-test"
+                                ]
+                            }
+                        },
+                        "status": "OK",
+                        "code": 200,
+                        "_postman_previewlanguage": "json",
+                        "header": [{
+                                "key": "Accept-Ranges",
+                                "value": "bytes"
+                            },
+                            {
+                                "key": "Access-Control-Allow-Origin",
+                                "value": "*"
+                            },
+                            {
+                                "key": "Age",
+                                "value": "1324"
+                            },
+                            {
+                                "key": "Cache-Control",
+                                "value": "no-store, max-age=0"
+                            },
+                            {
+                                "key": "Content-Disposition",
+                                "value": "inline"
+                            },
+                            {
+                                "key": "Content-Length",
+                                "value": "102"
+                            },
+                            {
+                                "key": "Content-Security-Policy",
+                                "value": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https:; frame-ancestors 'none';"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Cross-Origin-Embedder-Policy",
+                                "value": "require-corp"
+                            },
+                            {
+                                "key": "Cross-Origin-Opener-Policy",
+                                "value": "same-origin"
+                            },
+                            {
+                                "key": "Cross-Origin-Resource-Policy",
+                                "value": "same-origin"
+                            },
+                            {
+                                "key": "Date",
+                                "value": "Tue, 15 Apr 2025 22:19:45 GMT"
+                            },
+                            {
+                                "key": "Etag",
+                                "value": "\"515b26f29428dde47d174f82b5ed971b\""
+                            },
+                            {
+                                "key": "Expect-Ct",
+                                "value": "enforce, max-age=30"
+                            },
+                            {
+                                "key": "Feature-Policy",
+                                "value": "accelerometer 'none'; camera 'none'; geolocation 'none'; gyroscope 'none'; magnetometer 'none'; microphone 'none'; payment 'none'; usb 'none'"
+                            },
+                            {
+                                "key": "Origin-Agent-Cluster",
+                                "value": "?1"
+                            },
+                            {
+                                "key": "Permissions-Policy",
+                                "value": "accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()"
+                            },
+                            {
+                                "key": "Referrer-Policy",
+                                "value": "strict-origin-when-cross-origin"
+                            },
+                            {
+                                "key": "Server",
+                                "value": "Vercel"
+                            },
+                            {
+                                "key": "Strict-Transport-Security",
+                                "value": "max-age=31536000; includeSubDomains"
+                            },
+                            {
+                                "key": "X-Content-Type-Options",
+                                "value": "nosniff"
+                            },
+                            {
+                                "key": "X-Frame-Options",
+                                "value": "DENY"
+                            },
+                            {
+                                "key": "X-Matched-Path",
+                                "value": "/api/security-headers-test"
+                            },
+                            {
+                                "key": "X-Ratelimit-Limit",
+                                "value": "300"
+                            },
+                            {
+                                "key": "X-Ratelimit-Remaining",
+                                "value": "299"
+                            },
+                            {
+                                "key": "X-Ratelimit-Reset",
+                                "value": "1744755885283"
+                            },
+                            {
+                                "key": "X-Request-Id",
+                                "value": "1744755585283-195399"
+                            },
+                            {
+                                "key": "X-Response-Time",
+                                "value": "1ms"
+                            },
+                            {
+                                "key": "X-Vercel-Cache",
+                                "value": "HIT"
+                            },
+                            {
+                                "key": "X-Vercel-Id",
+                                "value": "pdx1::krj9c-1744755585214-9a07f6ac1e48"
+                            },
+                            {
+                                "key": "X-Xss-Protection",
+                                "value": "1; mode=block"
+                            }
+                        ],
+                        "cookie": [],
+                        "body": "{\n    \"status\": \"success\",\n    \"message\": \"Security headers test endpoint\",\n    \"timestamp\": \"2025-04-15T21:51:46.450Z\"\n}"
+                    }]
+                }
+            ],
+            "description": "System endpoints"
+        },
+        {
+            "name": "Auth",
+            "item": [{
+                    "name": "User",
+                    "item": [{
+                            "name": "Register a new user",
+                            "request": {
+                                "method": "POST",
+                                "header": [{
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    },
+                                    {
+                                        "key": "X-CSRF-Token",
+                                        "value": "{{csrfToken}}"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n  \"email\": \"{{ Email }}\",\n  \"password\": \"{{ Password }}\",\n  \"role\": \"{{ Role }}\",\n  \"school_id\": \"{{ School ID }}\",\n  \"pilot_id\": \"{{ Pilot ID }}\"\n}"
+                                },
+                                "url": {
+                                    "raw": "{{baseUrl}}/auth/register",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "auth",
+                                        "register"
+                                    ]
+                                },
+                                "description": "Register a new user"
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "Login user",
+                            "request": {
+                                "method": "POST",
+                                "header": [{
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    },
+                                    {
+                                        "key": "X-CSRF-Token",
+                                        "value": "{{csrfToken}}"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n    \"email\": \"{{ Email }}\",\n    \"password\": \"{{ Password }}\"\n}"
+                                },
+                                "url": {
+                                    "raw": "{{baseUrl}}/auth/login",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "auth",
+                                        "login"
+                                    ]
+                                },
+                                "description": "Login with email and password"
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "Logout user",
+                            "request": {
+                                "method": "POST",
+                                "header": [{
+                                        "key": "Authorization",
+                                        "value": "Bearer {{jwtToken}}"
+                                    },
+                                    {
+                                        "key": "X-CSRF-Token",
+                                        "value": "{{csrfToken}}"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/auth/logout",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "auth",
+                                        "logout"
+                                    ]
+                                },
+                                "description": "Logout and blacklist the current token"
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "Google Login",
+                            "request": {
+                                "method": "POST",
+                                "header": [{
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    },
+                                    {
+                                        "key": "X-CSRF-Token",
+                                        "value": "{{csrfToken}}"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n    \"id_token\": \"{{googleIdToken}}\"\n}"
+                                },
+                                "url": {
+                                    "raw": "{{baseUrl}}/auth/google",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "auth",
+                                        "google"
+                                    ]
+                                },
+                                "description": "Login with Google OAuth"
+                            },
+                            "response": []
+                        }
+                    ]
+                },
+                {
+                    "name": "Password",
+                    "item": [{
+                            "name": "Request password reset",
+                            "request": {
+                                "method": "POST",
+                                "header": [{
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    },
+                                    {
+                                        "key": "X-CSRF-Token",
+                                        "value": "{{csrfToken}}"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n    \"email\": \"{{ Email }}\"\n}"
+                                },
+                                "url": {
+                                    "raw": "{{baseUrl}}/auth/reset-password/request",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "auth",
+                                        "reset-password",
+                                        "request"
+                                    ]
+                                },
+                                "description": "Request a password reset email"
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "Verify reset token",
+                            "request": {
+                                "method": "POST",
+                                "header": [{
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    },
+                                    {
+                                        "key": "X-CSRF-Token",
+                                        "value": "{{csrfToken}}"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n    \"token\": \"{{ Token }}\",\n    \"newPassword\": \"{{ New Password }}\"\n}"
+                                },
+                                "url": {
+                                    "raw": "{{baseUrl}}/auth/reset-password/complete",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "auth",
+                                        "reset-password",
+                                        "complete"
+                                    ]
+                                },
+                                "description": "Reset password using the token from email"
+                            },
+                            "response": []
+                        }
+                    ]
+                },
+                {
+                    "name": "Magic Link",
+                    "item": [{
+                            "name": "Request Magic Link",
+                            "request": {
+                                "method": "POST",
+                                "header": [{
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    },
+                                    {
+                                        "key": "X-CSRF-Token",
+                                        "value": "{{csrfToken}}"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n    \"email\": \"{{ Email }}\"\n}"
+                                },
+                                "url": {
+                                    "raw": "{{baseUrl}}/auth/magic-link/request",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "auth",
+                                        "magic-link",
+                                        "request"
+                                    ]
+                                },
+                                "description": "Request a magic login link"
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "Login with magic link",
+                            "request": {
+                                "method": "POST",
+                                "header": [{
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    },
+                                    {
+                                        "key": "X-CSRF-Token",
+                                        "value": "{{csrfToken}}"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n    \"token\": \"{{ magicToken }}\",\n    \"code\": \"{{ magicCode }}\"\n}"
+                                },
+                                "url": {
+                                    "raw": "{{baseUrl}}/auth/magic-link/login",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "auth",
+                                        "magic-link",
+                                        "login"
+                                    ]
+                                },
+                                "description": "Login using magic link or code"
+                            },
+                            "response": []
+                        }
+                    ]
+                },
+                {
+                    "name": "MFA",
+                    "item": [{
+                            "name": "Setup MFA",
+                            "request": {
+                                "method": "POST",
+                                "header": [{
+                                        "key": "Authorization",
+                                        "value": "Bearer {{jwtToken}}"
+                                    },
+                                    {
+                                        "key": "X-CSRF-Token",
+                                        "value": "{{csrfToken}}"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/auth/mfa/setup",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "auth",
+                                        "mfa",
+                                        "setup"
+                                    ]
+                                },
+                                "description": "Initialize MFA setup and get QR code"
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "Verify MFA Setup",
+                            "request": {
+                                "method": "POST",
+                                "header": [{
+                                        "key": "Authorization",
+                                        "value": "Bearer {{jwtToken}}"
+                                    },
+                                    {
+                                        "key": "X-CSRF-Token",
+                                        "value": "{{csrfToken}}"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n    \"token\": \"{{ MFA Token }}\"\n}",
+                                    "options": {
+                                        "raw": {
+                                            "language": "json"
+                                        }
+                                    }
+                                },
+                                "url": {
+                                    "raw": "{{baseUrl}}/auth/mfa/verify",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "auth",
+                                        "mfa",
+                                        "verify"
+                                    ]
+                                },
+                                "description": "Verify and complete MFA setup"
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "Verify MFA during login",
+                            "request": {
+                                "method": "POST",
+                                "header": [{
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    },
+                                    {
+                                        "key": "X-CSRF-Token",
+                                        "value": "{{csrfToken}}"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n    \"token\": \"{{ mfaToken }}\",\n    \"userId\": \"{{ userId }}\"\n}"
+                                },
+                                "url": {
+                                    "raw": "{{baseUrl}}/auth/mfa/verify-login",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "auth",
+                                        "mfa",
+                                        "verify-login"
+                                    ]
+                                },
+                                "description": "Verify MFA token during login"
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "Get MFA Status",
+                            "request": {
+                                "method": "GET",
+                                "header": [{
+                                        "key": "Authorization",
+                                        "value": "Bearer {{jwtToken}}"
+                                    },
+                                    {
+                                        "key": "X-CSRF-Token",
+                                        "value": "{{csrfToken}}"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/auth/mfa/status",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "auth",
+                                        "mfa",
+                                        "status"
+                                    ]
+                                },
+                                "description": "Get current MFA status"
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "Disable MFA",
+                            "request": {
+                                "method": "POST",
+                                "header": [{
+                                        "key": "Authorization",
+                                        "value": "Bearer {{jwtToken}}"
+                                    },
+                                    {
+                                        "key": "X-CSRF-Token",
+                                        "value": "{{csrfToken}}"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n    \"token\": \"127310\"\n}",
+                                    "options": {
+                                        "raw": {
+                                            "language": "json"
+                                        }
+                                    }
+                                },
+                                "url": {
+                                    "raw": "{{baseUrl}}/auth/mfa/disable",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "auth",
+                                        "mfa",
+                                        "disable"
+                                    ]
+                                },
+                                "description": "Disable MFA for the user"
+                            },
+                            "response": []
+                        }
+                    ]
+                },
+                {
+                    "name": "Debug",
+                    "item": [{
+                            "name": "Get CSRF Token",
+                            "request": {
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{baseUrl}}/auth/csrf-token",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "auth",
+                                        "csrf-token"
+                                    ]
+                                },
+                                "description": "Get a CSRF token for protected routes"
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "Test Auth Route",
+                            "request": {
+                                "method": "GET",
+                                "header": [{
+                                    "key": "X-CSRF-Token",
+                                    "value": "{{csrfToken}}",
+                                    "type": "text"
+                                }],
+                                "url": {
+                                    "raw": "{{baseUrl}}/auth/test",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "auth",
+                                        "test"
+                                    ]
+                                },
+                                "description": "Test if the auth route is working"
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "Test CSRF",
+                            "request": {
+                                "method": "POST",
+                                "header": [{
+                                    "key": "X-CSRF-Token",
+                                    "value": "{{csrfToken}}",
+                                    "type": "text"
+                                }],
+                                "url": {
+                                    "raw": "{{baseUrl}}/test-csrf",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "test-csrf"
+                                    ]
+                                }
+                            },
+                            "response": []
+                        }
+                    ]
+                },
+                {
+                    "name": "User Management",
+                    "item": [{
+                            "name": "Get user information",
+                            "request": {
+                                "method": "GET",
+                                "header": [{
+                                        "key": "Authorization",
+                                        "value": "Bearer {{jwtToken}}"
+                                    },
+                                    {
+                                        "key": "X-CSRF-Token",
+                                        "value": "{{csrfToken}}"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/users/:UserID",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "users",
+                                        ":UserID"
+                                    ],
+                                    "variable": [{
+                                        "key": "UserID",
+                                        "value": ""
+                                    }]
+                                },
+                                "description": "Initialize MFA setup and get QR code"
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "Update user information",
+                            "request": {
+                                "method": "PUT",
+                                "header": [{
+                                        "key": "Authorization",
+                                        "value": "Bearer {{jwtToken}}"
+                                    },
+                                    {
+                                        "key": "X-CSRF-Token",
+                                        "value": "{{csrfToken}}"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "",
+                                    "options": {
+                                        "raw": {
+                                            "language": "json"
+                                        }
+                                    }
+                                },
+                                "url": {
+                                    "raw": "{{baseUrl}}/users/:UserID",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "users",
+                                        ":UserID"
+                                    ],
+                                    "variable": [{
+                                        "key": "UserID",
+                                        "value": ""
+                                    }]
+                                },
+                                "description": "Initialize MFA setup and get QR code"
+                            },
+                            "response": []
+                        }
+                    ]
+                }
+            ],
+            "description": "Authentication endpoints"
+        },
+        {
+            "name": "API Keys",
+            "item": [{
+                    "name": "Test API Keys Route",
+                    "request": {
+                        "method": "GET",
+                        "header": [{
+                                "key": "Authorization",
+                                "value": "Bearer {{jwtToken}}"
+                            },
+                            {
+                                "key": "X-CSRF-Token",
+                                "value": "{{csrfToken}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api-keys/test",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api-keys",
+                                "test"
+                            ]
+                        },
+                        "description": "Test if the API keys route is working"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Generate API Key",
+                    "request": {
+                        "method": "POST",
+                        "header": [{
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{jwtToken}}"
+                            },
+                            {
+                                "key": "X-CSRF-Token",
+                                "value": "{{csrfToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"label\": \"My API Key\",\n    \"durationValue\": 30,\n    \"durationType\": \"days\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api-keys/generate",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api-keys",
+                                "generate"
+                            ]
+                        },
+                        "description": "Generate a new API key"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "List API Keys",
+                    "request": {
+                        "method": "GET",
+                        "header": [{
+                                "key": "Authorization",
+                                "value": "Bearer {{jwtToken}}"
+                            },
+                            {
+                                "key": "X-CSRF-Token",
+                                "value": "{{csrfToken}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api-keys/keys",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api-keys",
+                                "keys"
+                            ]
+                        },
+                        "description": "List all API keys for the current user"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Revoke API Key",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [{
+                                "key": "Authorization",
+                                "value": "Bearer {{jwtToken}}"
+                            },
+                            {
+                                "key": "X-CSRF-Token",
+                                "value": "{{csrfToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api-keys/{{apiKeyId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api-keys",
+                                "{{apiKeyId}}"
+                            ]
+                        },
+                        "description": "Revoke (delete) an API key"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Test API key and User",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/auth/test-api-key",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "auth",
+                                "test-api-key"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Test API key",
+                    "request": {
+                        "method": "GET",
+                        "header": [{
+                            "key": "x-api-key",
+                            "value": "{{apiKey}}"
+                        }],
+                        "url": {
+                            "raw": "{{baseUrl}}/protected/test",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "protected",
+                                "test"
+                            ]
+                        },
+                        "description": "Test if the protected route is working"
+                    },
+                    "response": []
+                }
+            ],
+            "description": "API key management endpoints"
+        },
+        {
+            "name": "School",
+            "item": [{
+                    "name": "Admin Only",
+                    "item": [{
+                            "name": "List all schools",
+                            "request": {
+                                "method": "GET",
+                                "header": [{
+                                    "key": "Authorization",
+                                    "value": "Bearer {{jwtToken}}",
+                                    "type": "text"
+                                }],
+                                "url": {
+                                    "raw": "{{baseUrl}}/schools",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "schools"
+                                    ]
+                                }
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "Delete a school",
+                            "request": {
+                                "method": "DELETE",
+                                "header": [{
+                                    "key": "Authorization",
+                                    "value": "Bearer {{jwtToken}}",
+                                    "type": "text"
+                                }],
+                                "url": {
+                                    "raw": "{{baseUrl}}/schools/:schoolID",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "schools",
+                                        ":schoolID"
+                                    ],
+                                    "variable": [{
+                                        "key": "schoolID",
+                                        "value": ""
+                                    }]
+                                }
+                            },
+                            "response": []
+                        }
+                    ]
+                },
+                {
+                    "name": "Update a school",
+                    "request": {
+                        "method": "PUT",
+                        "header": [{
+                                "key": "Authorization",
+                                "value": "Bearer {{jwtToken}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-CSRF-Token",
+                                "value": "{{csrfToken}}",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"SkyTrack Flight Academy - Updated\",\n  \"address\": {\n    \"street\": \"456 Aviation Boulevard\",\n    \"city\": \"San Francisco\",\n    \"state\": \"CA\",\n    \"zip\": \"94105\",\n    \"country\": \"USA\"\n  },\n  \"airport\": \"KSFO\",\n  \"phone\": \"+1 (415) 555-5678\",\n  \"email\": \"contact@skytrackacademy.com\",\n  \"website\": \"https://www.skytrackacademy.com\",\n  \"payment_info\": {\n    \"subscription_plan\": \"enterprise\",\n    \"billing_cycle\": \"annual\",\n    \"next_billing_date\": \"2024-06-01T00:00:00.000Z\",\n    \"payment_status\": \"active\"\n  }\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/schools/:schoolID",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "schools",
+                                ":schoolID"
+                            ],
+                            "variable": [{
+                                "key": "schoolID",
+                                "value": ""
+                            }]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get a specific school",
+                    "request": {
+                        "method": "GET",
+                        "header": [{
+                                "key": "Authorization",
+                                "value": "Bearer {{jwtToken}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-CSRF-Token",
+                                "value": "{{csrfToken}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/schools/:schoolId",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "schools",
+                                ":schoolId"
+                            ],
+                            "variable": [{
+                                "key": "schoolId",
+                                "value": ""
+                            }]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Create a new school",
+                    "request": {
+                        "method": "POST",
+                        "header": [{
+                                "key": "Authorization",
+                                "value": "Bearer {{jwtToken}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-CSRF-Token",
+                                "value": "{{csrfToken}}",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"SkyTrack Flight Academy - Updated\",\n  \"address\": {\n    \"street\": \"456 Aviation Boulevard\",\n    \"city\": \"San Francisco\",\n    \"state\": \"CA\",\n    \"zip\": \"94105\",\n    \"country\": \"USA\"\n  },\n  \"airport\": \"KSFO\",\n  \"phone\": \"+1 (415) 555-5678\",\n  \"email\": \"contact@skytrackacademy.com\",\n  \"website\": \"https://www.skytrackacademy.com\",\n  \"payment_info\": {\n    \"subscription_plan\": \"enterprise\",\n    \"billing_cycle\": \"annual\",\n    \"next_billing_date\": \"2024-06-01T00:00:00.000Z\",\n    \"payment_status\": \"active\"\n  }\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/schools",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "schools"
+                            ]
+                        }
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Pilots",
+            "item": [{
+                    "name": "List all pilots for a school",
+                    "request": {
+                        "method": "GET",
+                        "header": [{
+                                "key": "Authorization",
+                                "value": "Bearer {{jwtToken}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-CSRF-Token",
+                                "value": "{{csrfToken}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/schools/:schoolId/pilots",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "schools",
+                                ":schoolId",
+                                "pilots"
+                            ],
+                            "variable": [{
+                                "key": "schoolId",
+                                "value": ""
+                            }]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Create a new pilot for a school",
+                    "request": {
+                        "method": "POST",
+                        "header": [{
+                                "key": "Authorization",
+                                "value": "Bearer {{jwtToken}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-CSRF-Token",
+                                "value": "{{csrfToken}}",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"first_name\": \"John\",\n  \"last_name\": \"Doe\",\n  \"contact_email\": \"john.doe@example.com\",\n  \"phone\": \"555-123-4567\",\n  \"pilot_type\": \"instructor\",\n  \"certifications\": [\"private\", \"instrument\", \"commercial\", \"cfi\"],\n  \"license_number\": \"12345678\",\n  \"emergency_contact\": {\n    \"name\": \"Jane Doe\",\n    \"relationship\": \"Spouse\",\n    \"phone\": \"555-987-6543\"\n  }\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/schools/:schoolId/pilots",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "schools",
+                                ":schoolId",
+                                "pilots"
+                            ],
+                            "variable": [{
+                                "key": "schoolId",
+                                "value": ""
+                            }]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Update a pilot",
+                    "request": {
+                        "method": "PUT",
+                        "header": [{
+                                "key": "Authorization",
+                                "value": "Bearer {{jwtToken}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-CSRF-Token",
+                                "value": "{{csrfToken}}",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"first_name\": \"John\",\n  \"last_name\": \"Smith\",\n  \"contact_email\": \"john.smith@example.com\",\n  \"phone\": \"555-123-4567\",\n  \"pilot_type\": \"instructor\",\n  \"certifications\": [\"private\", \"instrument\", \"commercial\", \"cfi\", \"cfii\"],\n  \"license_number\": \"12345678\",\n  \"emergency_contact\": {\n    \"name\": \"Jane Smith\",\n    \"relationship\": \"Spouse\",\n    \"phone\": \"555-987-6543\"\n  }\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/schools/:schoolId/pilots/:pilotId",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "schools",
+                                ":schoolId",
+                                "pilots",
+                                ":pilotId"
+                            ],
+                            "variable": [{
+                                    "key": "schoolId",
+                                    "value": ""
+                                },
+                                {
+                                    "key": "pilotId",
+                                    "value": ""
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get a specific pilot",
+                    "request": {
+                        "method": "GET",
+                        "header": [{
+                                "key": "Authorization",
+                                "value": "Bearer {{jwtToken}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-CSRF-Token",
+                                "value": "{{csrfToken}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/schools/:schoolId/pilots/:pilotId",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "schools",
+                                ":schoolId",
+                                "pilots",
+                                ":pilotId"
+                            ],
+                            "variable": [{
+                                    "key": "schoolId",
+                                    "value": ""
+                                },
+                                {
+                                    "key": "pilotId",
+                                    "value": ""
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Delete a pilot",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [{
+                                "key": "Authorization",
+                                "value": "Bearer {{jwtToken}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-CSRF-Token",
+                                "value": "{{csrfToken}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/schools/:schoolId/pilots/:pilotId",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "schools",
+                                ":schoolId",
+                                "pilots",
+                                ":pilotId"
+                            ],
+                            "variable": [{
+                                    "key": "schoolId",
+                                    "value": ""
+                                },
+                                {
+                                    "key": "pilotId",
+                                    "value": ""
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Planes",
+            "item": [{
+                    "name": "List Planes for a School",
+                    "request": {
+                        "method": "GET",
+                        "header": [{
+                                "key": "Authorization",
+                                "value": "Bearer {{jwtToken}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-CSRF-Token",
+                                "value": "{{csrfToken}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/schools/:schoolId/planes",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "schools",
+                                ":schoolId",
+                                "planes"
+                            ],
+                            "variable": [{
+                                "key": "schoolId",
+                                "value": ""
+                            }]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get a Specific Plane",
+                    "request": {
+                        "method": "GET",
+                        "header": [{
+                                "key": "Authorization",
+                                "value": "Bearer {{jwtToken}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-CSRF-Token",
+                                "value": "{{csrfToken}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/schools/:schoolId/planes/:planeId",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "schools",
+                                ":schoolId",
+                                "planes",
+                                ":planeId"
+                            ],
+                            "variable": [{
+                                    "key": "schoolId",
+                                    "value": ""
+                                },
+                                {
+                                    "key": "planeId",
+                                    "value": ""
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Create a Plane",
+                    "request": {
+                        "method": "POST",
+                        "header": [{
+                                "key": "Authorization",
+                                "value": "Bearer {{jwtToken}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-CSRF-Token",
+                                "value": "{{csrfToken}}",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"tail_number\": \"N12345\",\n    \"model\": \"Cessna 172\",\n    \"status\": \"active\",\n    \"capacity\": 4,\n    \"location\": \"Hangar A\",\n    \"year_manufactured\": 2015,\n    \"last_maintenance_date\": \"2023-01-15T00:00:00.000Z\",\n    \"next_maintenance_date\": \"2023-07-15T00:00:00.000Z\",\n    \"total_flight_hours\": 1200,\n    \"notes\": \"Regular maintenance completed\"\n  }",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/schools/:schoolId/planes",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "schools",
+                                ":schoolId",
+                                "planes"
+                            ],
+                            "variable": [{
+                                "key": "schoolId",
+                                "value": ""
+                            }]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Create a Plane Copy",
+                    "request": {
+                        "method": "PUT",
+                        "header": [{
+                                "key": "Authorization",
+                                "value": "Bearer {{jwtToken}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-CSRF-Token",
+                                "value": "{{csrfToken}}",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"status\": \"maintenance\",\n    \"location\": \"Hangar B\",\n    \"next_maintenance_date\": \"2023-08-15T00:00:00.000Z\",\n    \"notes\": \"Scheduled maintenance\"\n  }",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/schools/:schoolId/planes/:planeId",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "schools",
+                                ":schoolId",
+                                "planes",
+                                ":planeId"
+                            ],
+                            "variable": [{
+                                    "key": "schoolId",
+                                    "value": ""
+                                },
+                                {
+                                    "key": "planeId",
+                                    "value": ""
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Delete a Plane",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [{
+                                "key": "Authorization",
+                                "value": "Bearer {{jwtToken}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-CSRF-Token",
+                                "value": "{{csrfToken}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/schools/:schoolId/planes/:planeId",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "schools",
+                                ":schoolId",
+                                "planes",
+                                ":planeId"
+                            ],
+                            "variable": [{
+                                    "key": "schoolId",
+                                    "value": ""
+                                },
+                                {
+                                    "key": "planeId",
+                                    "value": ""
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Schedules",
+            "item": [{
+                    "name": "List all schedules for a school",
+                    "request": {
+                        "method": "GET",
+                        "header": [{
+                                "key": "Authorization",
+                                "value": "Bearer {{jwtToken}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-CSRF-Token",
+                                "value": "{{csrfToken}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/schools/:schoolId/schedules",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "schools",
+                                ":schoolId",
+                                "schedules"
+                            ],
+                            "variable": [{
+                                "key": "schoolId",
+                                "value": ""
+                            }]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get a Schedule",
+                    "request": {
+                        "method": "GET",
+                        "header": [{
+                                "key": "Authorization",
+                                "value": "Bearer {{jwtToken}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-CSRF-Token",
+                                "value": "{{csrfToken}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/schools/:schoolId/schedules/:scheduleId",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "schools",
+                                ":schoolId",
+                                "schedules",
+                                ":scheduleId"
+                            ],
+                            "variable": [{
+                                    "key": "schoolId",
+                                    "value": ""
+                                },
+                                {
+                                    "key": "scheduleId",
+                                    "value": ""
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Create Schedule",
+                    "request": {
+                        "method": "POST",
+                        "header": [{
+                                "key": "Authorization",
+                                "value": "Bearer {{jwtToken}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-CSRF-Token",
+                                "value": "{{csrfToken}}",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"student_id\": \"string (required)\",\n    \"instructor_id\": \"string (required)\",\n    \"plane_id\": \"string (required)\",\n    \"start_time\": \"string (ISO date, required)\",\n    \"end_time\": \"string (ISO date, required)\",\n    \"flight_type\": \"string (required)\",\n    \"notes\": \"string (optional)\",\n    \"weather_conditions\": \"string (optional)\",\n    \"aircraft_condition\": \"string (optional)\",\n    \"instructor_notes\": \"string (optional)\",\n    \"student_notes\": \"string (optional)\",\n    \"status\": \"string (default: 'scheduled')\"\n  }",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/schools/:schoolId/schedules",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "schools",
+                                ":schoolId",
+                                "schedules"
+                            ],
+                            "variable": [{
+                                "key": "schoolId",
+                                "value": ""
+                            }]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Update a Schedule",
+                    "request": {
+                        "method": "PUT",
+                        "header": [{
+                                "key": "Authorization",
+                                "value": "Bearer {{jwtToken}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-CSRF-Token",
+                                "value": "{{csrfToken}}",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"student_id\": \"string (required)\",\n    \"instructor_id\": \"string (required)\",\n    \"plane_id\": \"string (required)\",\n    \"start_time\": \"string (ISO date, required)\",\n    \"end_time\": \"string (ISO date, required)\",\n    \"flight_type\": \"string (required)\",\n    \"notes\": \"string (optional)\",\n    \"weather_conditions\": \"string (optional)\",\n    \"aircraft_condition\": \"string (optional)\",\n    \"instructor_notes\": \"string (optional)\",\n    \"student_notes\": \"string (optional)\",\n    \"status\": \"string (default: 'scheduled')\"\n  }",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/schools/:schoolId/schedules/:scheduleId",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "schools",
+                                ":schoolId",
+                                "schedules",
+                                ":scheduleId"
+                            ],
+                            "variable": [{
+                                    "key": "schoolId",
+                                    "value": ""
+                                },
+                                {
+                                    "key": "scheduleId",
+                                    "value": ""
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Delete a Schedule",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [{
+                                "key": "Authorization",
+                                "value": "Bearer {{jwtToken}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-CSRF-Token",
+                                "value": "{{csrfToken}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/schools/:schoolId/schedules/:scheduleId",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "schools",
+                                ":schoolId",
+                                "schedules",
+                                ":scheduleId"
+                            ],
+                            "variable": [{
+                                    "key": "schoolId",
+                                    "value": ""
+                                },
+                                {
+                                    "key": "scheduleId",
+                                    "value": ""
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                }
+            ]
+        }
+    ],
+    "auth": {
+        "type": "apikey",
+        "apikey": [{
+                "key": "value",
+                "value": "pk_7e203b45-dddc0ece-59a1c1b6-e8df2f3e",
+                "type": "string"
+            },
+            {
+                "key": "key",
+                "value": "x-api-key",
+                "type": "string"
+            }
+        ]
+    },
+    "event": [{
+            "listen": "prerequest",
+            "script": {
+                "type": "text/javascript",
+                "exec": [
+                    ""
+                ]
+            }
+        },
+        {
+            "listen": "test",
+            "script": {
+                "type": "text/javascript",
+                "exec": [
+                    ""
+                ]
+            }
+        }
+    ],
+    "variable": [{
+            "key": "baseUrl",
+            "value": "http://localhost:3000/api",
+            "type": "string"
+        },
+        {
+            "key": "jwtToken",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "csrfToken",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "googleIdToken",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "resetToken",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "magicToken",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "magicCode",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "apiKeyId",
+            "value": "",
+            "type": "string"
+        }
+    ]
+}

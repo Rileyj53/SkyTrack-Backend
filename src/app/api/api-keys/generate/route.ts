@@ -26,10 +26,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if the user has the admin role
-    if (decoded.role !== 'admin') {
+    // Check if the user has the sys_admin role
+    if (decoded.role !== 'sys_admin') {
       return NextResponse.json(
-        { error: 'Forbidden: Only administrators can create API keys' },
+        { error: 'Forbidden: Only system administrators can create API keys' },
         { status: 403 }
       );
     }

@@ -9,7 +9,12 @@ const EXCLUDED_PATHS = [
 ];
 
 // Methods that don't require CSRF protection
-const SAFE_METHODS = ['GET', 'HEAD', 'OPTIONS'];
+const SAFE_METHODS = ['HEAD', 'OPTIONS'];
+
+// Paths that require CSRF protection even for GET requests
+const PROTECTED_GET_PATHS = [
+  '/api/schools/'
+];
 
 // Export the middleware function as 'csrf'
 export const csrf = (request: NextRequest) => {
@@ -18,8 +23,9 @@ export const csrf = (request: NextRequest) => {
     return NextResponse.next();
   }
 
-  // Skip CSRF check for safe methods
-  if (SAFE_METHODS.includes(request.method)) {
+  // Skip CSRF check for safe methods unless it's a protected GET path
+  if (SAFE_METHODS.includes(request.method) || 
+      (request.method === 'GET' && !PROTECTED_GET_PATHS.some(path => request.nextUrl.pathname.startsWith(path)))) {
     return NextResponse.next();
   }
 

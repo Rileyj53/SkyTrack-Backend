@@ -1,8 +1,18 @@
 import mongoose from 'mongoose';
+import { School } from './School';
 import { User } from './User';
+import Pilot from './Pilot';
+import Plane from './Plane';
+import Schedule from './Schedule';
 
-// Ensure that the User model is properly registered with Mongoose
-export { User };
+// Export all models
+export {
+  School,
+  User,
+  Pilot,
+  Plane,
+  Schedule
+};
 
 // Export a function to initialize all models
 export function initializeModels() {
