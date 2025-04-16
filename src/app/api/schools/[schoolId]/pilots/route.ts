@@ -7,12 +7,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
 import { validateApiKey } from '@/middleware/apiKeyAuth';
-import { checkSchoolAccess } from '@/middleware/schoolAccess';
 import { authenticateRequest } from '@/lib/auth';
-import { verifyToken } from '@/lib/jwt';
-import mongoose from 'mongoose';
-import { User } from '@/models/User';
 import Pilot from '@/models/Pilot';
+import mongoose from 'mongoose';
 
 // Connect to MongoDB
 connectDB();
@@ -23,41 +20,32 @@ export async function GET(
   { params }: { params: { schoolId: string } }
 ) {
   try {
-    // Validate API key first
-    const authResult = await validateApiKey(request);
-    if (authResult instanceof NextResponse) {
-      return authResult;
+    // Validate API key
+    const apiKeyResult = await validateApiKey(request);
+    if ('error' in apiKeyResult) {
+      return NextResponse.json({ error: apiKeyResult.error }, { status: 401 });
     }
 
-    // Get user from token
-    const auth = authenticateRequest(request);
-    if (!auth.success) {
+    // Authenticate user
+    const authResult = await authenticateRequest(request);
+    if ('error' in authResult) {
+      return NextResponse.json({ error: authResult.error }, { status: 401 });
+    }
+
+    // Validate school ID
+    if (!mongoose.Types.ObjectId.isValid(params.schoolId)) {
       return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
+        { error: 'Invalid school ID format' },
+        { status: 400 }
       );
     }
 
-    // Get user role from token
-    const token = request.headers.get('Authorization')?.split(' ')[1];
-    const decoded = verifyToken(token || '');
-    const isSystemAdmin = decoded?.role === 'sys_admin';
-
-    // If not a system admin, check school access
-    if (!isSystemAdmin) {
-      const schoolAccessCheck = await checkSchoolAccess(request, params.schoolId);
-      if (schoolAccessCheck) {
-        return schoolAccessCheck;
-      }
-    }
-
     // Find all pilots for the school
-    const query = Pilot.find({ school_id: params.schoolId });
-    const pilots = await (query as any).exec();
+    const pilots = await (Pilot as any).find({ school_id: params.schoolId }).lean();
     
     return NextResponse.json({ pilots });
   } catch (error) {
-    console.error('Error listing pilots:', error);
+    console.error('Error in GET /api/schools/[schoolId]/pilots:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -71,102 +59,77 @@ export async function POST(
   { params }: { params: { schoolId: string } }
 ) {
   try {
-    // Validate API key first
-    const authResult = await validateApiKey(request);
-    if (authResult instanceof NextResponse) {
-      return authResult;
+    // Validate API key
+    const apiKeyResult = await validateApiKey(request);
+    if ('error' in apiKeyResult) {
+      return NextResponse.json({ error: apiKeyResult.error }, { status: 401 });
     }
 
-    // Get user from token
-    const auth = authenticateRequest(request);
-    if (!auth.success) {
+    // Authenticate user
+    const authResult = await authenticateRequest(request);
+    if ('error' in authResult) {
+      return NextResponse.json({ error: authResult.error }, { status: 401 });
+    }
+
+    // Validate school ID
+    if (!mongoose.Types.ObjectId.isValid(params.schoolId)) {
       return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
-      );
-    }
-
-    // Get user role from token
-    const token = request.headers.get('Authorization')?.split(' ')[1];
-    const decoded = verifyToken(token || '');
-    const isSystemAdmin = decoded?.role === 'sys_admin';
-
-    // If not a system admin, check school access
-    if (!isSystemAdmin) {
-      const schoolAccessCheck = await checkSchoolAccess(request, params.schoolId);
-      if (schoolAccessCheck) {
-        return schoolAccessCheck;
-      }
-    }
-
-    // Check if user has admin role
-    const query = User.findById(auth.userId);
-    const user = await (query as any).exec();
-    if (!user || (user.role !== 'sys_admin' && user.role !== 'school_admin')) {
-      return NextResponse.json(
-        { error: 'Insufficient permissions' },
-        { status: 403 }
+        { error: 'Invalid school ID format' },
+        { status: 400 }
       );
     }
 
     // Get request body
     const body = await request.json();
 
-    // Check for required fields
+    // Validate required fields
     const requiredFields = [
       'first_name',
       'last_name',
       'contact_email',
       'phone',
       'pilot_type',
+      'certifications',
       'license_number'
     ];
 
-    const missingFields = requiredFields.filter(field => !body[field]);
-    if (missingFields.length > 0) {
-      return NextResponse.json(
-        { error: `Missing required fields: ${missingFields.join(', ')}` },
-        { status: 400 }
-      );
+    for (const field of requiredFields) {
+      if (!body[field]) {
+        return NextResponse.json(
+          { error: `Missing required field: ${field}` },
+          { status: 400 }
+        );
+      }
     }
 
-    // Check if pilot with same license number already exists in this school
-    const existingPilotQuery = Pilot.findOne({
-      school_id: params.schoolId,
-      license_number: body.license_number
-    });
-    const existingPilot = await (existingPilotQuery as any).exec();
-    
+    // Check if pilot with license number already exists
+    const existingPilot = await (Pilot as any).findOne({
+      license_number: body.license_number,
+      school_id: params.schoolId
+    }).lean();
+
     if (existingPilot) {
       return NextResponse.json(
-        { error: 'Pilot with this license number already exists in this school' },
+        { error: 'A pilot with this license number already exists' },
         { status: 400 }
       );
     }
 
-    // Create new pilot with user_id from authenticated user
-    const pilotData = {
+    // Create new pilot
+    const pilot = new Pilot({
       ...body,
       school_id: params.schoolId,
-      user_id: auth.userId
-    };
-    const newPilot = await (Pilot.create(pilotData) as Promise<any>);
-    
-    return NextResponse.json({
-      message: 'Pilot created successfully',
-      pilot: newPilot
-    }, { status: 201 });
+      user_id: authResult.userId
+    });
+
+    await pilot.save();
+
+    return NextResponse.json(
+      { message: 'Pilot created successfully', pilot },
+      { status: 201 }
+    );
   } catch (error) {
-    console.error('Error creating pilot:', error);
-    
-    // Check if it's a validation error
-    if (error.name === 'ValidationError') {
-      return NextResponse.json(
-        { error: 'Validation error', details: error.message },
-        { status: 400 }
-      );
-    }
-    
+    console.error('Error in POST /api/schools/[schoolId]/pilots:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
