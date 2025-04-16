@@ -1,0 +1,566 @@
+{
+    "info": {
+        "_postman_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+        "name": "Personal Site Backend API 2",
+        "description": "API collection for the personal site backend",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [{
+            "name": "System",
+            "description": "System endpoints",
+            "item": [{
+                "name": "Health Check",
+                "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                        "raw": "{{baseUrl}}/health",
+                        "host": ["{{baseUrl}}"],
+                        "path": ["health"]
+                    },
+                    "description": "Check the health status of the system"
+                }
+            }]
+        },
+        {
+            "name": "Auth",
+            "description": "Authentication endpoints",
+            "item": [{
+                    "name": "Test Auth Route",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/auth/test",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["auth", "test"]
+                        },
+                        "description": "Test if the auth route is working"
+                    }
+                },
+                {
+                    "name": "Get CSRF Token",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/auth/csrf-token",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["auth", "csrf-token"]
+                        },
+                        "description": "Get a CSRF token for protected routes"
+                    }
+                },
+                {
+                    "name": "Register",
+                    "request": {
+                        "method": "POST",
+                        "header": [{
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "X-CSRF-Token",
+                                "value": "{{csrfToken}}"
+                            },
+                            {
+                                "key": "x-api-key",
+                                "value": "{{apiKey}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"firstName\": \"John\",\n    \"lastName\": \"Doe\",\n    \"email\": \"john.doe@example.com\",\n    \"password\": \"SecurePassword123!\",\n    \"role\": \"user\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/auth/register",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["auth", "register"]
+                        },
+                        "description": "Register a new user"
+                    }
+                },
+                {
+                    "name": "Login",
+                    "request": {
+                        "method": "POST",
+                        "header": [{
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "X-CSRF-Token",
+                                "value": "{{csrfToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"email\": \"john.doe@example.com\",\n    \"password\": \"SecurePassword123!\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/auth/login",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["auth", "login"]
+                        },
+                        "description": "Login with email and password"
+                    }
+                },
+                {
+                    "name": "Logout",
+                    "request": {
+                        "method": "POST",
+                        "header": [{
+                                "key": "Authorization",
+                                "value": "Bearer {{jwtToken}}"
+                            },
+                            {
+                                "key": "X-CSRF-Token",
+                                "value": "{{csrfToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/auth/logout",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["auth", "logout"]
+                        },
+                        "description": "Logout and blacklist the current token"
+                    }
+                },
+                {
+                    "name": "Google Login",
+                    "request": {
+                        "method": "POST",
+                        "header": [{
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "X-CSRF-Token",
+                                "value": "{{csrfToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"id_token\": \"{{googleIdToken}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/auth/google",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["auth", "google"]
+                        },
+                        "description": "Login with Google OAuth"
+                    }
+                },
+                {
+                    "name": "Request Password Reset",
+                    "request": {
+                        "method": "POST",
+                        "header": [{
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "X-CSRF-Token",
+                                "value": "{{csrfToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"email\": \"john.doe@example.com\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/auth/request-reset",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["auth", "request-reset"]
+                        },
+                        "description": "Request a password reset email"
+                    }
+                },
+                {
+                    "name": "Reset Password",
+                    "request": {
+                        "method": "POST",
+                        "header": [{
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "X-CSRF-Token",
+                                "value": "{{csrfToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"token\": \"{{resetToken}}\",\n    \"newPassword\": \"NewSecurePassword123!\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/auth/reset-password",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["auth", "reset-password"]
+                        },
+                        "description": "Reset password using the token from email"
+                    }
+                },
+                {
+                    "name": "Request Magic Link",
+                    "request": {
+                        "method": "POST",
+                        "header": [{
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "X-CSRF-Token",
+                                "value": "{{csrfToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"email\": \"john.doe@example.com\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/auth/request-magic-link",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["auth", "request-magic-link"]
+                        },
+                        "description": "Request a magic login link"
+                    }
+                },
+                {
+                    "name": "Magic Link Login",
+                    "request": {
+                        "method": "POST",
+                        "header": [{
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "X-CSRF-Token",
+                                "value": "{{csrfToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"token\": \"{{magicToken}}\",\n    \"code\": \"{{magicCode}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/auth/magic-login",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["auth", "magic-login"]
+                        },
+                        "description": "Login using magic link or code"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "API Keys",
+            "description": "API key management endpoints",
+            "item": [{
+                    "name": "Test API Keys Route",
+                    "request": {
+                        "method": "GET",
+                        "header": [{
+                            "key": "x-api-key",
+                            "value": "{{apiKey}}"
+                        }],
+                        "url": {
+                            "raw": "{{baseUrl}}/api-keys/test",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api-keys", "test"]
+                        },
+                        "description": "Test if the API keys route is working"
+                    }
+                },
+                {
+                    "name": "Generate API Key",
+                    "request": {
+                        "method": "POST",
+                        "header": [{
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{jwtToken}}"
+                            },
+                            {
+                                "key": "X-CSRF-Token",
+                                "value": "{{csrfToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"label\": \"My API Key\",\n    \"durationValue\": 30,\n    \"durationType\": \"days\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api-keys/generate",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api-keys", "generate"]
+                        },
+                        "description": "Generate a new API key"
+                    }
+                },
+                {
+                    "name": "List API Keys",
+                    "request": {
+                        "method": "GET",
+                        "header": [{
+                                "key": "Authorization",
+                                "value": "Bearer {{jwtToken}}"
+                            },
+                            {
+                                "key": "X-CSRF-Token",
+                                "value": "{{csrfToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api-keys/keys",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api-keys", "keys"]
+                        },
+                        "description": "List all API keys for the current user"
+                    }
+                },
+                {
+                    "name": "Revoke API Key",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [{
+                                "key": "Authorization",
+                                "value": "Bearer {{jwtToken}}"
+                            },
+                            {
+                                "key": "X-CSRF-Token",
+                                "value": "{{csrfToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api-keys/{{apiKeyId}}",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["api-keys", "{{apiKeyId}}"]
+                        },
+                        "description": "Revoke (delete) an API key"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "MFA",
+            "description": "Multi-Factor Authentication endpoints",
+            "item": [{
+                    "name": "Setup MFA",
+                    "request": {
+                        "method": "POST",
+                        "header": [{
+                                "key": "Authorization",
+                                "value": "Bearer {{jwtToken}}"
+                            },
+                            {
+                                "key": "X-CSRF-Token",
+                                "value": "{{csrfToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/auth/mfa/setup",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["auth", "mfa", "setup"]
+                        },
+                        "description": "Initialize MFA setup and get QR code"
+                    }
+                },
+                {
+                    "name": "Verify MFA Setup",
+                    "request": {
+                        "method": "POST",
+                        "header": [{
+                                "key": "Authorization",
+                                "value": "Bearer {{jwtToken}}"
+                            },
+                            {
+                                "key": "X-CSRF-Token",
+                                "value": "{{csrfToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"token\": \"{{mfaToken}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/auth/mfa/verify",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["auth", "mfa", "verify"]
+                        },
+                        "description": "Verify and complete MFA setup"
+                    }
+                },
+                {
+                    "name": "Disable MFA",
+                    "request": {
+                        "method": "POST",
+                        "header": [{
+                                "key": "Authorization",
+                                "value": "Bearer {{jwtToken}}"
+                            },
+                            {
+                                "key": "X-CSRF-Token",
+                                "value": "{{csrfToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"token\": \"{{mfaToken}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/auth/mfa/disable",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["auth", "mfa", "disable"]
+                        },
+                        "description": "Disable MFA for the user"
+                    }
+                },
+                {
+                    "name": "Get MFA Status",
+                    "request": {
+                        "method": "GET",
+                        "header": [{
+                                "key": "Authorization",
+                                "value": "Bearer {{jwtToken}}"
+                            },
+                            {
+                                "key": "X-CSRF-Token",
+                                "value": "{{csrfToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/auth/mfa/status",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["auth", "mfa", "status"]
+                        },
+                        "description": "Get current MFA status"
+                    }
+                },
+                {
+                    "name": "Verify MFA Login",
+                    "request": {
+                        "method": "POST",
+                        "header": [{
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "X-CSRF-Token",
+                                "value": "{{csrfToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"token\": \"{{mfaToken}}\",\n    \"userId\": \"{{userId}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/auth/mfa/verify-login",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["auth", "mfa", "verify-login"]
+                        },
+                        "description": "Verify MFA token during login"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Protected",
+            "description": "Protected endpoints requiring authentication",
+            "item": [{
+                "name": "Test Protected Route",
+                "request": {
+                    "method": "GET",
+                    "header": [{
+                        "key": "x-api-key",
+                        "value": "{{apiKey}}"
+                    }],
+                    "url": {
+                        "raw": "{{baseUrl}}/protected/test",
+                        "host": ["{{baseUrl}}"],
+                        "path": ["protected", "test"]
+                    },
+                    "description": "Test if the protected route is working"
+                }
+            }]
+        }
+    ],
+    "event": [{
+            "listen": "prerequest",
+            "script": {
+                "type": "text/javascript",
+                "exec": [
+                    ""
+                ]
+            }
+        },
+        {
+            "listen": "test",
+            "script": {
+                "type": "text/javascript",
+                "exec": [
+                    ""
+                ]
+            }
+        }
+    ],
+    "variable": [{
+            "key": "baseUrl",
+            "value": "http://localhost:3000/api",
+            "type": "string"
+        },
+        {
+            "key": "jwtToken",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "csrfToken",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "apiKey",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "googleIdToken",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "resetToken",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "magicToken",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "magicCode",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "apiKeyId",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "mfaToken",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "userId",
+            "value": "",
+            "type": "string"
+        }
+    ]
+}
