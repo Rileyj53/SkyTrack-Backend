@@ -40,9 +40,9 @@ const nextConfig = {
         }
         return config;
     },
-    // Specify which routes should use Node.js runtime
+    // Configure runtime for API routes
     experimental: {
-        serverComponentsExternalPackages: ['mongodb', 'mongoose'],
+        serverActions: true,
     },
 }
 
