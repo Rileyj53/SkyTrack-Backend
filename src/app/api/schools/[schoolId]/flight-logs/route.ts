@@ -58,6 +58,7 @@ export async function GET(
     const instructorId = searchParams.get('instructor_id');
     const planeId = searchParams.get('plane_id');
     const status = searchParams.get('status');
+    const date = searchParams.get('date');
     const startDate = searchParams.get('start_date');
     const endDate = searchParams.get('end_date');
     const type = searchParams.get('type');
@@ -103,7 +104,20 @@ export async function GET(
       query.type = type;
     }
 
-    if (startDate && endDate) {
+    // Handle date filtering
+    if (date) {
+      // If a specific date is provided, create a date range for that day
+      const targetDate = new Date(date);
+      targetDate.setHours(0, 0, 0, 0);
+      const nextDay = new Date(targetDate);
+      nextDay.setDate(nextDay.getDate() + 1);
+      
+      query.date = {
+        $gte: targetDate,
+        $lt: nextDay
+      };
+    } else if (startDate && endDate) {
+      // If date range is provided
       query.date = {
         $gte: new Date(startDate),
         $lte: new Date(endDate)
