@@ -33,7 +33,16 @@ export async function POST(req: NextRequest) {
 
     await connectDB();
 
-    const { email, password, role = 'student', school_id, pilot_id } = await req.json();
+    const { 
+      email, 
+      password, 
+      first_name, 
+      last_name, 
+      role = 'student', 
+      school_id, 
+      student_id, 
+      instructor_id 
+    } = await req.json();
 
     // Validate required fields
     if (!email || !password) {
@@ -80,9 +89,12 @@ export async function POST(req: NextRequest) {
     const userData = {
       email,
       password: hashedPassword,
+      first_name,
+      last_name,
       role,
       school_id,
-      pilot_id,
+      student_id,
+      instructor_id,
       isActive: true,
       failedLoginAttempts: 0,
       mfaEnabled: false,
@@ -98,11 +110,7 @@ export async function POST(req: NextRequest) {
     const user = await User.create(userData);
 
     // Generate JWT token
-    const token = generateToken({
-      _id: user._id,
-      email: user.email,
-      role: user.role
-    });
+    const token = await generateToken(user);
 
     // Generate CSRF token
     const csrfToken = generateCSRFToken();
@@ -110,8 +118,20 @@ export async function POST(req: NextRequest) {
     // Create response
     const response = NextResponse.json({
       message: 'User registered successfully',
-      token: token,
-      csrfToken
+      user: {
+        _id: user._id,
+        email: user.email,
+        first_name: user.first_name,
+        last_name: user.last_name,
+        role: user.role,
+        school_id: user.school_id,
+        student_id: user.student_id,
+        instructor_id: user.instructor_id,
+        isActive: user.isActive,
+        emailVerified: user.emailVerified
+      },
+      token,
+      csrfToken: csrfToken.token
     });
 
     // Set HTTP-only cookie with JWT token

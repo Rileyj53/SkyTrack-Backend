@@ -53,8 +53,28 @@ export async function GET(
     // Find all planes for this school
     const planes = await (Plane as any).find({ school_id: params.schoolId }).lean();
     
+    // Transform the response to match the expected format
+    const transformedPlanes = planes.map(plane => ({
+      id: plane._id,
+      registration: plane.registration,
+      type: plane.type,
+      model: plane.model,
+      year: plane.year,
+      engineHours: plane.engineHours,
+      tach_time: plane.tach_time,
+      hopps_time: plane.hopps_time,
+      lastMaintenance: plane.lastMaintenance,
+      nextMaintenance: plane.nextMaintenance,
+      status: plane.status,
+      hourlyRates: plane.hourlyRates,
+      specialRates: plane.specialRates,
+      utilization: plane.utilization,
+      location: plane.location,
+      notes: plane.notes
+    }));
+    
     return NextResponse.json({
-      planes
+      planes: transformedPlanes
     });
   } catch (error) {
     console.error('Error in GET /api/schools/[schoolId]/planes:', error);
@@ -96,12 +116,14 @@ export async function POST(
 
     // Validate required fields
     const requiredFields = [
-      'tail_number',
-      'make',
+      'registration',
+      'type',
       'model',
       'year',
-      'type',
-      'status'
+      'engineHours',
+      'status',
+      'location',
+      'hourlyRates'
     ];
 
     for (const field of requiredFields) {
@@ -113,15 +135,26 @@ export async function POST(
       }
     }
 
-    // Check if plane with tail number already exists
+    // Validate hourlyRates fields
+    const requiredHourlyRates = ['wet', 'dry', 'block', 'instruction', 'weekend', 'solo', 'checkride'];
+    for (const rate of requiredHourlyRates) {
+      if (body.hourlyRates[rate] === undefined) {
+        return NextResponse.json(
+          { error: `Missing required hourly rate: ${rate}` },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Check if plane with registration already exists
     const existingPlane = await (Plane as any).findOne({
-      tail_number: body.tail_number.toUpperCase(),
+      registration: body.registration.toUpperCase(),
       school_id: params.schoolId
     }).lean();
 
     if (existingPlane) {
       return NextResponse.json(
-        { error: 'A plane with this tail number already exists' },
+        { error: 'A plane with this registration already exists' },
         { status: 400 }
       );
     }
@@ -129,14 +162,36 @@ export async function POST(
     // Create new plane
     const plane = new Plane({
       ...body,
-      tail_number: body.tail_number.toUpperCase(),
-      school_id: params.schoolId
+      registration: body.registration.toUpperCase(),
+      school_id: params.schoolId,
+      // Ensure specialRates is an array
+      specialRates: body.specialRates || []
     });
 
     await plane.save();
 
+    // Transform the response to match the expected format
+    const transformedPlane = {
+      id: plane._id,
+      registration: plane.registration,
+      type: plane.type,
+      model: plane.model,
+      year: plane.year,
+      engineHours: plane.engineHours,
+      tach_time: plane.tach_time,
+      hopps_time: plane.hopps_time,
+      lastMaintenance: plane.lastMaintenance,
+      nextMaintenance: plane.nextMaintenance,
+      status: plane.status,
+      hourlyRates: plane.hourlyRates,
+      specialRates: plane.specialRates,
+      utilization: plane.utilization,
+      location: plane.location,
+      notes: plane.notes
+    };
+
     return NextResponse.json(
-      { message: 'Plane created successfully', plane },
+      { message: 'Plane created successfully', plane: transformedPlane },
       { status: 201 }
     );
   } catch (error) {

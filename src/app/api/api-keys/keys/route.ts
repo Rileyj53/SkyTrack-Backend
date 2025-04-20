@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyToken } from '../../../../lib/jwt';
-import { listApiKeys } from '../../../../lib/apiKeys';
+import { verifyToken } from '@/lib/jwt';
+import { listApiKeys } from '@/lib/apiKeys';
 
 export async function GET(request: NextRequest) {
   try {
@@ -23,11 +23,20 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Check if the user has the sys_admin role
+    if (decoded.role !== 'sys_admin') {
+      return NextResponse.json(
+        { error: 'Forbidden: Only system administrators can list API keys' },
+        { status: 403 }
+      );
+    }
+
     // Get the API keys
     const apiKeys = await listApiKeys(decoded.userId);
 
     return NextResponse.json({
-      apiKeys
+      status: 'success',
+      data: apiKeys
     });
   } catch (error) {
     console.error('API key listing error:', error);

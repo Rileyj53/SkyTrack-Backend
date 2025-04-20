@@ -6,6 +6,7 @@ import { checkSchoolAccess } from '@/middleware/schoolAccess';
 import { authenticateRequest } from '@/lib/auth';
 import mongoose from 'mongoose';
 import { User } from '@/models/User';
+import { verifyToken } from '@/lib/jwt';
 
 // Connect to MongoDB
 connectDB();
@@ -71,12 +72,6 @@ export async function PUT(
       return authResult;
     }
 
-    // Check if the user has access to this school
-    const schoolAccessCheck = await checkSchoolAccess(request, params.schoolId);
-    if (schoolAccessCheck) {
-      return schoolAccessCheck;
-    }
-
     // Get user from token
     const auth = authenticateRequest(request);
     if (!auth.success) {
@@ -86,11 +81,33 @@ export async function PUT(
       );
     }
 
-    // Check if user has admin role
-    const user = await User.findById(auth.userId);
-    if (!user || (user.role !== 'sys_admin' && user.role !== 'school_admin')) {
+    // Get the token from the Authorization header to extract role
+    const authHeader = request.headers.get('Authorization');
+    const token = authHeader?.split(' ')[1] || '';
+    const decoded = verifyToken(token);
+    
+    if (!decoded) {
       return NextResponse.json(
-        { error: 'Insufficient permissions' },
+        { error: 'Invalid token' },
+        { status: 401 }
+      );
+    }
+
+    // Check role-based access control
+    const role = decoded.role;
+    
+    // Only sys_admin and school_admin can update schools
+    if (role !== 'sys_admin' && role !== 'school_admin') {
+      return NextResponse.json(
+        { error: 'Forbidden: Only system administrators and school administrators can update schools' },
+        { status: 403 }
+      );
+    }
+    
+    // If school_admin, check if they belong to this school
+    if (role === 'school_admin' && decoded.school_id !== params.schoolId) {
+      return NextResponse.json(
+        { error: 'Forbidden: School administrators can only update their own school' },
         { status: 403 }
       );
     }
@@ -136,8 +153,9 @@ export async function PUT(
     );
     
     return NextResponse.json({
+      status: 'success',
       message: 'School updated successfully',
-      school: updatedSchool
+      data: updatedSchool
     });
   } catch (error) {
     console.error('Error updating school:', error);
@@ -169,11 +187,22 @@ export async function DELETE(
       );
     }
 
-    // Check if user has sys_admin role
-    const user = await User.findById(auth.userId);
-    if (!user || user.role !== 'sys_admin') {
+    // Get the token from the Authorization header to extract role
+    const authHeader = request.headers.get('Authorization');
+    const token = authHeader?.split(' ')[1] || '';
+    const decoded = verifyToken(token);
+    
+    if (!decoded) {
       return NextResponse.json(
-        { error: 'Insufficient permissions' },
+        { error: 'Invalid token' },
+        { status: 401 }
+      );
+    }
+
+    // Check if user has sys_admin role
+    if (decoded.role !== 'sys_admin') {
+      return NextResponse.json(
+        { error: 'Forbidden: Only system administrators can delete schools' },
         { status: 403 }
       );
     }
@@ -198,6 +227,7 @@ export async function DELETE(
     }
     
     return NextResponse.json({
+      status: 'success',
       message: 'School deleted successfully'
     });
   } catch (error) {

@@ -13,10 +13,10 @@ export function securityHeaders(request: NextRequest) {
   // Add security headers
   const headers = response.headers;
   
-  // Content Security Policy (CSP)
+  // Content Security Policy (CSP) - updated to allow cross-origin requests
   headers.set(
     'Content-Security-Policy',
-    "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https:; frame-ancestors 'none';"
+    "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https: http:; frame-ancestors 'self';"
   );
   
   // X-Content-Type-Options: Prevents MIME type sniffing
@@ -50,16 +50,20 @@ export function securityHeaders(request: NextRequest) {
   headers.set('Cache-Control', 'no-store, max-age=0');
   
   // Cross-Origin-Embedder-Policy: Helps prevent cross-origin attacks
-  headers.set('Cross-Origin-Embedder-Policy', 'require-corp');
+  // Removed to allow cross-origin requests
+  // headers.set('Cross-Origin-Embedder-Policy', 'require-corp');
   
   // Cross-Origin-Opener-Policy: Prevents cross-origin attacks
-  headers.set('Cross-Origin-Opener-Policy', 'same-origin');
+  // Removed to allow cross-origin requests
+  // headers.set('Cross-Origin-Opener-Policy', 'same-origin');
   
   // Cross-Origin-Resource-Policy: Prevents cross-origin attacks
-  headers.set('Cross-Origin-Resource-Policy', 'same-origin');
+  // Removed to allow cross-origin requests
+  // headers.set('Cross-Origin-Resource-Policy', 'same-origin');
   
   // Origin-Agent-Cluster: Provides additional isolation between origins
-  headers.set('Origin-Agent-Cluster', '?1');
+  // Removed to allow cross-origin requests
+  // headers.set('Origin-Agent-Cluster', '?1');
   
   // Expect-CT: Helps detect and prevent certificate transparency issues
   headers.set('Expect-CT', 'enforce, max-age=30');

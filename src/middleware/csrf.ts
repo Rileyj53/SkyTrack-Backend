@@ -5,7 +5,8 @@ import { validateCSRFToken } from '@/lib/csrf';
 const EXCLUDED_PATHS = [
   '/api/auth/login',
   '/api/auth/register',
-  '/api/auth/csrf-token'
+  '/api/auth/csrf-token',
+  '/api/schools/.*/flight-logs/today'
 ];
 
 // Methods that don't require CSRF protection

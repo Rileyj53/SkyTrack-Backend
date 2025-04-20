@@ -54,7 +54,27 @@ export async function GET(
       );
     }
 
-    return NextResponse.json({ plane });
+    // Transform the response to match the expected format
+    const transformedPlane = {
+      id: plane._id,
+      registration: plane.registration,
+      type: plane.type,
+      model: plane.model,
+      year: plane.year,
+      engineHours: plane.engineHours,
+      tach_time: plane.tach_time,
+      hopps_time: plane.hopps_time,
+      lastMaintenance: plane.lastMaintenance,
+      nextMaintenance: plane.nextMaintenance,
+      status: plane.status,
+      hourlyRates: plane.hourlyRates,
+      specialRates: plane.specialRates,
+      utilization: plane.utilization,
+      location: plane.location,
+      notes: plane.notes
+    };
+
+    return NextResponse.json({ plane: transformedPlane });
   } catch (error) {
     console.error('Error in GET /api/schools/[schoolId]/planes/[planeId]:', error);
     return NextResponse.json(
@@ -110,13 +130,62 @@ export async function PUT(
       );
     }
 
+    // Validate hourlyRates if provided
+    if (body.hourlyRates) {
+      const requiredHourlyRates = ['wet', 'dry', 'block', 'instruction', 'weekend', 'solo', 'checkride'];
+      for (const rate of requiredHourlyRates) {
+        if (body.hourlyRates[rate] === undefined) {
+          return NextResponse.json(
+            { error: `Missing required hourly rate: ${rate}` },
+            { status: 400 }
+          );
+        }
+      }
+    }
+
+    // Ensure specialRates is an array if provided
+    if (body.specialRates && !Array.isArray(body.specialRates)) {
+      return NextResponse.json(
+        { error: 'specialRates must be an array' },
+        { status: 400 }
+      );
+    }
+
+    // Remove _id fields from specialRates if present
+    if (body.specialRates) {
+      body.specialRates = body.specialRates.map((rate: any) => {
+        const { _id, ...rateWithoutId } = rate;
+        return rateWithoutId;
+      });
+    }
+
     // Update plane
     Object.assign(plane, body);
     await plane.save();
 
+    // Transform the response to match the expected format
+    const transformedPlane = {
+      id: plane._id,
+      registration: plane.registration,
+      type: plane.type,
+      model: plane.model,
+      year: plane.year,
+      engineHours: plane.engineHours,
+      tach_time: plane.tach_time,
+      hopps_time: plane.hopps_time,
+      lastMaintenance: plane.lastMaintenance,
+      nextMaintenance: plane.nextMaintenance,
+      status: plane.status,
+      hourlyRates: plane.hourlyRates,
+      specialRates: plane.specialRates,
+      utilization: plane.utilization,
+      location: plane.location,
+      notes: plane.notes
+    };
+
     return NextResponse.json({
       message: 'Plane updated successfully',
-      plane
+      plane: transformedPlane
     });
   } catch (error) {
     console.error('Error in PUT /api/schools/[schoolId]/planes/[planeId]:', error);

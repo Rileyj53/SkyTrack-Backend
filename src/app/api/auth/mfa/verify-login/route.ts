@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Generate final tokens
-    const jwtToken = generateToken(user);
+    const jwtToken = await generateToken(user);
     const csrfToken = generateCSRFToken();
 
     // Set cookies

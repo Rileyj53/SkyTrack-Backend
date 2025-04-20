@@ -1,27 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyToken } from '@/lib/edgeJwt';
-import { generateAPIKey } from '@/lib/apiKeys';
-import { createApiKeyDocument, API_KEYS_COLLECTION } from '@/models/ApiKey';
+import { verifyToken } from '@/lib/jwt';
 import { connectDB } from '@/lib/db';
-import { ObjectId } from 'mongodb';
-import mongoose from 'mongoose';
+import { ApiKey } from '@/models/ApiKey';
+import { User } from '@/models/User';
+import { generateAPIKey } from '@/lib/apiKeys';
 
 export async function POST(request: NextRequest) {
   try {
-    // Get the authorization token from the request header
-    const authHeader = request.headers.get('authorization');
+    // Connect to the database
+    await connectDB();
+
+    // Check for authorization header
+    const authHeader = request.headers.get('Authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return NextResponse.json(
-        { error: 'Unauthorized: Missing or invalid token' },
+        { error: 'Unauthorized' },
         { status: 401 }
       );
     }
 
+    // Verify the token and check for sys_admin role
     const token = authHeader.split(' ')[1];
     const decoded = verifyToken(token);
     if (!decoded || !decoded.userId) {
       return NextResponse.json(
-        { error: 'Unauthorized: Invalid token' },
+        { error: 'Invalid token' },
         { status: 401 }
       );
     }
@@ -29,91 +32,82 @@ export async function POST(request: NextRequest) {
     // Check if the user has the sys_admin role
     if (decoded.role !== 'sys_admin') {
       return NextResponse.json(
-        { error: 'Forbidden: Only system administrators can create API keys' },
+        { error: 'Forbidden: Only system administrators can generate API keys' },
         { status: 403 }
       );
     }
 
-    // Get the request body
+    // Get the user from the database
+    const user = await User.findById(decoded.userId);
+    if (!user) {
+      return NextResponse.json(
+        { error: 'User not found' },
+        { status: 404 }
+      );
+    }
+
+    // Parse request body
     const body = await request.json();
     const { label, durationValue, durationType } = body;
 
-    if (!label) {
+    // Validate required fields
+    if (!label || !durationValue || !durationType) {
       return NextResponse.json(
-        { error: 'Bad Request: Label is required' },
+        { error: 'Missing required fields: label, durationValue, and durationType are required' },
         { status: 400 }
       );
     }
 
-    // Generate a new API key
-    const apiKey = generateAPIKey();
-    
-    // Get the last 6 characters of the actual API key for display purposes
-    const lastSix = apiKey.slice(-6);
-    
-    // Hash the API key using Web Crypto API
-    const encoder = new TextEncoder();
-    const data = encoder.encode(apiKey);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    const hashedKey = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-
-    // Calculate expiration date if provided
-    let expiresAt: Date | undefined;
-    if (durationValue && durationType) {
-      const value = parseInt(durationValue);
-      if (!isNaN(value) && value > 0) {
-        expiresAt = new Date();
-        
-        // Set expiration based on duration type
-        switch (durationType.toLowerCase()) {
-          case 'days':
-            expiresAt.setDate(expiresAt.getDate() + value);
-            break;
-          case 'weeks':
-            expiresAt.setDate(expiresAt.getDate() + (value * 7));
-            break;
-          case 'months':
-            expiresAt.setMonth(expiresAt.getMonth() + value);
-            break;
-          case 'years':
-            expiresAt.setFullYear(expiresAt.getFullYear() + value);
-            break;
-          default:
-            // Default to days if an invalid type is provided
-            expiresAt.setDate(expiresAt.getDate() + value);
-        }
-      }
-    }
-
-    // Create the API key document with the last 6 characters of the actual key
-    const apiKeyDoc = createApiKeyDocument(decoded.userId, label, hashedKey, expiresAt);
-    apiKeyDoc.lastSix = lastSix; // Override the lastSix field with the actual last 6 characters
-
-    // Connect to the database
-    await connectDB();
-    const db = mongoose.connection.db;
-
-    // Insert the API key into the database
-    const result = await db.collection(API_KEYS_COLLECTION).insertOne(apiKeyDoc);
-
-    if (!result.acknowledged) {
+    // Validate duration type
+    if (!['days', 'months', 'years'].includes(durationType)) {
       return NextResponse.json(
-        { error: 'Failed to create API key' },
-        { status: 500 }
+        { error: 'Invalid duration type. Must be one of: days, months, years' },
+        { status: 400 }
       );
     }
 
-    // Return the API key to the user (this is the only time the full key is returned)
+    // Calculate expiration date
+    const expirationDate = new Date();
+    switch (durationType) {
+      case 'days':
+        expirationDate.setDate(expirationDate.getDate() + durationValue);
+        break;
+      case 'months':
+        expirationDate.setMonth(expirationDate.getMonth() + durationValue);
+        break;
+      case 'years':
+        expirationDate.setFullYear(expirationDate.getFullYear() + durationValue);
+        break;
+    }
+
+    // Generate a new API key
+    const apiKey = generateAPIKey();
+
+    // Create a new API key document
+    const newApiKey = new ApiKey({
+      user_id: user._id,
+      key: apiKey,
+      name: label,
+      created_by: user._id,
+      expires_at: expirationDate
+    });
+
+    // Save the API key to the database
+    await newApiKey.save();
+
     return NextResponse.json({
-      success: true,
-      apiKey,
-      message: 'API key created successfully',
+      status: 'success',
+      message: 'API key generated successfully',
+      data: {
+        apiKey,
+        label,
+        expiresAt: expirationDate
+      }
     });
   } catch (error) {
     console.error('Error generating API key:', error);
     return NextResponse.json(
-      { error: 'Internal Server Error' },
+      { error: 'Internal server error' },
       { status: 500 }
     );
   }

@@ -1,6 +1,9 @@
 import jwt from 'jsonwebtoken';
 import { UserDocument } from '../models/User';
 import { User } from '../models/User';
+import { connectDB } from './db';
+import Student from '../models/Student';
+import Instructor from '../models/Instructor';
 
 // JWT secret from environment variables
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
@@ -10,19 +13,71 @@ const JWT_EXPIRES_IN = '1d';
 export interface TokenPayload {
   userId: string;
   email: string;
+  first_name?: string;
+  last_name?: string;
   role: string;
   iat?: number;
   exp?: number;
   mfaPending?: boolean;
   _id?: string;
+  school_id?: string | null;
+  student_id?: string | null;
+  instructor_id?: string | null;
 }
 
 // Generate a JWT token
-export const generateToken = (user: Partial<UserDocument> | UserDocument) => {
+export const generateToken = async (user: Partial<UserDocument> | UserDocument) => {
+  // Ensure we have a valid user ID
+  const userId = (user as any).userId || (user as any)._id?.toString() || '';
+  
+  // Connect to the database if not already connected
+  await connectDB();
+  
+  // If we don't have complete user data, fetch it from the database
+  let userData = user;
+  if (!user.first_name || !user.last_name) {
+    try {
+      const fullUser = await User.findById(userId);
+      if (fullUser) {
+        userData = fullUser;
+      }
+    } catch (error) {
+      console.error('Error fetching user data for token generation:', error);
+    }
+  }
+  
+  let schoolId = userData.school_id?.toString() || null;
+  
+  // Search for student and instructor records associated with this user
+  let studentId = null;
+  let instructorId = null;
+  
+  try {
+    // Find student record if it exists
+    const student = await (Student as any).findOne({ user_id: userId });
+    if (student) {
+      studentId = student._id.toString();
+    }
+    
+    // Find instructor record if it exists
+    const instructor = await (Instructor as any).findOne({ user_id: userId });
+    if (instructor) {
+      instructorId = instructor._id.toString();
+    }
+  } catch (error) {
+    console.error('Error finding student/instructor records:', error);
+    // Continue without the IDs if there's an error
+  }
+  
   const payload: TokenPayload = {
-    userId: (user as any).userId || (user as any)._id?.toString() || '',
-    email: user.email || '',
-    role: user.role || 'user'
+    userId,
+    email: userData.email || '',
+    first_name: userData.first_name || '',
+    last_name: userData.last_name || '',
+    role: userData.role || 'user',
+    school_id: schoolId,
+    student_id: studentId,
+    instructor_id: instructorId
   };
 
   return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });

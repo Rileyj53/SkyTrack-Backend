@@ -5,6 +5,7 @@ import { validateApiKey } from '@/middleware/apiKeyAuth';
 import { authenticateRequest } from '@/lib/auth';
 import mongoose from 'mongoose';
 import { User } from '@/models/User';
+import { verifyToken } from '@/lib/jwt';
 
 // Connect to MongoDB
 connectDB();
@@ -27,11 +28,22 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Check if user has sys_admin role
-    const user = await User.findById(auth.userId);
-    if (!user || user.role !== 'sys_admin') {
+    // Get the token from the Authorization header to extract role
+    const authHeader = request.headers.get('Authorization');
+    const token = authHeader?.split(' ')[1] || '';
+    const decoded = verifyToken(token);
+    
+    if (!decoded) {
       return NextResponse.json(
-        { error: 'Only system administrators can list all schools' },
+        { error: 'Invalid token' },
+        { status: 401 }
+      );
+    }
+
+    // Check if user has sys_admin role
+    if (decoded.role !== 'sys_admin') {
+      return NextResponse.json(
+        { error: 'Forbidden: Only system administrators can list all schools' },
         { status: 403 }
       );
     }
@@ -40,7 +52,8 @@ export async function GET(request: NextRequest) {
     const schools = await School.find({}).select('-payment_info.stripe_customer_id');
     
     return NextResponse.json({
-      schools
+      status: 'success',
+      data: schools
     });
   } catch (error) {
     console.error('Error listing schools:', error);

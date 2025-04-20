@@ -60,7 +60,7 @@ export const POST = createAPIHandler(async (request: NextRequest) => {
   }
 
   // Generate JWT token
-  const jwtToken = generateToken(user);
+  const jwtToken = await generateToken(user);
 
   // Generate new CSRF token
   const csrfToken = generateCSRFToken();

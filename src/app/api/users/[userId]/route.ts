@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
 import { validateApiKey } from '@/middleware/apiKeyAuth';
-import { authenticateRequest } from '@/lib/auth';
+import { authenticateRequest } from '@/middleware/auth';
 import { verifyToken } from '@/lib/jwt';
 import mongoose from 'mongoose';
 import { User } from '@/models/User';
+import { checkUserAccess } from '@/middleware/permissions';
 
 // Connect to MongoDB
 connectDB();
@@ -21,14 +22,9 @@ export async function GET(
       return authResult;
     }
 
-    // Get user from token
-    const auth = authenticateRequest(request);
-    if (!auth.success) {
-      return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
-      );
-    }
+    // Authenticate the request
+    const authError = await authenticateRequest(request);
+    if (authError) return authError;
 
     // Get the token from the Authorization header to extract role
     const authHeader = request.headers.get('Authorization');
@@ -61,8 +57,8 @@ export async function GET(
     }
 
     // Check if user has permission to view this user
-    // Users can only view their own profile unless they are sys_admin
-    if (auth.userId !== params.userId && decoded.role !== 'sys_admin') {
+    const hasAccess = await checkUserAccess(request, params.userId);
+    if (!hasAccess) {
       return NextResponse.json(
         { error: 'Insufficient permissions' },
         { status: 403 }
@@ -73,9 +69,10 @@ export async function GET(
     const safeUser = {
       _id: user._id,
       email: user.email,
+      first_name: user.first_name,
+      last_name: user.last_name,
       role: user.role,
       school_id: user.school_id,
-      pilot_id: user.pilot_id,
       isActive: user.isActive,
       emailVerified: user.emailVerified,
       mfaEnabled: user.mfaEnabled,
@@ -108,14 +105,9 @@ export async function PUT(
       return authResult;
     }
 
-    // Get user from token
-    const auth = authenticateRequest(request);
-    if (!auth.success) {
-      return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
-      );
-    }
+    // Authenticate the request
+    const authError = await authenticateRequest(request);
+    if (authError) return authError;
 
     // Get the token from the Authorization header to extract role
     const authHeader = request.headers.get('Authorization');
@@ -148,8 +140,8 @@ export async function PUT(
     }
 
     // Check if user has permission to update this user
-    // Users can only update their own profile unless they are sys_admin
-    if (auth.userId !== params.userId && decoded.role !== 'sys_admin') {
+    const hasAccess = await checkUserAccess(request, params.userId);
+    if (!hasAccess) {
       return NextResponse.json(
         { error: 'Insufficient permissions' },
         { status: 403 }
@@ -159,13 +151,17 @@ export async function PUT(
     // Get request body
     const body = await request.json();
     
-    // List of fields that can be updated
+    // Get the fields that can be updated
     const allowedFields = [
       'email',
+      'first_name',
+      'last_name',
       'role',
       'school_id',
-      'pilot_id',
-      'isActive'
+      'isActive',
+      'emailVerified',
+      'mfaEnabled',
+      'mfaVerified'
     ];
 
     // Filter out fields that are not allowed to be updated
@@ -213,9 +209,10 @@ export async function PUT(
     const safeUser = {
       _id: updatedUser._id,
       email: updatedUser.email,
+      first_name: updatedUser.first_name,
+      last_name: updatedUser.last_name,
       role: updatedUser.role,
       school_id: updatedUser.school_id,
-      pilot_id: updatedUser.pilot_id,
       isActive: updatedUser.isActive,
       emailVerified: updatedUser.emailVerified,
       mfaEnabled: updatedUser.mfaEnabled,

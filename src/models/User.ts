@@ -15,6 +15,8 @@ export interface APIKey {
 
 export interface UserDocument extends Document {
   email: string;
+  first_name?: string;
+  last_name?: string;
   password: string | null;
   googleId?: string;
   isActive: boolean;
@@ -25,7 +27,8 @@ export interface UserDocument extends Document {
   magicCode?: string;
   role: string;
   school_id?: mongoose.Types.ObjectId;
-  pilot_id?: mongoose.Types.ObjectId;
+  student_id?: mongoose.Types.ObjectId;
+  instructor_id?: mongoose.Types.ObjectId;
   failedLoginAttempts: number;
   lastFailedLogin?: Date;
   lockUntil?: Date;
@@ -83,9 +86,20 @@ const UserSchema = new Schema<UserDocument>(
       lowercase: true,
       match: [/^\S+@\S+\.\S+$/, 'Please enter a valid email address'],
     },
+    first_name: {
+      type: String,
+      required: [true, 'First name is required'],
+      trim: true,
+    },
+    last_name: {
+      type: String,
+      required: [true, 'Last name is required'],
+      trim: true,
+    },
     password: {
       type: String,
-      default: null,
+      required: [true, 'Password is required'],
+      minlength: [8, 'Password must be at least 8 characters long']
     },
     googleId: {
       type: String,
@@ -118,15 +132,23 @@ const UserSchema = new Schema<UserDocument>(
     },
     role: {
       type: String,
+      required: [true, 'Role is required'],
       enum: ['sys_admin', 'school_admin', 'instructor', 'student'],
       default: 'student',
     },
     school_id: {
       type: mongoose.Schema.Types.ObjectId,
+      ref: 'School',
       required: false,
     },
-    pilot_id: {
+    student_id: {
       type: mongoose.Schema.Types.ObjectId,
+      ref: 'Student',
+      required: false,
+    },
+    instructor_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Instructor',
       required: false,
     },
     // Account lockout fields
@@ -163,7 +185,7 @@ const UserSchema = new Schema<UserDocument>(
     // Email verification fields
     emailVerified: {
       type: Boolean,
-      default: true,
+      default: false,
     },
     verificationToken: {
       type: String,

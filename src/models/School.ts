@@ -26,6 +26,8 @@ export interface SchoolDocument extends Document {
   email?: string;
   website?: string;
   payment_info?: PaymentInfo;
+  admins?: mongoose.Types.ObjectId[];
+  instructors?: mongoose.Types.ObjectId[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -61,6 +63,8 @@ const SchoolSchema = new Schema<SchoolDocument>(
       type: String,
       default: null,
     },
+    admins: [{ type: Schema.Types.ObjectId, ref: 'User' }],
+    instructors: [{ type: Schema.Types.ObjectId, ref: 'User' }],
     payment_info: {
       type: {
         subscription_plan: { type: String, default: null },

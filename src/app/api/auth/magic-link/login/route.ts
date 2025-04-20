@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
     await user.save();
 
     // Generate tokens
-    const authToken = generateToken(user);
+    const authToken = await generateToken(user);
     const csrfToken = generateCSRFToken();
 
     // Create response with token

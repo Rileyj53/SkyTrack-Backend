@@ -1,17 +1,21 @@
 import mongoose from 'mongoose';
 import { School } from './School';
 import { User } from './User';
-import Pilot from './Pilot';
+import Student from './Student';
+import Instructor from './Instructor';
 import Plane from './Plane';
-import Schedule from './Schedule';
+import ScheduleModel from './ScheduleModel';
+import Program from './Program';
 
 // Export all models
 export {
   School,
   User,
-  Pilot,
+  Student,
+  Instructor,
   Plane,
-  Schedule
+  ScheduleModel,
+  Program
 };
 
 // Export a function to initialize all models
