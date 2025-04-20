@@ -19,7 +19,8 @@ const ALLOWED_ORIGINS = [
   'https://admin.skytrack.com',
   'https://api.skytrack.com',
   'https://sky-track-frontend-3rgbu8g4i-sky-track.vercel.app',
-  'https://*.rileyjacobson.net'
+  'https://skytrack-nonprod-frontend.rileyjacobson.net',
+  'https://skytrack-nonprod-backend.rileyjacobson.net'
 ];
 
 // Allowed methods
