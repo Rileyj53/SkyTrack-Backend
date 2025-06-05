@@ -2,18 +2,20 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
 import { comparePasswords } from '@/lib/auth';
 import { generateToken } from '@/lib/jwt';
-import { createAPIHandler } from '@/lib/apiHandler';
-import { Errors } from '@/lib/errors';
 import { generateCSRFToken } from '@/lib/csrf';
 import { User } from '@/models/User';
 import mongoose from 'mongoose';
 
-export const POST = createAPIHandler(async (request: NextRequest) => {
+export async function POST(request: NextRequest) {
+  try {
   const { email, password, token } = await request.json();
 
   // Validate input
   if (!email || !password) {
-    throw Errors.BadRequest('Email and password are required');
+    return NextResponse.json(
+      { error: 'Email and password are required' },
+      { status: 400 }
+    );
   }
 
   await connectDB();
@@ -23,13 +25,19 @@ export const POST = createAPIHandler(async (request: NextRequest) => {
   // Find user by email
   const user = await users.findOne({ email });
   if (!user) {
-    throw Errors.Unauthorized('Invalid email or password');
+    return NextResponse.json(
+      { error: 'Invalid email or password' },
+      { status: 401 }
+    );
   }
 
   // Verify password
   const isValidPassword = await comparePasswords(password, user.password);
   if (!isValidPassword) {
-    throw Errors.Unauthorized('Invalid email or password');
+    return NextResponse.json(
+      { error: 'Invalid email or password' },
+      { status: 401 }
+    );
   }
 
   // Check if MFA is required - MFA should be required on EVERY login when enabled
@@ -47,19 +55,28 @@ export const POST = createAPIHandler(async (request: NextRequest) => {
 
     // Verify MFA token using the User model method
     if (!user.mfaSecret) {
-      throw Errors.InternalServerError('MFA secret not found');
+      return NextResponse.json(
+        { error: 'MFA secret not found' },
+        { status: 500 }
+      );
     }
 
     // Get the user document to use the verifyMFAToken method
     const userDoc = await User.findById(user._id).select('+mfaSecret +mfaBackupCodes');
     if (!userDoc) {
-      throw Errors.InternalServerError('User document not found');
+      return NextResponse.json(
+        { error: 'User document not found' },
+        { status: 500 }
+      );
     }
 
     // Verify the MFA token
     const isValidToken = await userDoc.verifyMFAToken(token);
     if (!isValidToken) {
-      throw Errors.Unauthorized('Invalid MFA token');
+      return NextResponse.json(
+        { error: 'Invalid MFA token' },
+        { status: 401 }
+      );
     }
   }
 
@@ -95,4 +112,36 @@ export const POST = createAPIHandler(async (request: NextRequest) => {
   });
 
   return response;
-}); 
+  } catch (error) {
+    // Handle errors manually since we're not using createAPIHandler
+    console.error('Login error:', error);
+    
+    if (error instanceof Error) {
+      // Handle known error types
+      if (error.message.includes('BadRequest')) {
+        return NextResponse.json(
+          { error: error.message },
+          { status: 400 }
+        );
+      }
+      if (error.message.includes('Unauthorized')) {
+        return NextResponse.json(
+          { error: error.message },
+          { status: 401 }
+        );
+      }
+      if (error.message.includes('InternalServerError')) {
+        return NextResponse.json(
+          { error: error.message },
+          { status: 500 }
+        );
+      }
+    }
+    
+    // Default error response
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
