@@ -23,8 +23,8 @@
   - Requires: email
   - Headers: X-API-Key
 
-- [ ] `POST /api/auth/reset-password/verify` - Verify reset token
-  - Requires: token, newPassword
+- [ ] `POST /api/auth/reset-password/complete` - Complete password reset
+  - Requires: token, newPassword (or password)
   - Headers: X-API-Key
 
 ### Magic Link Authentication
@@ -57,6 +57,22 @@
   - Requires: JWT token
   - Headers: X-API-Key, X-CSRF-Token
 
+- [ ] `GET /api/auth/mfa/debug` - Debug MFA functionality
+  - Requires: JWT token
+  - Headers: X-API-Key, X-CSRF-Token
+
+### CSRF Token Management
+- [ ] `GET /api/auth/csrf-token` - Generate CSRF token
+  - Requires: API key
+  - Headers: X-API-Key
+  - Returns: CSRF token and expiration
+
+### Current User Information
+- [ ] `GET /api/auth/me` - Get current user information
+  - Requires: JWT token
+  - Headers: X-API-Key, X-CSRF-Token
+  - Returns: User object with school, student, and instructor details
+
 ### Account Management
 - [ ] `POST /api/auth/unlock-account` - Unlock locked account
   - Requires: email
@@ -65,6 +81,9 @@
 - [ ] `GET /api/auth/test-api-key` - Test API key validity
   - Requires: JWT token
   - Headers: X-API-Key, X-CSRF-Token
+
+- [ ] `GET /api/auth/test` - Test auth API
+  - No authentication required
 
 ## User Management
 
@@ -113,35 +132,101 @@
   - Returns: Success message
   - Permissions: sys_admin only
 
-## Pilot Management
+## Student Management
 
-- [ ] `GET /api/schools/[schoolId]/pilots` - List all pilots for a school
+- [ ] `GET /api/schools/[schoolId]/students` - List all students for a school
   - Requires: JWT token, schoolId
   - Headers: X-API-Key, X-CSRF-Token
-  - Returns: List of pilots for the specified school
+  - Returns: List of students for the specified school with populated user information
   - Access: Users with access to the school
 
-- [ ] `POST /api/schools/[schoolId]/pilots` - Create a new pilot for a school
-  - Requires: JWT token, schoolId, pilot data
+- [ ] `POST /api/schools/[schoolId]/students` - Create a new student for a school
+  - Requires: JWT token, schoolId, student data
   - Headers: X-API-Key, X-CSRF-Token
-  - Returns: Created pilot object
-  - Permissions: sys_admin, school_admin
-  - Required fields: first_name, last_name, contact_email, phone, pilot_type, license_number
+  - Returns: Created student object
+  - Permissions: sys_admin, school_admin, instructor
+  - Required fields: contact_email, program
 
-- [ ] `GET /api/schools/[schoolId]/pilots/[pilotId]` - Get a specific pilot
-  - Requires: JWT token, schoolId, pilotId
+- [ ] `GET /api/schools/[schoolId]/students/[studentId]` - Get a specific student
+  - Requires: JWT token, schoolId, studentId
   - Headers: X-API-Key, X-CSRF-Token
-  - Returns: Pilot object
+  - Returns: Student object with progress and program information
   - Access: Users with access to the school
 
-- [ ] `PUT /api/schools/[schoolId]/pilots/[pilotId]` - Update a pilot
-  - Requires: JWT token, schoolId, pilotId, updated pilot data
+- [ ] `PUT /api/schools/[schoolId]/students/[studentId]` - Update a student
+  - Requires: JWT token, schoolId, studentId, updated student data
   - Headers: X-API-Key, X-CSRF-Token
-  - Returns: Updated pilot object
+  - Returns: Updated student object
+  - Permissions: sys_admin, school_admin, instructor
+
+- [ ] `DELETE /api/schools/[schoolId]/students/[studentId]` - Delete a student
+  - Requires: JWT token, schoolId, studentId
+  - Headers: X-API-Key, X-CSRF-Token
+  - Returns: Success message
   - Permissions: sys_admin, school_admin
 
-- [ ] `DELETE /api/schools/[schoolId]/pilots/[pilotId]` - Delete a pilot
-  - Requires: JWT token, schoolId, pilotId
+## Instructor Management
+
+- [ ] `GET /api/schools/[schoolId]/instructors` - List all instructors for a school
+  - Requires: JWT token, schoolId
+  - Headers: X-API-Key, X-CSRF-Token
+  - Returns: List of instructors for the specified school
+  - Access: Users with access to the school
+
+- [ ] `POST /api/schools/[schoolId]/instructors` - Create a new instructor for a school
+  - Requires: JWT token, schoolId, instructor data
+  - Headers: X-API-Key, X-CSRF-Token
+  - Returns: Created instructor object
+  - Permissions: sys_admin, school_admin
+  - Required fields: first_name, last_name, contact_email, phone, instructor_type, license_number
+
+- [ ] `GET /api/schools/[schoolId]/instructors/[instructorId]` - Get a specific instructor
+  - Requires: JWT token, schoolId, instructorId
+  - Headers: X-API-Key, X-CSRF-Token
+  - Returns: Instructor object
+  - Access: Users with access to the school
+
+- [ ] `PUT /api/schools/[schoolId]/instructors/[instructorId]` - Update an instructor
+  - Requires: JWT token, schoolId, instructorId, updated instructor data
+  - Headers: X-API-Key, X-CSRF-Token
+  - Returns: Updated instructor object
+  - Permissions: sys_admin, school_admin
+
+- [ ] `DELETE /api/schools/[schoolId]/instructors/[instructorId]` - Delete an instructor
+  - Requires: JWT token, schoolId, instructorId
+  - Headers: X-API-Key, X-CSRF-Token
+  - Returns: Success message
+  - Permissions: sys_admin, school_admin
+
+## Program Management
+
+- [ ] `GET /api/schools/[schoolId]/programs` - List all programs for a school
+  - Requires: JWT token, schoolId
+  - Headers: X-API-Key, X-CSRF-Token
+  - Returns: List of programs for the specified school
+  - Access: Users with access to the school
+
+- [ ] `POST /api/schools/[schoolId]/programs` - Create a new program for a school
+  - Requires: JWT token, schoolId, program data
+  - Headers: X-API-Key, X-CSRF-Token
+  - Returns: Created program object
+  - Permissions: sys_admin, school_admin
+  - Required fields: program_name, requirements
+
+- [ ] `GET /api/schools/[schoolId]/programs/[programId]` - Get a specific program
+  - Requires: JWT token, schoolId, programId
+  - Headers: X-API-Key, X-CSRF-Token
+  - Returns: Program object with requirements, milestones, and stages
+  - Access: Users with access to the school
+
+- [ ] `PUT /api/schools/[schoolId]/programs/[programId]` - Update a program
+  - Requires: JWT token, schoolId, programId, updated program data
+  - Headers: X-API-Key, X-CSRF-Token
+  - Returns: Updated program object
+  - Permissions: sys_admin, school_admin
+
+- [ ] `DELETE /api/schools/[schoolId]/programs/[programId]` - Delete a program
+  - Requires: JWT token, schoolId, programId
   - Headers: X-API-Key, X-CSRF-Token
   - Returns: Success message
   - Permissions: sys_admin, school_admin
@@ -316,6 +401,105 @@
   }
   ```
 
+## Flight Log Management
+
+- [ ] `GET /api/schools/[schoolId]/flight-logs` - List all flight logs for a school
+  - Requires: JWT token, schoolId
+  - Headers: X-API-Key, X-CSRF-Token
+  - Query Parameters: page, limit, student_id, instructor_id, plane_id, status, date, start_date, end_date, type
+  - Returns: List of flight logs with pagination
+  - Access: Users with access to the school
+
+- [ ] `POST /api/schools/[schoolId]/flight-logs` - Create a new flight log
+  - Requires: JWT token, schoolId, flight log data
+  - Headers: X-API-Key, X-CSRF-Token
+  - Returns: Created flight log object
+  - Permissions: sys_admin, school_admin, instructor
+  - Required fields: date, start_time, end_time, plane_id, student_id, instructor_id, type
+
+- [ ] `GET /api/schools/[schoolId]/flight-logs/[flightLogId]` - Get a specific flight log
+  - Requires: JWT token, schoolId, flightLogId
+  - Headers: X-API-Key, X-CSRF-Token
+  - Returns: Flight log object
+  - Access: Users with access to the school
+
+- [ ] `PUT /api/schools/[schoolId]/flight-logs/[flightLogId]` - Update a flight log
+  - Requires: JWT token, schoolId, flightLogId, updated flight log data
+  - Headers: X-API-Key, X-CSRF-Token
+  - Returns: Updated flight log object
+  - Permissions: sys_admin, school_admin, instructor
+
+- [ ] `DELETE /api/schools/[schoolId]/flight-logs/[flightLogId]` - Delete a flight log
+  - Requires: JWT token, schoolId, flightLogId
+  - Headers: X-API-Key, X-CSRF-Token
+  - Returns: Success message
+  - Permissions: sys_admin, school_admin, instructor
+
+- [ ] `GET /api/schools/[schoolId]/flight-logs/today` - Get today's flight logs
+  - Requires: JWT token, schoolId
+  - Headers: X-API-Key, X-CSRF-Token
+  - Returns: List of flight logs for today
+  - Access: Users with access to the school
+
+## Flight Tracking Management
+
+### Track Management
+- [ ] `GET /api/track` - List all flight tracks
+  - Requires: JWT token
+  - Headers: X-API-Key, X-CSRF-Token
+  - Query Parameters: tail_number, start_date, end_date, plane_id, school_id, instructor_id, student_id, limit, page
+  - Returns: List of tracks with filtering and pagination
+
+- [ ] `POST /api/track` - Start tracking a plane
+  - Requires: JWT token, plane tracking data
+  - Headers: X-API-Key, X-CSRF-Token
+  - Returns: Created track object with FlightAware integration
+  - Required fields: plane_id, school_id
+  - Optional fields: tail_number, instructor_id, student_id, start_time
+
+- [ ] `GET /api/track/[trackId]` - Get specific track details
+  - Requires: JWT token, trackId
+  - Headers: X-API-Key, X-CSRF-Token
+  - Returns: Track object with detailed tracking data
+
+- [ ] `PUT /api/track/[trackId]` - Update track information
+  - Requires: JWT token, trackId, updated track data
+  - Headers: X-API-Key, X-CSRF-Token
+  - Returns: Updated track object
+
+- [ ] `DELETE /api/track/[trackId]` - Delete track
+  - Requires: JWT token, trackId
+  - Headers: X-API-Key, X-CSRF-Token
+  - Returns: Success message
+
+### Track Data Management
+- [ ] `GET /api/trackData` - Get all tracks with filtering
+  - Requires: JWT token
+  - Headers: X-API-Key, X-CSRF-Token
+  - Query Parameters: tail_number, start_date, end_date, plane_id, school_id, instructor_id, student_id, limit, page
+  - Returns: List of tracks with pagination
+
+- [ ] `POST /api/trackData` - Create new track data
+  - Requires: JWT token, track data
+  - Headers: X-API-Key, X-CSRF-Token
+  - Returns: Created track object
+  - Required fields: tail_number
+
+- [ ] `GET /api/trackData/[trackId]` - Get specific track data
+  - Requires: JWT token, trackId
+  - Headers: X-API-Key, X-CSRF-Token
+  - Returns: Track object with detailed data
+
+- [ ] `PUT /api/trackData/[trackId]` - Update track data
+  - Requires: JWT token, trackId, updated track data
+  - Headers: X-API-Key, X-CSRF-Token
+  - Returns: Updated track object
+
+- [ ] `DELETE /api/trackData/[trackId]` - Delete track data
+  - Requires: JWT token, trackId
+  - Headers: X-API-Key, X-CSRF-Token
+  - Returns: Success message
+
 ## API Key Management
 
 - [ ] `GET /api/api-keys/keys` - List API keys
@@ -326,7 +510,15 @@
   - Requires: JWT token, label
   - Headers: X-API-Key, X-CSRF-Token
 
+- [ ] `GET /api/api-keys/[apiKeyId]` - Get specific API key details
+  - Requires: JWT token, apiKeyId
+  - Headers: X-API-Key, X-CSRF-Token
+
 - [ ] `DELETE /api/api-keys/[apiKeyId]` - Revoke API key
+  - Requires: JWT token
+  - Headers: X-API-Key, X-CSRF-Token
+
+- [ ] `GET /api/api-keys/test` - Test API key functionality
   - Requires: JWT token
   - Headers: X-API-Key, X-CSRF-Token
 
@@ -344,16 +536,40 @@
   - Requires: JWT token
   - Headers: X-API-Key, X-CSRF-Token
 
+- [ ] `GET /api/protected/test-with-key` - Test protected route with API key
+  - Requires: JWT token
+  - Headers: X-API-Key, X-CSRF-Token
+
 ## System Endpoints
 
 - [ ] `GET /api/health` - System health check
   - No authentication required
+  - Returns: Comprehensive health status including database, memory, and system information
 
 - [ ] `GET /api/test` - Test API endpoint
   - No authentication required
+  - Returns: Basic test response with request information
+
+- [ ] `POST /api/test` - Test POST endpoint
+  - No authentication required
+  - Accepts: JSON payload
+  - Returns: Echo of received data
 
 - [ ] `GET /api/auth/test` - Test auth API
   - No authentication required
+
+## Debug and Testing Endpoints
+
+- [ ] `GET /api/debug-middleware` - Debug middleware functionality
+  - Requires: JWT token
+  - Headers: X-API-Key, X-CSRF-Token
+
+- [ ] `GET /api/security-headers-test` - Test security headers
+  - No authentication required
+
+- [ ] `GET /api/test-csrf` - Test CSRF functionality
+  - Requires: JWT token
+  - Headers: X-API-Key, X-CSRF-Token
 
 ## Schedule Management
 
@@ -435,4 +651,8 @@
 3. Most POST/PUT/DELETE requests require CSRF token in `X-CSRF-Token` header
 4. JWT tokens should be sent in the `Authorization` header as `Bearer <token>`
 5. All timestamps are in ISO 8601 format
-6. Error responses follow the format: `{ error: string, status: number }` 
+6. Error responses follow the format: `{ error: string, status: number }`
+7. FlightAware integration is used for real-time flight tracking in the track endpoints
+8. Pagination is available on list endpoints with `page` and `limit` query parameters
+9. All ID parameters must be valid MongoDB ObjectIds
+10. Role-based access control is enforced throughout the API 

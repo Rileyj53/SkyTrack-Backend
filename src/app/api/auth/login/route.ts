@@ -5,6 +5,7 @@ import { generateToken } from '@/lib/jwt';
 import { createAPIHandler } from '@/lib/apiHandler';
 import { Errors } from '@/lib/errors';
 import { generateCSRFToken } from '@/lib/csrf';
+import { User } from '@/models/User';
 import mongoose from 'mongoose';
 
 export const POST = createAPIHandler(async (request: NextRequest) => {
@@ -31,32 +32,35 @@ export const POST = createAPIHandler(async (request: NextRequest) => {
     throw Errors.Unauthorized('Invalid email or password');
   }
 
-  // Check if MFA is required
-  if (user.mfaEnabled && !user.mfaVerified) {
+  // Check if MFA is required - MFA should be required on EVERY login when enabled
+  if (user.mfaEnabled) {
     // If no token provided, return MFA required response
     if (!token) {
       return NextResponse.json(
-        { message: 'MFA verification required' },
+        { 
+          message: 'MFA verification required',
+          requiresMFA: true 
+        },
         { status: 401 }
       );
     }
 
-    // Verify MFA token
+    // Verify MFA token using the User model method
     if (!user.mfaSecret) {
       throw Errors.InternalServerError('MFA secret not found');
     }
 
-    // TODO: Implement MFA token verification
-    // For now, just check if token matches a dummy value
-    if (token !== '123456') {
-      throw Errors.Unauthorized('Invalid MFA token');
+    // Get the user document to use the verifyMFAToken method
+    const userDoc = await User.findById(user._id).select('+mfaSecret +mfaBackupCodes');
+    if (!userDoc) {
+      throw Errors.InternalServerError('User document not found');
     }
 
-    // Update user as MFA verified
-    await users.updateOne(
-      { _id: user._id },
-      { $set: { mfaVerified: true } }
-    );
+    // Verify the MFA token
+    const isValidToken = await userDoc.verifyMFAToken(token);
+    if (!isValidToken) {
+      throw Errors.Unauthorized('Invalid MFA token');
+    }
   }
 
   // Generate JWT token
