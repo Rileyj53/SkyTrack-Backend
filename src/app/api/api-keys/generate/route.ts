@@ -83,17 +83,29 @@ export async function POST(request: NextRequest) {
     // Generate a new API key
     const apiKey = generateAPIKey();
 
+    // Hash the API key for storage (to match validation middleware expectations)
+    const encoder = new TextEncoder();
+    const data = encoder.encode(apiKey);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const hashedKey = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
+    console.log('Generated API key:', apiKey);
+    console.log('Hashed key being stored:', hashedKey);
+
     // Create a new API key document
     const newApiKey = new ApiKey({
-      user_id: user._id,
-      key: apiKey,
-      name: label,
-      created_by: user._id,
-      expires_at: expirationDate
+      user: user._id,
+      key: hashedKey,
+      label: label,
+      lastSix: apiKey.slice(-6),
+      expiresAt: expirationDate
     });
 
     // Save the API key to the database
     await newApiKey.save();
+
+    console.log('API key saved to database with hash:', hashedKey);
 
     return NextResponse.json({
       status: 'success',

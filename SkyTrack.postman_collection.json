@@ -107,6 +107,49 @@
                     }]
                 },
                 {
+                    "name": "Test GET",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/test",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "test"
+                            ]
+                        },
+                        "description": "Test GET endpoint with request information"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Test POST",
+                    "request": {
+                        "method": "POST",
+                        "header": [{
+                            "key": "Content-Type",
+                            "value": "application/json"
+                        }],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"message\": \"Test data\",\n    \"timestamp\": \"{{$timestamp}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/test",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "test"
+                            ]
+                        },
+                        "description": "Test POST endpoint with JSON payload"
+                    },
+                    "response": []
+                },
+                {
                     "name": "Security headers test",
                     "request": {
                         "method": "GET",
@@ -269,10 +312,6 @@
                             {
                                 "key": "X-Vercel-Id",
                                 "value": "pdx1::krj9c-1744755585214-9a07f6ac1e48"
-                            },
-                            {
-                                "key": "X-Xss-Protection",
-                                "value": "1; mode=block"
                             }
                         ],
                         "cookie": [],
@@ -732,6 +771,33 @@
                             "response": []
                         },
                         {
+                            "name": "Get Current User Info",
+                            "request": {
+                                "method": "GET",
+                                "header": [{
+                                        "key": "Authorization",
+                                        "value": "Bearer {{jwtToken}}"
+                                    },
+                                    {
+                                        "key": "X-CSRF-Token",
+                                        "value": "{{csrfToken}}"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/auth/me",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "auth",
+                                        "me"
+                                    ]
+                                },
+                                "description": "Get current user information with school, student, and instructor details"
+                            },
+                            "response": []
+                        },
+                        {
                             "name": "Test Auth Route",
                             "request": {
                                 "method": "GET",
@@ -772,6 +838,32 @@
                                         "test-csrf"
                                     ]
                                 }
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "Debug Middleware",
+                            "request": {
+                                "method": "GET",
+                                "header": [{
+                                        "key": "Authorization",
+                                        "value": "Bearer {{jwtToken}}"
+                                    },
+                                    {
+                                        "key": "X-CSRF-Token",
+                                        "value": "{{csrfToken}}"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/debug-middleware",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "debug-middleware"
+                                    ]
+                                },
+                                "description": "Debug middleware functionality"
                             },
                             "response": []
                         }
@@ -958,7 +1050,8 @@
                             },
                             {
                                 "key": "X-CSRF-Token",
-                                "value": "{{csrfToken}}"
+                                "value": "{{csrfToken}}",
+                                "type": "text"
                             }
                         ],
                         "url": {
@@ -1183,9 +1276,9 @@
             ]
         },
         {
-            "name": "Pilots",
+            "name": "Instructors",
             "item": [{
-                    "name": "List all pilots for a school",
+                    "name": "List all instructors for a school",
                     "request": {
                         "method": "GET",
                         "header": [{
@@ -1200,14 +1293,14 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{baseUrl}}/schools/:schoolId/pilots",
+                            "raw": "{{baseUrl}}/schools/:schoolId/instructors",
                             "host": [
                                 "{{baseUrl}}"
                             ],
                             "path": [
                                 "schools",
                                 ":schoolId",
-                                "pilots"
+                                "instructors"
                             ],
                             "variable": [{
                                 "key": "schoolId",
@@ -1218,7 +1311,7 @@
                     "response": []
                 },
                 {
-                    "name": "Create a new pilot for a school",
+                    "name": "Create a new instructor for a school",
                     "request": {
                         "method": "POST",
                         "header": [{
@@ -1234,7 +1327,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n  \"first_name\": \"John\",\n  \"last_name\": \"Doe\",\n  \"contact_email\": \"john.doe@example.com\",\n  \"phone\": \"555-123-4567\",\n  \"pilot_type\": \"instructor\",\n  \"certifications\": [\"private\", \"instrument\", \"commercial\", \"cfi\"],\n  \"license_number\": \"12345678\",\n  \"emergency_contact\": {\n    \"name\": \"Jane Doe\",\n    \"relationship\": \"Spouse\",\n    \"phone\": \"555-987-6543\"\n  }\n}",
+                            "raw": "{\n  \"first_name\": \"John\",\n  \"last_name\": \"Doe\",\n  \"contact_email\": \"john.doe@example.com\",\n  \"phone\": \"555-123-4567\",\n  \"instructor_type\": \"cfi\",\n  \"certifications\": [\"private\", \"instrument\", \"commercial\", \"cfi\"],\n  \"license_number\": \"12345678\",\n  \"emergency_contact\": {\n    \"name\": \"Jane Doe\",\n    \"relationship\": \"Spouse\",\n    \"phone\": \"555-987-6543\"\n  }\n}",
                             "options": {
                                 "raw": {
                                     "language": "json"
@@ -1242,14 +1335,14 @@
                             }
                         },
                         "url": {
-                            "raw": "{{baseUrl}}/schools/:schoolId/pilots",
+                            "raw": "{{baseUrl}}/schools/:schoolId/instructors",
                             "host": [
                                 "{{baseUrl}}"
                             ],
                             "path": [
                                 "schools",
                                 ":schoolId",
-                                "pilots"
+                                "instructors"
                             ],
                             "variable": [{
                                 "key": "schoolId",
@@ -1260,7 +1353,7 @@
                     "response": []
                 },
                 {
-                    "name": "Update a pilot",
+                    "name": "Update an instructor",
                     "request": {
                         "method": "PUT",
                         "header": [{
@@ -1276,7 +1369,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n  \"first_name\": \"John\",\n  \"last_name\": \"Smith\",\n  \"contact_email\": \"john.smith@example.com\",\n  \"phone\": \"555-123-4567\",\n  \"pilot_type\": \"instructor\",\n  \"certifications\": [\"private\", \"instrument\", \"commercial\", \"cfi\", \"cfii\"],\n  \"license_number\": \"12345678\",\n  \"emergency_contact\": {\n    \"name\": \"Jane Smith\",\n    \"relationship\": \"Spouse\",\n    \"phone\": \"555-987-6543\"\n  }\n}",
+                            "raw": "{\n  \"first_name\": \"John\",\n  \"last_name\": \"Smith\",\n  \"contact_email\": \"john.smith@example.com\",\n  \"phone\": \"555-123-4567\",\n  \"instructor_type\": \"cfi\",\n  \"certifications\": [\"private\", \"instrument\", \"commercial\", \"cfi\", \"cfii\"],\n  \"license_number\": \"12345678\",\n  \"emergency_contact\": {\n    \"name\": \"Jane Smith\",\n    \"relationship\": \"Spouse\",\n    \"phone\": \"555-987-6543\"\n  }\n}",
                             "options": {
                                 "raw": {
                                     "language": "json"
@@ -1284,22 +1377,22 @@
                             }
                         },
                         "url": {
-                            "raw": "{{baseUrl}}/schools/:schoolId/pilots/:pilotId",
+                            "raw": "{{baseUrl}}/schools/:schoolId/instructors/:instructorId",
                             "host": [
                                 "{{baseUrl}}"
                             ],
                             "path": [
                                 "schools",
                                 ":schoolId",
-                                "pilots",
-                                ":pilotId"
+                                "instructors",
+                                ":instructorId"
                             ],
                             "variable": [{
                                     "key": "schoolId",
                                     "value": ""
                                 },
                                 {
-                                    "key": "pilotId",
+                                    "key": "instructorId",
                                     "value": ""
                                 }
                             ]
@@ -1308,7 +1401,7 @@
                     "response": []
                 },
                 {
-                    "name": "Get a specific pilot",
+                    "name": "Get a specific instructor",
                     "request": {
                         "method": "GET",
                         "header": [{
@@ -1323,22 +1416,22 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{baseUrl}}/schools/:schoolId/pilots/:pilotId",
+                            "raw": "{{baseUrl}}/schools/:schoolId/instructors/:instructorId",
                             "host": [
                                 "{{baseUrl}}"
                             ],
                             "path": [
                                 "schools",
                                 ":schoolId",
-                                "pilots",
-                                ":pilotId"
+                                "instructors",
+                                ":instructorId"
                             ],
                             "variable": [{
                                     "key": "schoolId",
                                     "value": ""
                                 },
                                 {
-                                    "key": "pilotId",
+                                    "key": "instructorId",
                                     "value": ""
                                 }
                             ]
@@ -1347,7 +1440,7 @@
                     "response": []
                 },
                 {
-                    "name": "Delete a pilot",
+                    "name": "Delete an instructor",
                     "request": {
                         "method": "DELETE",
                         "header": [{
@@ -1362,22 +1455,22 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{baseUrl}}/schools/:schoolId/pilots/:pilotId",
+                            "raw": "{{baseUrl}}/schools/:schoolId/instructors/:instructorId",
                             "host": [
                                 "{{baseUrl}}"
                             ],
                             "path": [
                                 "schools",
                                 ":schoolId",
-                                "pilots",
-                                ":pilotId"
+                                "instructors",
+                                ":instructorId"
                             ],
                             "variable": [{
                                     "key": "schoolId",
                                     "value": ""
                                 },
                                 {
-                                    "key": "pilotId",
+                                    "key": "instructorId",
                                     "value": ""
                                 }
                             ]
@@ -1796,6 +1889,1095 @@
                     "response": []
                 }
             ]
+        },
+        {
+            "name": "Students",
+            "item": [{
+                    "name": "List all students for a school",
+                    "request": {
+                        "method": "GET",
+                        "header": [{
+                                "key": "Authorization",
+                                "value": "Bearer {{jwtToken}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-CSRF-Token",
+                                "value": "{{csrfToken}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/schools/:schoolId/students",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "schools",
+                                ":schoolId",
+                                "students"
+                            ],
+                            "variable": [{
+                                "key": "schoolId",
+                                "value": ""
+                            }]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Create a new student for a school",
+                    "request": {
+                        "method": "POST",
+                        "header": [{
+                                "key": "Authorization",
+                                "value": "Bearer {{jwtToken}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-CSRF-Token",
+                                "value": "{{csrfToken}}",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"contact_email\": \"student@example.com\",\n  \"phone\": \"555-123-4567\",\n  \"program\": \"Private Pilot License\",\n  \"certifications\": [\"student\"],\n  \"license_number\": \"\",\n  \"emergency_contact\": {\n    \"name\": \"Parent Name\",\n    \"relationship\": \"Parent\",\n    \"phone\": \"555-987-6543\"\n  },\n  \"enrollmentDate\": \"2024-01-01T00:00:00.000Z\",\n  \"status\": \"Active\",\n  \"notes\": \"New student enrollment\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/schools/:schoolId/students",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "schools",
+                                ":schoolId",
+                                "students"
+                            ],
+                            "variable": [{
+                                "key": "schoolId",
+                                "value": ""
+                            }]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get a specific student",
+                    "request": {
+                        "method": "GET",
+                        "header": [{
+                                "key": "Authorization",
+                                "value": "Bearer {{jwtToken}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-CSRF-Token",
+                                "value": "{{csrfToken}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/schools/:schoolId/students/:studentId",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "schools",
+                                ":schoolId",
+                                "students",
+                                ":studentId"
+                            ],
+                            "variable": [{
+                                    "key": "schoolId",
+                                    "value": ""
+                                },
+                                {
+                                    "key": "studentId",
+                                    "value": ""
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Update a student",
+                    "request": {
+                        "method": "PUT",
+                        "header": [{
+                                "key": "Authorization",
+                                "value": "Bearer {{jwtToken}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-CSRF-Token",
+                                "value": "{{csrfToken}}",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"contact_email\": \"updated.student@example.com\",\n  \"phone\": \"555-123-4567\",\n  \"status\": \"Active\",\n  \"stage\": \"Pre-Solo\",\n  \"notes\": \"Updated student information\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/schools/:schoolId/students/:studentId",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "schools",
+                                ":schoolId",
+                                "students",
+                                ":studentId"
+                            ],
+                            "variable": [{
+                                    "key": "schoolId",
+                                    "value": ""
+                                },
+                                {
+                                    "key": "studentId",
+                                    "value": ""
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Delete a student",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [{
+                                "key": "Authorization",
+                                "value": "Bearer {{jwtToken}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-CSRF-Token",
+                                "value": "{{csrfToken}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/schools/:schoolId/students/:studentId",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "schools",
+                                ":schoolId",
+                                "students",
+                                ":studentId"
+                            ],
+                            "variable": [{
+                                    "key": "schoolId",
+                                    "value": ""
+                                },
+                                {
+                                    "key": "studentId",
+                                    "value": ""
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Programs",
+            "item": [{
+                    "name": "List all programs for a school",
+                    "request": {
+                        "method": "GET",
+                        "header": [{
+                                "key": "Authorization",
+                                "value": "Bearer {{jwtToken}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-CSRF-Token",
+                                "value": "{{csrfToken}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/schools/:schoolId/programs",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "schools",
+                                ":schoolId",
+                                "programs"
+                            ],
+                            "variable": [{
+                                "key": "schoolId",
+                                "value": ""
+                            }]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Create a new program",
+                    "request": {
+                        "method": "POST",
+                        "header": [{
+                                "key": "Authorization",
+                                "value": "Bearer {{jwtToken}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-CSRF-Token",
+                                "value": "{{csrfToken}}",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"program_name\": \"Private Pilot License\",\n  \"requirements\": [\n    { \"name\": \"Total Flight Time\", \"hours\": 40, \"type\": \"Standard\" },\n    { \"name\": \"Dual Instruction\", \"hours\": 20, \"type\": \"Key\" },\n    { \"name\": \"Solo Flight Time\", \"hours\": 10, \"type\": \"Standard\" }\n  ],\n  \"description\": \"Complete training program for Private Pilot License\",\n  \"duration\": \"6-12 months\",\n  \"cost\": 12000,\n  \"milestones\": [\n    { \"name\": \"First Solo\", \"description\": \"Student's first solo flight\", \"order\": 1 },\n    { \"name\": \"Cross Country\", \"description\": \"First cross country flight\", \"order\": 2 }\n  ],\n  \"stages\": [\n    { \"name\": \"Pre-Solo\", \"description\": \"Training before first solo\", \"order\": 1 },\n    { \"name\": \"Post-Solo\", \"description\": \"Training after first solo\", \"order\": 2 }\n  ]\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/schools/:schoolId/programs",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "schools",
+                                ":schoolId",
+                                "programs"
+                            ],
+                            "variable": [{
+                                "key": "schoolId",
+                                "value": ""
+                            }]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get a specific program",
+                    "request": {
+                        "method": "GET",
+                        "header": [{
+                                "key": "Authorization",
+                                "value": "Bearer {{jwtToken}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-CSRF-Token",
+                                "value": "{{csrfToken}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/schools/:schoolId/programs/:programId",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "schools",
+                                ":schoolId",
+                                "programs",
+                                ":programId"
+                            ],
+                            "variable": [{
+                                    "key": "schoolId",
+                                    "value": ""
+                                },
+                                {
+                                    "key": "programId",
+                                    "value": ""
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Update a program",
+                    "request": {
+                        "method": "PUT",
+                        "header": [{
+                                "key": "Authorization",
+                                "value": "Bearer {{jwtToken}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-CSRF-Token",
+                                "value": "{{csrfToken}}",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"program_name\": \"Private Pilot License - Updated\",\n  \"description\": \"Updated complete training program for Private Pilot License\",\n  \"duration\": \"6-12 months\",\n  \"cost\": 13000\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/schools/:schoolId/programs/:programId",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "schools",
+                                ":schoolId",
+                                "programs",
+                                ":programId"
+                            ],
+                            "variable": [{
+                                    "key": "schoolId",
+                                    "value": ""
+                                },
+                                {
+                                    "key": "programId",
+                                    "value": ""
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Delete a program",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [{
+                                "key": "Authorization",
+                                "value": "Bearer {{jwtToken}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-CSRF-Token",
+                                "value": "{{csrfToken}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/schools/:schoolId/programs/:programId",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "schools",
+                                ":schoolId",
+                                "programs",
+                                ":programId"
+                            ],
+                            "variable": [{
+                                    "key": "schoolId",
+                                    "value": ""
+                                },
+                                {
+                                    "key": "programId",
+                                    "value": ""
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Flight Logs",
+            "item": [{
+                    "name": "List all flight logs for a school",
+                    "request": {
+                        "method": "GET",
+                        "header": [{
+                                "key": "Authorization",
+                                "value": "Bearer {{jwtToken}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-CSRF-Token",
+                                "value": "{{csrfToken}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/schools/:schoolId/flight-logs?page=1&limit=10",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "schools",
+                                ":schoolId",
+                                "flight-logs"
+                            ],
+                            "query": [{
+                                    "key": "page",
+                                    "value": "1"
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "10"
+                                },
+                                {
+                                    "key": "student_id",
+                                    "value": "",
+                                    "disabled": true
+                                },
+                                {
+                                    "key": "instructor_id",
+                                    "value": "",
+                                    "disabled": true
+                                },
+                                {
+                                    "key": "plane_id",
+                                    "value": "",
+                                    "disabled": true
+                                },
+                                {
+                                    "key": "status",
+                                    "value": "",
+                                    "disabled": true
+                                },
+                                {
+                                    "key": "date",
+                                    "value": "",
+                                    "disabled": true
+                                }
+                            ],
+                            "variable": [{
+                                "key": "schoolId",
+                                "value": ""
+                            }]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Create a new flight log",
+                    "request": {
+                        "method": "POST",
+                        "header": [{
+                                "key": "Authorization",
+                                "value": "Bearer {{jwtToken}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-CSRF-Token",
+                                "value": "{{csrfToken}}",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"date\": \"2024-01-15T00:00:00.000Z\",\n  \"start_time\": \"09:00\",\n  \"end_time\": \"11:00\",\n  \"duration\": 2.0,\n  \"plane_id\": \"{{planeId}}\",\n  \"student_id\": \"{{studentId}}\",\n  \"instructor_id\": \"{{instructorId}}\",\n  \"type\": \"dual_instruction\",\n  \"status\": \"completed\",\n  \"notes\": \"Practice landings and takeoffs\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/schools/:schoolId/flight-logs",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "schools",
+                                ":schoolId",
+                                "flight-logs"
+                            ],
+                            "variable": [{
+                                "key": "schoolId",
+                                "value": ""
+                            }]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get a specific flight log",
+                    "request": {
+                        "method": "GET",
+                        "header": [{
+                                "key": "Authorization",
+                                "value": "Bearer {{jwtToken}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-CSRF-Token",
+                                "value": "{{csrfToken}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/schools/:schoolId/flight-logs/:flightLogId",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "schools",
+                                ":schoolId",
+                                "flight-logs",
+                                ":flightLogId"
+                            ],
+                            "variable": [{
+                                    "key": "schoolId",
+                                    "value": ""
+                                },
+                                {
+                                    "key": "flightLogId",
+                                    "value": ""
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Update a flight log",
+                    "request": {
+                        "method": "PUT",
+                        "header": [{
+                                "key": "Authorization",
+                                "value": "Bearer {{jwtToken}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-CSRF-Token",
+                                "value": "{{csrfToken}}",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"duration\": 2.5,\n  \"end_time\": \"11:30\",\n  \"status\": \"completed\",\n  \"notes\": \"Practice landings and takeoffs - extended session\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/schools/:schoolId/flight-logs/:flightLogId",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "schools",
+                                ":schoolId",
+                                "flight-logs",
+                                ":flightLogId"
+                            ],
+                            "variable": [{
+                                    "key": "schoolId",
+                                    "value": ""
+                                },
+                                {
+                                    "key": "flightLogId",
+                                    "value": ""
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Delete a flight log",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [{
+                                "key": "Authorization",
+                                "value": "Bearer {{jwtToken}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-CSRF-Token",
+                                "value": "{{csrfToken}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/schools/:schoolId/flight-logs/:flightLogId",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "schools",
+                                ":schoolId",
+                                "flight-logs",
+                                ":flightLogId"
+                            ],
+                            "variable": [{
+                                    "key": "schoolId",
+                                    "value": ""
+                                },
+                                {
+                                    "key": "flightLogId",
+                                    "value": ""
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get today's flight logs",
+                    "request": {
+                        "method": "GET",
+                        "header": [{
+                                "key": "Authorization",
+                                "value": "Bearer {{jwtToken}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-CSRF-Token",
+                                "value": "{{csrfToken}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/schools/:schoolId/flight-logs/today",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "schools",
+                                ":schoolId",
+                                "flight-logs",
+                                "today"
+                            ],
+                            "variable": [{
+                                "key": "schoolId",
+                                "value": ""
+                            }]
+                        }
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Flight Tracking",
+            "item": [{
+                    "name": "Track Management",
+                    "item": [{
+                            "name": "List all flight tracks",
+                            "request": {
+                                "method": "GET",
+                                "header": [{
+                                        "key": "Authorization",
+                                        "value": "Bearer {{jwtToken}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "X-CSRF-Token",
+                                        "value": "{{csrfToken}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/track?page=1&limit=10",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "track"
+                                    ],
+                                    "query": [{
+                                            "key": "page",
+                                            "value": "1"
+                                        },
+                                        {
+                                            "key": "limit",
+                                            "value": "10"
+                                        },
+                                        {
+                                            "key": "tail_number",
+                                            "value": "",
+                                            "disabled": true
+                                        },
+                                        {
+                                            "key": "school_id",
+                                            "value": "",
+                                            "disabled": true
+                                        },
+                                        {
+                                            "key": "plane_id",
+                                            "value": "",
+                                            "disabled": true
+                                        }
+                                    ]
+                                }
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "Start tracking a plane",
+                            "request": {
+                                "method": "POST",
+                                "header": [{
+                                        "key": "Authorization",
+                                        "value": "Bearer {{jwtToken}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "X-CSRF-Token",
+                                        "value": "{{csrfToken}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n  \"plane_id\": \"{{planeId}}\",\n  \"school_id\": \"{{schoolId}}\",\n  \"tail_number\": \"N12345\",\n  \"instructor_id\": \"{{instructorId}}\",\n  \"student_id\": \"{{studentId}}\",\n  \"start_time\": \"2024-01-15T09:00:00.000Z\"\n}",
+                                    "options": {
+                                        "raw": {
+                                            "language": "json"
+                                        }
+                                    }
+                                },
+                                "url": {
+                                    "raw": "{{baseUrl}}/track?interval=30",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "track"
+                                    ],
+                                    "query": [{
+                                        "key": "interval",
+                                        "value": "30",
+                                        "description": "Tracking interval in seconds"
+                                    }]
+                                }
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "Get specific track details",
+                            "request": {
+                                "method": "GET",
+                                "header": [{
+                                        "key": "Authorization",
+                                        "value": "Bearer {{jwtToken}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "X-CSRF-Token",
+                                        "value": "{{csrfToken}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/track/:trackId",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "track",
+                                        ":trackId"
+                                    ],
+                                    "variable": [{
+                                        "key": "trackId",
+                                        "value": ""
+                                    }]
+                                }
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "Update track information",
+                            "request": {
+                                "method": "PUT",
+                                "header": [{
+                                        "key": "Authorization",
+                                        "value": "Bearer {{jwtToken}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "X-CSRF-Token",
+                                        "value": "{{csrfToken}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n  \"status\": \"completed\",\n  \"notes\": \"Flight completed successfully\"\n}",
+                                    "options": {
+                                        "raw": {
+                                            "language": "json"
+                                        }
+                                    }
+                                },
+                                "url": {
+                                    "raw": "{{baseUrl}}/track/:trackId",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "track",
+                                        ":trackId"
+                                    ],
+                                    "variable": [{
+                                        "key": "trackId",
+                                        "value": ""
+                                    }]
+                                }
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "Delete track",
+                            "request": {
+                                "method": "DELETE",
+                                "header": [{
+                                        "key": "Authorization",
+                                        "value": "Bearer {{jwtToken}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "X-CSRF-Token",
+                                        "value": "{{csrfToken}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/track/:trackId",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "track",
+                                        ":trackId"
+                                    ],
+                                    "variable": [{
+                                        "key": "trackId",
+                                        "value": ""
+                                    }]
+                                }
+                            },
+                            "response": []
+                        }
+                    ]
+                },
+                {
+                    "name": "Track Data Management",
+                    "item": [{
+                            "name": "Get all tracks with filtering",
+                            "request": {
+                                "method": "GET",
+                                "header": [{
+                                        "key": "Authorization",
+                                        "value": "Bearer {{jwtToken}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "X-CSRF-Token",
+                                        "value": "{{csrfToken}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/trackData?page=1&limit=50",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "trackData"
+                                    ],
+                                    "query": [{
+                                            "key": "page",
+                                            "value": "1"
+                                        },
+                                        {
+                                            "key": "limit",
+                                            "value": "50"
+                                        },
+                                        {
+                                            "key": "tail_number",
+                                            "value": "",
+                                            "disabled": true
+                                        },
+                                        {
+                                            "key": "start_date",
+                                            "value": "",
+                                            "disabled": true
+                                        },
+                                        {
+                                            "key": "end_date",
+                                            "value": "",
+                                            "disabled": true
+                                        },
+                                        {
+                                            "key": "school_id",
+                                            "value": "",
+                                            "disabled": true
+                                        }
+                                    ]
+                                }
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "Create new track data",
+                            "request": {
+                                "method": "POST",
+                                "header": [{
+                                        "key": "Authorization",
+                                        "value": "Bearer {{jwtToken}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "X-CSRF-Token",
+                                        "value": "{{csrfToken}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n  \"tail_number\": \"N12345\",\n  \"fa_flight_id\": \"ABC123-1234567890\",\n  \"date\": \"2024-01-15T00:00:00.000Z\",\n  \"start_time\": \"09:00:00\",\n  \"flight_type\": \"training\",\n  \"plane_id\": \"{{planeId}}\",\n  \"school_id\": \"{{schoolId}}\",\n  \"instructor_id\": \"{{instructorId}}\",\n  \"student_id\": \"{{studentId}}\",\n  \"tracking\": [\n    {\n      \"altitude\": 3000,\n      \"ground_speed\": 120,\n      \"heading\": 90,\n      \"latitude\": 40.7128,\n      \"longitude\": -74.0060,\n      \"timestamp\": \"2024-01-15T09:05:00.000Z\",\n      \"vertical_speed\": 500\n    }\n  ]\n}",
+                                    "options": {
+                                        "raw": {
+                                            "language": "json"
+                                        }
+                                    }
+                                },
+                                "url": {
+                                    "raw": "{{baseUrl}}/trackData",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "trackData"
+                                    ]
+                                }
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "Get specific track data",
+                            "request": {
+                                "method": "GET",
+                                "header": [{
+                                        "key": "Authorization",
+                                        "value": "Bearer {{jwtToken}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "X-CSRF-Token",
+                                        "value": "{{csrfToken}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/trackData/:trackId",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "trackData",
+                                        ":trackId"
+                                    ],
+                                    "variable": [{
+                                        "key": "trackId",
+                                        "value": ""
+                                    }]
+                                }
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "Update track data",
+                            "request": {
+                                "method": "PUT",
+                                "header": [{
+                                        "key": "Authorization",
+                                        "value": "Bearer {{jwtToken}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "X-CSRF-Token",
+                                        "value": "{{csrfToken}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n  \"status\": \"completed\",\n  \"actual_on\": \"2024-01-15T11:00:00.000Z\",\n  \"notes\": \"Flight completed with additional tracking data\"\n}",
+                                    "options": {
+                                        "raw": {
+                                            "language": "json"
+                                        }
+                                    }
+                                },
+                                "url": {
+                                    "raw": "{{baseUrl}}/trackData/:trackId",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "trackData",
+                                        ":trackId"
+                                    ],
+                                    "variable": [{
+                                        "key": "trackId",
+                                        "value": ""
+                                    }]
+                                }
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "Delete track data",
+                            "request": {
+                                "method": "DELETE",
+                                "header": [{
+                                        "key": "Authorization",
+                                        "value": "Bearer {{jwtToken}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "X-CSRF-Token",
+                                        "value": "{{csrfToken}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/trackData/:trackId",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "trackData",
+                                        ":trackId"
+                                    ],
+                                    "variable": [{
+                                        "key": "trackId",
+                                        "value": ""
+                                    }]
+                                }
+                            },
+                            "response": []
+                        }
+                    ]
+                }
+            ]
         }
     ],
     "auth": {
@@ -1868,6 +3050,46 @@
         },
         {
             "key": "apiKeyId",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "schoolId",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "studentId",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "instructorId",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "planeId",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "programId",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "scheduleId",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "flightLogId",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "trackId",
             "value": "",
             "type": "string"
         }
