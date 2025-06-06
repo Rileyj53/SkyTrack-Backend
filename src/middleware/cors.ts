@@ -18,10 +18,26 @@ const ALLOWED_ORIGINS = [
   'https://app.skytrack.com',
   'https://admin.skytrack.com',
   'https://api.skytrack.com',
-  'https://sky-track-frontend-3rgbu8g4i-sky-track.vercel.app',
   'https://skytrack-nonprod-frontend.rileyjacobson.net',
   'https://skytrack-nonprod-backend.rileyjacobson.net'
 ];
+
+// Function to check if origin matches allowed patterns
+function isOriginAllowed(origin: string | null): boolean {
+  if (!origin) return false;
+  
+  // Check exact matches
+  if (ALLOWED_ORIGINS.includes(origin)) {
+    return true;
+  }
+  
+  // Check pattern: any URL ending with -sky-track.vercel.app
+  if (origin.endsWith('-sky-track.vercel.app') && origin.startsWith('https://')) {
+    return true;
+  }
+  
+  return false;
+}
 
 // Allowed methods
 const ALLOWED_METHODS = ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'];
@@ -42,7 +58,7 @@ export function cors(request: NextRequest) {
   
   // Allow requests from the same origin as the backend
   const isSameOrigin = !origin || origin === request.nextUrl.origin;
-  const isAllowedOrigin = isSameOrigin || (origin && ALLOWED_ORIGINS.includes(origin));
+  const isAllowedOrigin = isSameOrigin || isOriginAllowed(origin);
   
   // Handle preflight requests
   if (request.method === 'OPTIONS') {
