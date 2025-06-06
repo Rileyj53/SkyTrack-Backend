@@ -47,7 +47,7 @@ export async function GET(
     }
 
     // Find all planes for this school
-    const planes = await Plane.find({ school_id: params.schoolId }).lean();
+    const planes = await (Plane as any).find({ school_id: params.schoolId }).lean();
 
     if (!planes || planes.length === 0) {
       return NextResponse.json({
