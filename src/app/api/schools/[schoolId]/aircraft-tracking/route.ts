@@ -24,7 +24,7 @@ export async function GET(
       return NextResponse.json({ error: authResult.error }, { status: 401 });
     }
 
-    // Connect to database
+    // Connect to databas
     await connectDB();
 
     // Validate school ID
