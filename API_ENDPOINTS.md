@@ -401,6 +401,90 @@
   }
   ```
 
+### Real-Time Aircraft Tracking
+- **Endpoint:** `GET /api/schools/:schoolId/aircraft-tracking`
+- **Description:** Gets real-time aircraft tracking data from ADSB.lol for all planes in a school
+- **Headers:**
+  - `x-api-key`: API key for authentication
+  - `Authorization`: Bearer token for user authentication
+- **Access:**
+  - System administrators can access tracking for any school
+  - School administrators and instructors can only access tracking for their own school
+- **Response:**
+  ```json
+  {
+    "message": "Aircraft tracking data retrieved successfully",
+    "school_id": "school_id",
+    "summary": {
+      "total_planes": 5,
+      "planes_with_tracking": 2,
+      "planes_without_tracking": 3,
+      "planes_in_flight": 1
+    },
+    "aircraft": [
+      {
+        "plane_id": "plane_id",
+        "registration": "N12345",
+        "type": "Single Engine",
+        "aircraftModel": "Cessna 172",
+        "status": "active",
+        "tracking_data": {
+          "ac": [
+            {
+              "hex": "a94ae5",
+              "type": "adsb_icao",
+              "flight": "N12345",
+              "r": "N12345",
+              "t": "C172",
+              "alt_baro": 3500,
+              "alt_geom": 3600,
+              "gs": 120.5,
+              "track": 180.0,
+              "baro_rate": 0,
+              "squawk": "1200",
+              "emergency": "none",
+              "category": "A1",
+              "lat": 40.7128,
+              "lon": -74.0060,
+              "nic": 8,
+              "rc": 186,
+              "seen_pos": 0.5,
+              "version": 2,
+              "messages": 1250,
+              "seen": 0.1,
+              "rssi": -15.2
+            }
+          ],
+          "msg": "No error",
+          "now": 1749171642001,
+          "total": 1,
+          "ctime": 1749171642001,
+          "ptime": 0
+        },
+        "last_updated": "2023-01-15T14:30:00.000Z"
+      }
+    ],
+    "active_aircraft": [
+      {
+        "plane_id": "plane_id",
+        "registration": "N12345",
+        "tracking_data": {
+          "ac": [...]
+        }
+      }
+    ],
+    "inactive_aircraft": [
+      {
+        "plane_id": "plane_id_2",
+        "registration": "N67890",
+        "tracking_data": null,
+        "error": "Aircraft not currently transmitting"
+      }
+    ],
+    "timestamp": "2023-01-15T14:30:00.000Z"
+  }
+  ```
+
 ## Flight Log Management
 
 - [ ] `GET /api/schools/[schoolId]/flight-logs` - List all flight logs for a school
