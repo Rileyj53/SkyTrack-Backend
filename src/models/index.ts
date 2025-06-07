@@ -4,7 +4,6 @@ import { User } from './User';
 import Student from './Student';
 import Instructor from './Instructor';
 import Plane from './Plane';
-import ScheduleModel from './ScheduleModel';
 import Program from './Program';
 
 // Export all models
@@ -14,7 +13,6 @@ export {
   Student,
   Instructor,
   Plane,
-  ScheduleModel,
   Program
 };
 

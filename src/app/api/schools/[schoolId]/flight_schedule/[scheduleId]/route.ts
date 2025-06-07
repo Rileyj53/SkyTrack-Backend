@@ -225,10 +225,25 @@ export async function PUT(
       }
     }
 
+    // Prepare update object with proper time handling for duration calculation
+    const updateData = { ...body };
+    
+    // If either scheduled time is being updated, ensure both are included for duration calculation
+    if (body.scheduled_start_time || body.scheduled_end_time) {
+      updateData.scheduled_start_time = scheduledStartTime || existingSchedule.scheduled_start_time;
+      updateData.scheduled_end_time = scheduledEndTime || existingSchedule.scheduled_end_time;
+    }
+    
+    // If either actual time is being updated, ensure both are included for duration calculation
+    if (body.actual_start_time || body.actual_end_time) {
+      updateData.actual_start_time = actualStartTime || existingSchedule.actual_start_time;
+      updateData.actual_end_time = actualEndTime || existingSchedule.actual_end_time;
+    }
+
     // Update the flight schedule
     const updatedSchedule = await (FlightSchedule as any).findByIdAndUpdate(
       params.scheduleId,
-      { $set: body },
+      { $set: updateData },
       { new: true, runValidators: true }
     )
     .populate({

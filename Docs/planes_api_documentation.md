@@ -1,16 +1,16 @@
 # Planes API Documentation
 
 ## Overview
-The Planes API provides comprehensive aircraft management functionality including aircraft registration, maintenance tracking, airworthiness directives, and service bulletins. All endpoints are school-scoped with role-based access control.
+The Planes API provides comprehensive aircraft management functionality including aircraft registration and maintenance record tracking. All endpoints are school-scoped with role-based access control.
 
 ## Access Control Matrix
 
-| Role | Planes | Maintenance | Airworthiness Directives | Service Bulletins |
-|------|---------|-------------|-------------------------|-------------------|
-| **Student** | ✅ View Only | ❌ No Access | ❌ No Access | ❌ No Access |
-| **Instructor** | ✅ View Only | ✅ View Only | ✅ View Only | ✅ View Only |
-| **School Admin** | ✅ Full CRUD | ✅ Full CRUD | ✅ Full CRUD | ✅ Full CRUD |
-| **System Admin** | ✅ Full CRUD | ✅ Full CRUD | ✅ Full CRUD | ✅ Full CRUD |
+| Role | Planes | Records |
+|------|---------|---------|
+| **Student** | ✅ View Only | ❌ No Access |
+| **Instructor** | ✅ View Only | ✅ View Only |
+| **School Admin** | ✅ Full CRUD | ✅ Full CRUD |
+| **System Admin** | ✅ Full CRUD | ✅ Full CRUD |
 
 ## Plane Object Structure
 
@@ -144,194 +144,241 @@ Delete a plane.
 
 **Access:** School Admins, System Admins
 
-## Maintenance Endpoints
+## Records System
 
-### GET /api/schools/{schoolId}/planes/{planeId}/maintenance
-Get all maintenance records for a plane.
+The Records system provides a unified approach to tracking all aircraft maintenance, airworthiness directives, and service bulletins. All records are associated with specific aircraft and support flexible categorization.
+
+### Record Object Structure
+
+```json
+{
+  "id": "ObjectId",
+  "plane_id": "ObjectId",
+  "record_type": "maintenance",
+  "title": "100-hour Inspection",
+  "description": "Replaced spark plugs and checked oil",
+  "status": "completed",
+  "date": "2024-01-10T00:00:00.000Z",
+  "nextDue": "2024-04-10T00:00:00.000Z",
+  "aircraftHours": 1250.5,
+  "partsReplaced": ["Oil filter", "Brake pads"],
+  "notes": "All clear",
+  "attachments": [
+    {
+      "url": "https://s3.url/logbook-entry.pdf",
+      "name": "Logbook Entry",
+      "uploaded_at": "2024-01-10T12:30:00.000Z"
+    }
+  ],
+  "created_at": "2024-01-10T12:00:00.000Z",
+  "updated_at": "2024-01-10T12:00:00.000Z"
+}
+```
+
+### Record Types
+- `maintenance` - General maintenance activities, inspections, repairs
+- `airworthiness` - Airworthiness directives and compliance tracking
+- `service_bulletin` - Service bulletin implementation and tracking
+
+## Records Collection Endpoints
+
+### GET /api/schools/{schoolId}/planes/{planeId}/records
+Get all records for a specific aircraft.
 
 **Access:** Instructors, School Admins, System Admins
 
+**Query Parameters:**
+- `record_type` - Filter by record type (`maintenance`, `airworthiness`, `service_bulletin`)
+- `status` - Filter by status
+- `limit` - Number of records to return (default: 50)
+- `offset` - Number of records to skip (default: 0)
+
+**Example Request:**
+```
+GET /api/schools/{schoolId}/planes/{planeId}/records?record_type=maintenance&status=completed&limit=10&offset=0
+```
+
 **Response:**
 ```json
-[
-  {
-    "_id": "64a1b2c3d4e5f6789012348",
-    "aircraftId": "64a1b2c3d4e5f6789012345",
-    "date": "2024-01-15T00:00:00.000Z",
-    "type": "100 Hour Inspection",
-    "description": "Routine 100-hour inspection",
-    "workPerformed": ["Engine inspection", "Control surfaces check"],
-    "partsReplaced": ["Oil filter", "Spark plugs"],
-    "technician": "John Smith A&P",
-    "aircraftHours": 1250.5,
-    "nextDue": "2024-02-15T00:00:00.000Z",
-    "status": "Completed",
-    "referenceDocuments": ["Log entry 245", "Work order 1023"],
-    "notes": "All systems operating normally"
+{
+  "records": [
+    {
+      "id": "64a1b2c3d4e5f6789012348",
+      "plane_id": "64a1b2c3d4e5f6789012345",
+      "record_type": "maintenance",
+      "title": "100-hour Inspection",
+      "description": "Routine 100-hour inspection completed",
+      "status": "completed",
+      "date": "2024-01-15T00:00:00.000Z",
+      "nextDue": "2024-04-15T00:00:00.000Z",
+      "aircraftHours": 1250.5,
+      "partsReplaced": ["Oil filter", "Spark plugs"],
+      "notes": "All systems operating normally",
+      "attachments": [],
+      "created_at": "2024-01-15T12:00:00.000Z",
+      "updated_at": "2024-01-15T12:00:00.000Z"
+    }
+  ],
+  "total": 25,
+  "limit": 10,
+  "offset": 0
+}
+```
+
+### POST /api/schools/{schoolId}/planes/{planeId}/records
+Create a new record for an aircraft.
+
+**Access:** Instructors, School Admins, System Admins
+
+**Required Fields:**
+- `description` - Record description
+
+**Optional Fields:**
+- `record_type` - Type of record (`maintenance`, `airworthiness`, `service_bulletin`)
+- `title` - Record title
+- `status` - Record status
+- `date` - Date of work/compliance
+- `nextDue` - Next due date
+- `aircraftHours` - Aircraft hours at time of record
+- `partsReplaced` - Array of parts replaced
+- `notes` - Additional notes
+- `attachments` - Array of attachment objects
+
+**Example Request:**
+```json
+{
+  "record_type": "maintenance",
+  "title": "Oil Change",
+  "description": "Changed engine oil and filter",
+  "status": "completed",
+  "date": "2024-02-01T00:00:00.000Z",
+  "aircraftHours": 1275.8,
+  "partsReplaced": ["Oil filter"],
+  "notes": "Used Mobil 1 aviation oil",
+  "attachments": [
+    {
+      "url": "https://s3.amazonaws.com/bucket/oil-change-receipt.pdf",
+      "name": "Oil Change Receipt"
+    }
+  ]
+}
+```
+
+### PUT /api/schools/{schoolId}/planes/{planeId}/records
+Bulk update multiple records for an aircraft.
+
+**Access:** School Admins, System Admins
+
+**Request Body:**
+```json
+{
+  "filter": {
+    "record_type": "maintenance",
+    "status": "pending"
+  },
+  "update": {
+    "status": "completed",
+    "notes": "Bulk completion update"
   }
-]
-```
-
-### POST /api/schools/{schoolId}/planes/{planeId}/maintenance
-Create a new maintenance record.
-
-**Access:** Instructors, School Admins, System Admins
-
-**Required Fields:**
-- `date` - Maintenance date
-- `type` - Type of maintenance
-- `description` - Maintenance description
-- `technician` - Technician information
-- `status` - Maintenance status
-
-### PUT /api/schools/{schoolId}/planes/{planeId}/maintenance/{logId}
-Update a maintenance record.
-
-**Access:** Instructors, School Admins, System Admins
-
-### DELETE /api/schools/{schoolId}/planes/{planeId}/maintenance/{logId}
-Delete a maintenance record.
-
-**Access:** Instructors, School Admins, System Admins
-
-## Maintenance Schedule Endpoints
-
-### GET /api/schools/{schoolId}/planes/{planeId}/maintenance-schedule
-Get the maintenance schedule for a plane.
-
-**Access:** Instructors, School Admins, System Admins
-
-**Response:**
-```json
-{
-  "_id": "64a1b2c3d4e5f6789012349",
-  "plane_id": "64a1b2c3d4e5f6789012345",
-  "school_id": "64a1b2c3d4e5f6789012340",
-  "maintenance_type": "100 Hour Inspection",
-  "frequency_hours": 100,
-  "frequency_days": 365,
-  "last_maintenance": "2024-01-15T00:00:00.000Z",
-  "next_maintenance": "2024-04-15T00:00:00.000Z",
-  "notes": "Standard inspection schedule"
 }
 ```
 
-### POST /api/schools/{schoolId}/planes/{planeId}/maintenance-schedule
-Create a maintenance schedule for a plane.
+**Response:**
+```json
+{
+  "message": "Records updated successfully",
+  "updated_count": 3
+}
+```
+
+### DELETE /api/schools/{schoolId}/planes/{planeId}/records
+Bulk delete records for an aircraft.
 
 **Access:** School Admins, System Admins
 
-**Business Rules:**
-- Only one maintenance schedule per plane
-- Returns 400 error if schedule already exists
+**Query Parameters:**
+- `ids` - Comma-separated list of record IDs to delete
+- `record_type` - Delete all records of this type
+- `status` - Delete all records with this status
 
-### PUT /api/schools/{schoolId}/planes/{planeId}/maintenance-schedule
-Update the maintenance schedule for a plane.
+**Example Requests:**
+```
+DELETE /api/schools/{schoolId}/planes/{planeId}/records?ids=id1,id2,id3
+DELETE /api/schools/{schoolId}/planes/{planeId}/records?record_type=maintenance&status=draft
+```
 
-**Access:** School Admins, System Admins
+**Response:**
+```json
+{
+  "message": "Records deleted successfully",
+  "deleted_count": 5
+}
+```
 
-## Airworthiness Directives Endpoints
+## Individual Record Endpoints
 
-### GET /api/schools/{schoolId}/planes/{planeId}/airworthiness-directives
-Get all airworthiness directives for a plane.
+### GET /api/schools/{schoolId}/planes/{planeId}/records/{recordId}
+Get a specific record.
 
 **Access:** Instructors, School Admins, System Admins
 
 **Response:**
 ```json
 {
-  "airworthinessDirectives": [
+  "record": {
+    "id": "64a1b2c3d4e5f6789012348",
+    "plane_id": "64a1b2c3d4e5f6789012345",
+    "record_type": "airworthiness",
+    "title": "AD 2024-02-15",
+    "description": "Fuel system component replacement",
+    "status": "compliant",
+    "date": "2024-01-20T00:00:00.000Z",
+    "nextDue": "2025-01-20T00:00:00.000Z",
+    "aircraftHours": 1260.2,
+    "notes": "Completed during annual inspection",
+    "attachments": [
+      {
+        "url": "https://s3.amazonaws.com/bucket/ad-compliance-cert.pdf",
+        "name": "Compliance Certificate",
+        "uploaded_at": "2024-01-20T14:30:00.000Z"
+      }
+    ],
+    "created_at": "2024-01-20T12:00:00.000Z",
+    "updated_at": "2024-01-20T14:30:00.000Z"
+  }
+}
+```
+
+### PUT /api/schools/{schoolId}/planes/{planeId}/records/{recordId}
+Update a specific record.
+
+**Access:** Instructors, School Admins, System Admins
+
+**Example Request:**
+```json
+{
+  "status": "completed",
+  "notes": "Work completed ahead of schedule",
+  "attachments": [
     {
-      "_id": "64a1b2c3d4e5f6789012350",
-      "aircraftId": "64a1b2c3d4e5f6789012345",
-      "adNumber": "2024-02-15",
-      "title": "Fuel System Component Replacement",
-      "description": "Mandatory replacement of fuel selector valve",
-      "status": "Compliant",
-      "complianceDate": "2024-05-15T00:00:00.000Z",
-      "nextDueDate": "2025-05-15T00:00:00.000Z",
-      "notes": "Completed during annual inspection"
+      "url": "https://s3.amazonaws.com/bucket/completion-photo.jpg",
+      "name": "Completion Photo"
     }
   ]
 }
 ```
 
-### POST /api/schools/{schoolId}/planes/{planeId}/airworthiness-directives
-Create a new airworthiness directive.
+### DELETE /api/schools/{schoolId}/planes/{planeId}/records/{recordId}
+Delete a specific record.
 
 **Access:** School Admins, System Admins
-
-**Required Fields:**
-- `adNumber` - AD number (must be unique per aircraft)
-- `title` - AD title
-- `description` - AD description
-- `status` - AD status ("Compliant", "Pending", "Not Applicable")
-
-**Validation:**
-- Status must be one of the valid enum values
-- Date fields must be valid ISO dates
-- Duplicate AD numbers return 409 error
-
-### PUT /api/schools/{schoolId}/planes/{planeId}/airworthiness-directives/{adId}
-Update an airworthiness directive.
-
-**Access:** School Admins, System Admins
-
-### DELETE /api/schools/{schoolId}/planes/{planeId}/airworthiness-directives/{adId}
-Delete an airworthiness directive.
-
-**Access:** School Admins, System Admins
-
-## Service Bulletins Endpoints
-
-### GET /api/schools/{schoolId}/planes/{planeId}/service-bulletins
-Get all service bulletins for a plane.
-
-**Access:** Instructors, School Admins, System Admins
 
 **Response:**
 ```json
 {
-  "serviceBulletins": [
-    {
-      "_id": "64a1b2c3d4e5f6789012351",
-      "aircraftId": "64a1b2c3d4e5f6789012345",
-      "sbNumber": "SB-2024-01",
-      "title": "Propeller Inspection",
-      "description": "Mandatory inspection of propeller blades",
-      "status": "Completed",
-      "completionDate": "2024-06-15T00:00:00.000Z",
-      "notes": "Inspection completed, no issues found"
-    }
-  ]
+  "message": "Record deleted successfully"
 }
 ```
-
-### POST /api/schools/{schoolId}/planes/{planeId}/service-bulletins
-Create a new service bulletin.
-
-**Access:** School Admins, System Admins
-
-**Required Fields:**
-- `sbNumber` - Service bulletin number (must be unique per aircraft)
-- `title` - SB title
-- `description` - SB description
-- `status` - SB status ("Completed", "Pending", "Not Applicable")
-
-**Validation:**
-- Status must be one of the valid enum values
-- `completionDate` must be valid ISO date if provided
-- Duplicate SB numbers return 409 error
-
-### PUT /api/schools/{schoolId}/planes/{planeId}/service-bulletins/{sbId}
-Update a service bulletin.
-
-**Access:** School Admins, System Admins
-
-### DELETE /api/schools/{schoolId}/planes/{planeId}/service-bulletins/{sbId}
-Delete a service bulletin.
-
-**Access:** School Admins, System Admins
 
 ## Status Values
 
@@ -341,16 +388,13 @@ Delete a service bulletin.
 - `Out of Service` - Not airworthy
 - `Reserved` - Reserved for specific use
 
-### Maintenance Status
-- `Scheduled` - Maintenance scheduled
-- `In Progress` - Currently being worked on
-- `Completed` - Maintenance finished
-- `Overdue` - Past due date
-
-### AD/SB Status
-- `Compliant` - Requirement met
-- `Pending` - Awaiting compliance
-- `Not Applicable` - Does not apply to this aircraft
+### Record Status
+- `pending` - Awaiting action
+- `in_progress` - Currently being worked on
+- `completed` - Work finished
+- `compliant` - Requirement met
+- `overdue` - Past due date
+- `not_applicable` - Does not apply
 
 ## Validation Rules
 
@@ -364,9 +408,12 @@ Delete a service bulletin.
   - `wet`, `dry`, `block`, `instruction`, `weekend`, `solo`, `checkride`
 - Must be numeric values >= 0
 
-### Dates
-- All dates must be valid ISO 8601 format
-- Compliance dates are optional but validated if provided
+### Records
+- `description` field is required for all records
+- `record_type` must be one of: `maintenance`, `airworthiness`, `service_bulletin`
+- All date fields must be valid ISO 8601 format
+- `partsReplaced` must be an array of strings
+- `attachments` must be an array of objects with `url` and `name` fields
 
 ### School Scoping
 - All aircraft belong to a specific school
@@ -381,12 +428,7 @@ Delete a service bulletin.
 **400 - Validation Error:**
 ```json
 {
-  "error": "Missing required fields",
-  "details": ["registration is required", "type is required"],
-  "example": {
-    "registration": "N123AB",
-    "type": "Single Engine"
-  }
+  "error": "Missing required field: description"
 }
 ```
 
@@ -400,15 +442,14 @@ Delete a service bulletin.
 **404 - Not Found:**
 ```json
 {
-  "error": "Plane not found in this school"
+  "error": "Plane not found or does not belong to this school"
 }
 ```
 
-**409 - Duplicate:**
+**404 - Record Not Found:**
 ```json
 {
-  "error": "Duplicate airworthiness directive",
-  "details": "An AD with number 2024-02-15 already exists for this aircraft"
+  "error": "Record not found"
 }
 ```
 
@@ -417,17 +458,19 @@ Delete a service bulletin.
 ### Aircraft Management
 - Registration numbers are automatically uppercased
 - Duplicate registrations within a school are prevented
-- Aircraft deletion removes all associated maintenance records
+- Aircraft deletion removes all associated records
 
-### Maintenance Tracking
-- Maintenance records are linked to specific aircraft
-- Historical maintenance data is preserved
-- Maintenance schedules track recurring requirements
+### Records Management
+- Records are linked to specific aircraft and schools
+- Historical record data is preserved
+- Flexible categorization supports different record types
+- Bulk operations support efficient data management
 
-### Compliance Management
-- Airworthiness Directives track mandatory compliance
-- Service Bulletins track recommended improvements
+### Compliance Tracking
+- Records can track mandatory compliance (airworthiness directives)
+- Service bulletin implementation tracking
 - Status tracking ensures regulatory compliance
+- Attachment support for documentation
 
 ## Integration Points
 
@@ -439,12 +482,12 @@ Delete a service bulletin.
 ### Financial System
 - Hourly rates used for flight charge calculations
 - Special rates override standard rates
-- Maintenance costs tracked separately
+- Maintenance costs tracked in records
 
 ### Regulatory Compliance
-- AD compliance ensures airworthiness
-- Maintenance logs provide audit trail
-- Service bulletin tracking enhances safety
+- Records provide comprehensive audit trail
+- Attachment system supports documentation requirements
+- Flexible categorization supports various compliance needs
 
 ## Use Cases
 
@@ -473,50 +516,76 @@ POST /api/schools/{schoolId}/planes
 
 ### 2. Maintenance Record Creation
 ```json
-POST /api/schools/{schoolId}/planes/{planeId}/maintenance
+POST /api/schools/{schoolId}/planes/{planeId}/records
 {
-  "date": "2024-01-20",
-  "type": "Annual Inspection",
-  "description": "FAA required annual inspection",
-  "workPerformed": ["Complete aircraft inspection"],
-  "technician": "Bob Wilson A&P/IA",
+  "record_type": "maintenance",
+  "title": "Annual Inspection",
+  "description": "FAA required annual inspection completed",
+  "status": "completed",
+  "date": "2024-01-20T00:00:00.000Z",
   "aircraftHours": 1255.2,
-  "status": "Completed"
+  "partsReplaced": ["Battery", "Tire"],
+  "notes": "All systems checked and approved",
+  "attachments": [
+    {
+      "url": "https://s3.amazonaws.com/bucket/annual-inspection-cert.pdf",
+      "name": "Annual Inspection Certificate"
+    }
+  ]
 }
 ```
 
 ### 3. Airworthiness Directive Compliance
 ```json
-POST /api/schools/{schoolId}/planes/{planeId}/airworthiness-directives
+POST /api/schools/{schoolId}/planes/{planeId}/records
 {
-  "adNumber": "2024-03-22",
-  "title": "Engine Mount Inspection",
-  "description": "Inspect engine mount for cracks",
-  "status": "Pending",
-  "complianceDate": "2024-06-30",
-  "notes": "Scheduled for next 100-hour inspection"
+  "record_type": "airworthiness",
+  "title": "AD 2024-03-22",
+  "description": "Engine mount inspection for cracks completed",
+  "status": "compliant",
+  "date": "2024-02-15T00:00:00.000Z",
+  "nextDue": "2025-02-15T00:00:00.000Z",
+  "aircraftHours": 1265.5,
+  "notes": "No cracks found, mount in good condition"
 }
 ```
 
 ### 4. Service Bulletin Implementation
 ```json
-POST /api/schools/{schoolId}/planes/{planeId}/service-bulletins
+POST /api/schools/{schoolId}/planes/{planeId}/records
 {
-  "sbNumber": "SB-2024-05",
-  "title": "Avionics Software Update",
-  "description": "Update GPS navigation software",
-  "status": "Completed",
-  "completionDate": "2024-02-15",
-  "notes": "Updated to version 6.2.1"
+  "record_type": "service_bulletin",
+  "title": "SB 2024-05 - Avionics Update",
+  "description": "GPS navigation software updated to version 6.2.1",
+  "status": "completed",
+  "date": "2024-02-15T00:00:00.000Z",
+  "aircraftHours": 1270.1,
+  "notes": "Software update successful, all functions tested"
+}
+```
+
+### 5. Bulk Status Update
+```json
+PUT /api/schools/{schoolId}/planes/{planeId}/records
+{
+  "filter": {
+    "record_type": "maintenance",
+    "status": "pending"
+  },
+  "update": {
+    "status": "in_progress",
+    "notes": "Maintenance team assigned"
+  }
 }
 ```
 
 ## Security Features
 
 - **Role-based Access Control:** Different permissions for students, instructors, and admins
-- **School Isolation:** Aircraft data isolated by school; students limited to their enrolled school
+- **School Isolation:** Aircraft and records isolated by school; students limited to their enrolled school
 - **API Key Authentication:** Required for all requests
 - **JWT Validation:** User identity verification
 - **Input Validation:** Comprehensive data validation
 - **Audit Trail:** All changes tracked with timestamps
-- **Student Data Protection:** Students can view aircraft information but cannot access sensitive maintenance or compliance data 
+- **Student Data Protection:** Students can view aircraft information but cannot access maintenance records
+ 

@@ -72,15 +72,18 @@ export async function GET(
     if (startDate || endDate) {
       filter.scheduled_start_time = {};
       if (startDate) {
-        // Set start of day for start date filter
+        // Expand start date by 24 hours earlier to account for timezone differences
+        // This ensures we catch flights that are on the same local date but different UTC date
         const startOfDay = new Date(startDate);
         startOfDay.setUTCHours(0, 0, 0, 0);
+        startOfDay.setUTCDate(startOfDay.getUTCDate() - 1); // Go back 1 day
         filter.scheduled_start_time.$gte = startOfDay;
       }
       if (endDate) {
-        // Set end of day for end date filter
+        // Expand end date by 24 hours later to account for timezone differences
         const endOfDay = new Date(endDate);
         endOfDay.setUTCHours(23, 59, 59, 999);
+        endOfDay.setUTCDate(endOfDay.getUTCDate() + 1); // Go forward 1 day
         filter.scheduled_start_time.$lte = endOfDay;
       }
     }

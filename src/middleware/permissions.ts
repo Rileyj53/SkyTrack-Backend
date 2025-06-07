@@ -6,8 +6,7 @@ import { User } from '../models/User';
 import Student from '../models/Student';
 import Instructor from '../models/Instructor';
 import Plane from '../models/Plane';
-import FlightLog from '../models/FlightLog';
-import ScheduleModel from '../models/ScheduleModel';
+
 
 // Define permission types
 export enum Permission {
@@ -24,7 +23,6 @@ export enum Resource {
   STUDENT = 'student',
   INSTRUCTOR = 'instructor',
   PLANE = 'plane',
-  FLIGHT_LOG = 'flightLog',
   SCHEDULED_FLIGHT = 'scheduledFlight'
 }
 
@@ -36,7 +34,6 @@ const rolePermissions = {
     [Resource.STUDENT]: [Permission.READ, Permission.WRITE, Permission.DELETE, Permission.ADMIN],
     [Resource.INSTRUCTOR]: [Permission.READ, Permission.WRITE, Permission.DELETE, Permission.ADMIN],
     [Resource.PLANE]: [Permission.READ, Permission.WRITE, Permission.DELETE, Permission.ADMIN],
-    [Resource.FLIGHT_LOG]: [Permission.READ, Permission.WRITE, Permission.DELETE, Permission.ADMIN],
     [Resource.SCHEDULED_FLIGHT]: [Permission.READ, Permission.WRITE, Permission.DELETE, Permission.ADMIN]
   },
   school_admin: {
@@ -45,7 +42,6 @@ const rolePermissions = {
     [Resource.STUDENT]: [Permission.READ, Permission.WRITE],
     [Resource.INSTRUCTOR]: [Permission.READ, Permission.WRITE],
     [Resource.PLANE]: [Permission.READ, Permission.WRITE],
-    [Resource.FLIGHT_LOG]: [Permission.READ, Permission.WRITE, Permission.DELETE],
     [Resource.SCHEDULED_FLIGHT]: [Permission.READ, Permission.WRITE]
   },
   instructor: {
@@ -54,7 +50,6 @@ const rolePermissions = {
     [Resource.STUDENT]: [Permission.READ],
     [Resource.INSTRUCTOR]: [Permission.READ],
     [Resource.PLANE]: [Permission.READ],
-    [Resource.FLIGHT_LOG]: [Permission.READ, Permission.WRITE],
     [Resource.SCHEDULED_FLIGHT]: [Permission.READ, Permission.WRITE]
   },
   student: {
@@ -63,7 +58,6 @@ const rolePermissions = {
     [Resource.STUDENT]: [Permission.READ],
     [Resource.INSTRUCTOR]: [Permission.READ],
     [Resource.PLANE]: [Permission.READ],
-    [Resource.FLIGHT_LOG]: [Permission.READ],
     [Resource.SCHEDULED_FLIGHT]: [Permission.READ]
   }
 };
@@ -207,75 +201,6 @@ export const checkPlaneAccess = async (req: NextRequest, planeId: string): Promi
   return false;
 };
 
-// Middleware to check if user has access to a flight log
-export const checkFlightLogAccess = async (req: NextRequest, flightLogId: string): Promise<boolean> => {
-  const token = req.headers.get('Authorization')?.split(' ')[1];
-  if (!token) return false;
-  
-  const decoded = verifyToken(token);
-  if (!decoded) return false;
-  
-  // System admins have access to all flight logs
-  if (decoded.role === 'sys_admin') return true;
-  
-  // School admins have access to all flight logs in their school
-  if (decoded.role === 'school_admin') {
-    await connectDB();
-    const flightLog = await (FlightLog as any).findById(flightLogId);
-    return flightLog && flightLog.school_id.toString() === decoded.school_id;
-  }
-  
-  // Instructors have access to all flight logs in their school
-  if (decoded.role === 'instructor') {
-    await connectDB();
-    const flightLog = await (FlightLog as any).findById(flightLogId);
-    return flightLog && flightLog.school_id.toString() === decoded.school_id;
-  }
-  
-  // Students have access only to their own flight logs
-  if (decoded.role === 'student') {
-    await connectDB();
-    const flightLog = await (FlightLog as any).findById(flightLogId);
-    return flightLog && flightLog.student_id.toString() === decoded.student_id;
-  }
-  
-  return false;
-};
-
-// Middleware to check if user has access to a scheduled flight
-export const checkScheduledFlightAccess = async (req: NextRequest, scheduledFlightId: string): Promise<boolean> => {
-  const token = req.headers.get('Authorization')?.split(' ')[1];
-  if (!token) return false;
-  
-  const decoded = verifyToken(token);
-  if (!decoded) return false;
-  
-  // System admins have access to all scheduled flights
-  if (decoded.role === 'sys_admin') return true;
-  
-  // School admins have access to all scheduled flights in their school
-  if (decoded.role === 'school_admin') {
-    await connectDB();
-    const scheduledFlight = await (ScheduleModel as any).findById(scheduledFlightId);
-    return scheduledFlight && scheduledFlight.school_id.toString() === decoded.school_id;
-  }
-  
-  // Instructors have access to all scheduled flights in their school
-  if (decoded.role === 'instructor') {
-    await connectDB();
-    const scheduledFlight = await (ScheduleModel as any).findById(scheduledFlightId);
-    return scheduledFlight && scheduledFlight.school_id.toString() === decoded.school_id;
-  }
-  
-  // Students have access only to their own scheduled flights
-  if (decoded.role === 'student') {
-    await connectDB();
-    const scheduledFlight = await (ScheduleModel as any).findById(scheduledFlightId);
-    return scheduledFlight && scheduledFlight.student_id.toString() === decoded.student_id;
-  }
-  
-  return false;
-};
 
 // Middleware to check if user has access to a user
 export async function checkUserAccess(
