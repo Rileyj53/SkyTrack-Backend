@@ -485,6 +485,161 @@
   }
   ```
 
+## Flight Schedule Management
+
+### List Flight Schedules for a School
+- **Endpoint:** `GET /api/schools/:schoolId/flight_schedule`
+- **Description:** Gets all flight schedules for a specific school with full populated data
+- **Headers:**
+  - `x-api-key`: API key for authentication
+  - `Authorization`: Bearer token for user authentication
+- **Query Parameters:**
+  - `page` (optional): Page number for pagination (default: 1)
+  - `limit` (optional): Number of results per page (default: 50)
+  - `status` (optional): Filter by status (scheduled, confirmed, in-progress, completed, canceled, no-show)
+  - `start_date` (optional): Filter by start date (ISO string)
+  - `end_date` (optional): Filter by end date (ISO string)
+  - `plane_id` (optional): Filter by plane ID
+  - `instructor_id` (optional): Filter by instructor ID
+  - `student_id` (optional): Filter by student ID
+- **Response:**
+  ```json
+  {
+    "schedules": [
+      {
+        "_id": "schedule_id",
+        "school_id": {
+          "_id": "school_id",
+          "name": "Flight Academy",
+          "address": {...},
+          "airport": "KJFK"
+        },
+        "plane_id": {
+          "_id": "plane_id",
+          "registration": "N12345",
+          "type": "Single Engine",
+          "aircraftModel": "Cessna 172"
+        },
+        "instructor_id": {
+          "_id": "instructor_id",
+          "user_id": {
+            "_id": "user_id",
+            "first_name": "John",
+            "last_name": "Smith",
+            "email": "john@example.com"
+          }
+        },
+        "student_id": {
+          "_id": "student_id",
+          "user_id": {
+            "_id": "user_id", 
+            "first_name": "Jane",
+            "last_name": "Doe",
+            "email": "jane@example.com"
+          }
+        },
+        "start_time": "2025-06-06T10:00:00.000Z",
+        "end_time": "2025-06-06T11:30:00.000Z",
+        "flight_type": "Solo",
+        "status": "scheduled",
+        "duration": 1.5,
+        "notes": "Practice landings",
+        "created_at": "2025-01-01T00:00:00.000Z",
+        "updated_at": "2025-01-01T00:00:00.000Z"
+      }
+    ],
+    "pagination": {
+      "page": 1,
+      "limit": 50,
+      "total": 1,
+      "pages": 1
+    }
+  }
+  ```
+
+### Create a Flight Schedule
+- **Endpoint:** `POST /api/schools/:schoolId/flight_schedule`
+- **Description:** Creates a new flight schedule with automatic duration calculation
+- **Headers:**
+  - `x-api-key`: API key for authentication
+  - `Authorization`: Bearer token for user authentication
+- **Request Body:**
+  ```json
+  {
+    "plane_id": "684238fc551d3d8d70edbeb4",
+    "instructor_id": "6838ad948d13949c514ac678",
+    "student_id": "6841e28c8d13949c514ac6dd",
+    "start_time": "2025-06-06T10:00:00.000Z",
+    "end_time": "2025-06-06T11:30:00.000Z",
+    "flight_type": "Solo",
+    "status": "scheduled",
+    "notes": "Practice landings"
+  }
+  ```
+- **Response:**
+  ```json
+  {
+    "message": "Flight schedule created successfully",
+    "schedule": {
+      // ... populated schedule object with all related data
+    }
+  }
+  ```
+
+### Get a Specific Flight Schedule
+- **Endpoint:** `GET /api/schools/:schoolId/flight_schedule/:scheduleId`
+- **Description:** Retrieves a specific flight schedule with full populated data
+- **Headers:**
+  - `x-api-key`: API key for authentication
+  - `Authorization`: Bearer token for user authentication
+- **Response:**
+  ```json
+  {
+    "schedule": {
+      // ... populated schedule object with all related data
+    }
+  }
+  ```
+
+### Update a Flight Schedule
+- **Endpoint:** `PUT /api/schools/:schoolId/flight_schedule/:scheduleId`
+- **Description:** Updates a specific flight schedule with conflict checking
+- **Headers:**
+  - `x-api-key`: API key for authentication
+  - `Authorization`: Bearer token for user authentication
+- **Request Body:**
+  ```json
+  {
+    "start_time": "2025-06-06T11:00:00.000Z",
+    "end_time": "2025-06-06T12:30:00.000Z",
+    "status": "confirmed",
+    "notes": "Updated practice session"
+  }
+  ```
+- **Response:**
+  ```json
+  {
+    "message": "Flight schedule updated successfully",
+    "schedule": {
+      // ... populated updated schedule object
+    }
+  }
+  ```
+
+### Delete a Flight Schedule
+- **Endpoint:** `DELETE /api/schools/:schoolId/flight_schedule/:scheduleId`
+- **Description:** Deletes a specific flight schedule
+- **Headers:**
+  - `x-api-key`: API key for authentication
+  - `Authorization`: Bearer token for user authentication
+- **Response:**
+  ```json
+  {
+    "message": "Flight schedule deleted successfully",
+    "schedule_id": "schedule_id"
+  }
+  ```
+
 ## Flight Log Management
 
 - [ ] `GET /api/schools/[schoolId]/flight-logs` - List all flight logs for a school

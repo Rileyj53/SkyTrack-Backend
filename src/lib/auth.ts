@@ -38,15 +38,21 @@ export function validateEmail(email: string): boolean {
 
 export function authenticateRequest(request: NextRequest) {
   try {
-    // Get the token from the Authorization header
+    // First try to get the token from the Authorization header
     const authHeader = request.headers.get('Authorization');
-    if (!authHeader) {
-      return { success: false, message: 'No token provided' };
+    let token = null;
+
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.split(' ')[1];
     }
 
-    const token = authHeader.split(' ')[1];
+    // If no Authorization header token, try to get from cookies
     if (!token) {
-      return { success: false, message: 'Invalid token format' };
+      token = request.cookies.get('token')?.value;
+    }
+
+    if (!token) {
+      return { success: false, message: 'No token provided in Authorization header or cookies' };
     }
 
     // Verify the token
@@ -55,7 +61,7 @@ export function authenticateRequest(request: NextRequest) {
       return { success: false, message: 'Invalid token' };
     }
 
-    return { success: true, userId: decoded.userId };
+    return { success: true, userId: decoded.userId, tokenSource: authHeader ? 'header' : 'cookie' };
   } catch (error) {
     console.error('Request authentication error');
     return { success: false, message: 'Authentication failed' };

@@ -15,10 +15,7 @@ export async function validateApiKey(request: NextRequest) {
     const apiKey = request.headers.get('X-API-Key');
     if (!apiKey) {
       console.log('No API key provided in X-API-Key header');
-      return NextResponse.json(
-        { error: 'API key is required' },
-        { status: 401 }
-      );
+      return { error: 'API key is required' };
     }
 
     console.log('API key received:', apiKey.substring(0, 10) + '...');
@@ -26,10 +23,7 @@ export async function validateApiKey(request: NextRequest) {
     // Ensure we have a valid connection
     if (!mongoose.connection || !mongoose.connection.db) {
       console.error('Database connection error');
-      return NextResponse.json(
-        { error: 'Database connection error' },
-        { status: 500 }
-      );
+      return { error: 'Database connection error' };
     }
 
     // Hash the incoming API key
@@ -49,10 +43,7 @@ export async function validateApiKey(request: NextRequest) {
 
     if (!apiKeyDoc) {
       console.log('API key not found in database or inactive');
-      return NextResponse.json(
-        { error: 'Invalid API key' },
-        { status: 401 }
-      );
+      return { error: 'Invalid API key' };
     }
 
     console.log('API key found in database');
@@ -60,10 +51,7 @@ export async function validateApiKey(request: NextRequest) {
     // Check if API key has expired
     if (apiKeyDoc.expiresAt && new Date() > new Date(apiKeyDoc.expiresAt)) {
       console.log('API key has expired');
-      return NextResponse.json(
-        { error: 'API key has expired' },
-        { status: 401 }
-      );
+      return { error: 'API key has expired' };
     }
 
     console.log('API key validation successful');
@@ -80,9 +68,6 @@ export async function validateApiKey(request: NextRequest) {
     };
   } catch (error) {
     console.error('API key validation error:', error);
-    return NextResponse.json(
-      { error: 'Error validating API key' },
-      { status: 500 }
-    );
+    return { error: 'Error validating API key' };
   }
 } 
