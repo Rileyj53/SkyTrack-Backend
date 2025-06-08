@@ -31,23 +31,24 @@ export async function GET(request: NextRequest) {
       
       // Simple query test
       const simpleQueryStart = Date.now();
-      await User.findOne().lean();
+      await (User as any).findOne().lean();
       const simpleQueryTime = Date.now() - simpleQueryStart;
       
       // Count query test
       const countQueryStart = Date.now();
-      const userCount = await User.countDocuments();
+      const userCount = await (User as any).countDocuments();
       const countQueryTime = Date.now() - countQueryStart;
       
       // Aggregation test
       const aggregationStart = Date.now();
-      await User.aggregate([
+      await (User as any).aggregate([
         { $group: { _id: '$role', count: { $sum: 1 } } }
       ]);
       const aggregationTime = Date.now() - aggregationStart;
       
       tests.database = {
         status: 'completed',
+        responseTime: Date.now() - dbStartTime,
         totalTime: Date.now() - dbStartTime,
         operations: {
           simpleQuery: simpleQueryTime,
@@ -125,20 +126,20 @@ export async function GET(request: NextRequest) {
     };
 
     // Generate performance recommendations
-    if (tests.database.totalTime > 200) {
-      tests.overall.recommendations.push('Consider database query optimization');
+    if ((tests.database as any).status === 'completed' && (tests.database as any).responseTime > 200) {
+      (tests.overall as any).recommendations.push('Consider database query optimization');
     }
-    if (tests.memory.percentage > 80) {
-      tests.overall.recommendations.push('Memory usage is high, consider optimization');
+    if ((tests.memory as any).percentage > 80) {
+      (tests.overall as any).recommendations.push('Memory usage is high, consider optimization');
     }
-    if (tests.cpu.responseTime > 50) {
-      tests.overall.recommendations.push('CPU performance may be impacted by system load');
+    if ((tests.cpu as any).responseTime > 50) {
+      (tests.overall as any).recommendations.push('CPU performance may be impacted by system load');
     }
     if (totalTime > 500) {
-      tests.overall.recommendations.push('Overall response time is slow, investigate bottlenecks');
+      (tests.overall as any).recommendations.push('Overall response time is slow, investigate bottlenecks');
     }
-    if (tests.overall.recommendations.length === 0) {
-      tests.overall.recommendations.push('Performance is within acceptable ranges');
+    if ((tests.overall as any).recommendations.length === 0) {
+      (tests.overall as any).recommendations.push('Performance is within acceptable ranges');
     }
 
     return NextResponse.json({
@@ -191,7 +192,7 @@ export async function POST(request: NextRequest) {
         const dbStart = Date.now();
         try {
           await connectDB();
-          await User.findOne().lean();
+          await (User as any).findOne().lean();
           iterationResult.database = Date.now() - dbStart;
         } catch (error) {
           iterationResult.database = `error: ${error.message}`;

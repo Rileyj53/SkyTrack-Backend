@@ -58,7 +58,7 @@ export async function GET(
     }
 
     // Verify plane belongs to the school
-    const plane = await Plane.findOne({ 
+    const plane = await (Plane as any).findOne({ 
       _id: params.planeId, 
       school_id: params.schoolId 
     }).lean();
@@ -83,14 +83,14 @@ export async function GET(
     if (status) query.status = status;
 
     // Find records with pagination
-    const records = await PlaneRecord.find(query)
+    const records = await (PlaneRecord as any).find(query)
       .sort({ created_at: -1 })
       .limit(limit)
       .skip(offset)
       .lean();
 
     // Get total count
-    const total = await PlaneRecord.countDocuments(query);
+    const total = await (PlaneRecord as any).countDocuments(query);
 
     // Transform the response
     const transformedRecords = records.map(record => ({
@@ -172,7 +172,7 @@ export async function POST(
     }
 
     // Verify plane belongs to the school
-    const plane = await Plane.findOne({ 
+    const plane = await (Plane as any).findOne({ 
       _id: params.planeId, 
       school_id: params.schoolId 
     }).lean();
@@ -298,7 +298,7 @@ export async function PUT(
     }
 
     // Verify plane belongs to the school
-    const plane = await Plane.findOne({ 
+    const plane = await (Plane as any).findOne({ 
       _id: params.planeId, 
       school_id: params.schoolId 
     }).lean();
@@ -346,7 +346,7 @@ export async function PUT(
     if (update.notes !== undefined) updateObj.notes = update.notes;
 
     // Perform bulk update
-    const result = await PlaneRecord.updateMany(query, updateObj);
+    const result = await (PlaneRecord as any).updateMany(query, updateObj);
 
     return NextResponse.json({
       message: 'Records updated successfully',
@@ -408,7 +408,7 @@ export async function DELETE(
     }
 
     // Verify plane belongs to the school
-    const plane = await Plane.findOne({ 
+    const plane = await (Plane as any).findOne({ 
       _id: params.planeId, 
       school_id: params.schoolId 
     }).lean();
@@ -446,7 +446,7 @@ export async function DELETE(
     }
 
     // Perform deletion
-    const result = await PlaneRecord.deleteMany(query);
+    const result = await (PlaneRecord as any).deleteMany(query);
 
     return NextResponse.json({
       message: 'Records deleted successfully',

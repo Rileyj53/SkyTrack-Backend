@@ -228,7 +228,7 @@ export async function POST(
     }
 
     // Check if ledger already exists
-    const existingLedger = await StudentLedger.findOne({
+    const existingLedger = await (StudentLedger as any).findOne({
       student_id: params.studentId,
       school_id: params.schoolId
     });

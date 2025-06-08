@@ -44,8 +44,8 @@ export async function GET(request: NextRequest) {
     for (const collection of collections) {
       const collectionStartTime = Date.now();
       try {
-        const count = await collection.model.countDocuments();
-        const sampleDoc = await collection.model.findOne().lean();
+        const count = await (collection.model as any).countDocuments();
+        const sampleDoc = await (collection.model as any).findOne().lean();
         tests.collections[collection.name] = {
           status: 'ok',
           count,
@@ -66,10 +66,10 @@ export async function GET(request: NextRequest) {
     const opStartTime = Date.now();
     try {
       // Test read operation
-      const userCount = await User.countDocuments({ isActive: true });
+      const userCount = await (User as any).countDocuments({ isActive: true });
       
       // Test aggregation
-      const usersByRole = await User.aggregate([
+      const usersByRole = await (User as any).aggregate([
         { $group: { _id: '$role', count: { $sum: 1 } } }
       ]);
 

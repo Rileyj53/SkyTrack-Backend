@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
       if (verified && verified.userId) {
         const userStartTime = Date.now();
         try {
-          const user = await User.findById(verified.userId).select('-password -mfaSecret -mfaBackupCodes').lean();
+          const user = await (User as any).findById(verified.userId).select('-password -mfaSecret -mfaBackupCodes').lean();
           result.user = {
             status: user ? 'found' : 'not_found',
             responseTime: Date.now() - userStartTime,
@@ -149,7 +149,7 @@ export async function GET(request: NextRequest) {
       student_id: '507f1f77bcf86cd799439013'
     };
 
-    const sampleToken = await generateToken(sampleUser);
+    const sampleToken = await generateToken(sampleUser as any);
 
     return NextResponse.json({
       message: 'JWT debug endpoint information',

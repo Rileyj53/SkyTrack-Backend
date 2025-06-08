@@ -65,7 +65,7 @@ export async function GET(
     }
 
     // Verify plane belongs to the school
-    const plane = await Plane.findOne({ 
+    const plane = await (Plane as any).findOne({ 
       _id: params.planeId, 
       school_id: params.schoolId 
     }).lean();
@@ -78,7 +78,7 @@ export async function GET(
     }
 
     // Find the specific record
-    const record = await PlaneRecord.findOne({
+    const record = await (PlaneRecord as any).findOne({
       _id: params.recordId,
       plane_id: params.planeId
     }).lean();
@@ -172,7 +172,7 @@ export async function PUT(
     }
 
     // Verify plane belongs to the school
-    const plane = await Plane.findOne({ 
+    const plane = await (Plane as any).findOne({ 
       _id: params.planeId, 
       school_id: params.schoolId 
     }).lean();
@@ -209,7 +209,7 @@ export async function PUT(
     if (body.attachments !== undefined) updateObj.attachments = body.attachments;
 
     // Update the record
-    const record = await PlaneRecord.findOneAndUpdate(
+    const record = await (PlaneRecord as any).findOneAndUpdate(
       { _id: params.recordId, plane_id: params.planeId },
       updateObj,
       { new: true, runValidators: true }
@@ -307,7 +307,7 @@ export async function DELETE(
     }
 
     // Verify plane belongs to the school
-    const plane = await Plane.findOne({ 
+    const plane = await (Plane as any).findOne({ 
       _id: params.planeId, 
       school_id: params.schoolId 
     }).lean();
@@ -320,7 +320,7 @@ export async function DELETE(
     }
 
     // Delete the record
-    const result = await PlaneRecord.findOneAndDelete({
+    const result = await (PlaneRecord as any).findOneAndDelete({
       _id: params.recordId,
       plane_id: params.planeId
     });

@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Only allow sys_admin to view environment variables
-    if (auth.role !== 'sys_admin') {
+    if ((auth as any).role !== 'sys_admin') {
       return NextResponse.json(
         { error: 'Forbidden: Only system administrators can access environment information' },
         { status: 403 }
@@ -117,8 +117,8 @@ export async function GET(request: NextRequest) {
 
     console.log(JSON.stringify({
       type: 'environment_access',
-      userId: auth.userId,
-      userRole: auth.role,
+      userId: (auth as any).userId,
+      userRole: (auth as any).role,
       timestamp: new Date().toISOString()
     }));
 

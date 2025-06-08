@@ -9,6 +9,7 @@ import mongoose from 'mongoose';
 import Student from '@/models/Student';
 import Program from '@/models/Program';
 import { IProgram } from '@/models/Program';
+import { School } from '@/models/School';
 import crypto from 'crypto';
 
 // POST /api/schools/[schoolId]/students/invite - Invite a new student
@@ -102,7 +103,7 @@ export async function POST(
     await connectDB();
 
     // Check if student with this email already exists in this school
-    const existingStudent = await Student.findOne({
+    const existingStudent = await (Student as any).findOne({
       school_id: params.schoolId,
       contact_email: email.toLowerCase()
     });
@@ -174,40 +175,90 @@ export async function POST(
 
     await student.save();
 
+    // Get school information for personalized email
+    const school = await (School as any).findById(params.schoolId).select('name');
+    const schoolName = school?.name || 'Your Flight School';
+
     // Create invitation email
     const inviteLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/auth/complete-registration?token=${invitationToken}&email=${encodeURIComponent(email)}`;
     
-    const emailSubject = `Welcome to SkyTrack - Complete Your Account Setup`;
+    const emailSubject = `You're Invited to ${schoolName} – Set Up Your Student Account Today`;
     const emailContent = `
-      <h2>Welcome to SkyTrack Flight Training!</h2>
-      <p>You have been invited to join as a student in the <strong>${program}</strong> program.</p>
-      
-      <p>To get started, please click the link below to create your account:</p>
-      
-      <div style="text-align: center; margin: 30px 0;">
-        <a href="${inviteLink}" 
-           style="background-color: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block;">
-          Complete Account Setup
-        </a>
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Welcome to ${schoolName}</title>
+    </head>
+    <body style="margin:0; padding:0; font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height:1.6; color:#333;">
+      <div style="max-width:600px; margin:0 auto; background:#fff;">
+        
+        <!-- Header -->
+        <div style="background:linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding:40px 20px; text-align:center;">
+          <div style="color:#fff; margin:0; font-size:28px; font-weight:300;">Welcome to</div>
+          <div style="color:#fff; margin:10px 0 0; font-size:32px; font-weight:600;">${schoolName}</div>
+        </div>
+    
+        <!-- Main Content -->
+        <div style="padding:40px 20px;">
+          
+          <!-- Intro -->
+          <div style="text-align:center; margin-bottom:30px;">
+            <h3 style="color:#333; font-size:24px; margin-bottom:10px;">🎉 You're Officially Invited!</h3>
+            <p style="color:#666; font-size:16px; margin:0;">You’ve been enrolled in our <strong style="color:#667eea;">${program}</strong> flight training program.</p>
+          </div>
+          
+          <!-- Callout -->
+          <div style="background-color:#f8f9fa; border-left:4px solid #667eea; padding:20px; margin:30px 0; border-radius:0 8px 8px 0;">
+            <p style="margin:0; color:#555; font-size:16px;">
+              <strong>Let’s get started:</strong> Set up your student account to begin your aviation journey.
+            </p>
+          </div>
+          
+          <!-- CTA Button -->
+          <div style="text-align:center; margin:40px 0;">
+            <a href="${inviteLink}" 
+               style="background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                      color:white;
+                      padding:18px 36px;
+                      text-decoration:none;
+                      border-radius:50px;
+                      display:inline-block;
+                      font-weight:600;
+                      font-size:17px;
+                      box-shadow:0 4px 15px rgba(102, 126, 234, 0.3);
+                      transition:all 0.3s ease;">
+              ✈️ Complete Account Setup
+            </a>
+          </div>
+    
+          <!-- Program Info -->
+          <div style="background-color:#fff; border:1px solid #e9ecef; border-radius:12px; padding:25px; margin:30px 0;">
+            <h4 style="color:#333; margin-top:0; font-size:18px;">📋 Program Details</h4>
+            <p style="margin:8px 0; color:#666;"><strong>Program:</strong> ${program}</p>
+            <p style="margin:8px 0; color:#666;"><strong>School:</strong> ${schoolName}</p>
+            <p style="margin:8px 0; color:#666;"><strong>Email:</strong> ${email}</p>
+          </div>
+    
+          <!-- Expiration Notice -->
+          <div style="background:#fff3cd; border:1px solid #ffeaa7; border-radius:8px; padding:15px; margin:30px 0;">
+            <p style="margin:0; color:#856404; font-size:14px;">
+              <strong>⏰ Note:</strong> This invitation link expires in 7 days.
+            </p>
+          </div>
+        </div>
+    
+        <!-- Footer -->
+        <div style="background:#f8f9fa; padding:30px 20px; text-align:center; border-top:1px solid #e9ecef;">
+          <p style="margin:0; color:#6c757d; font-size:14px;">
+            This email was sent by ${schoolName}<br>
+            <span style="font-size:12px;">Powered by SkyTrack Flight Training Management System</span>
+          </p>
+        </div>
       </div>
-      
-      <p><strong>Program Details:</strong></p>
-      <ul>
-        <li><strong>Program:</strong> ${program}</li>
-        <li><strong>Email:</strong> ${email}</li>
-      </ul>
-      
-      <p><strong>What's Next?</strong></p>
-      <ol>
-        <li>Click the link above to create your account</li>
-        <li>Set up your password and profile information</li>
-        <li>Start your flight training journey!</li>
-      </ol>
-      
-      <p><small>This invitation link will expire in 7 days. If you need a new invitation, please contact your flight school.</small></p>
-      
-      <hr>
-      <p><small>This email was sent from SkyTrack Flight Training Management System.</small></p>
+    </body>
+    </html>
     `;
 
     // Send invitation email
@@ -246,7 +297,7 @@ export async function POST(
       console.error('Failed to send invitation email:', emailError);
       
       // Delete the student record if email failed
-      await Student.findByIdAndDelete(student._id);
+      await (Student as any).findByIdAndDelete(student._id);
       
       return NextResponse.json({
         message: 'Failed to send invitation email',

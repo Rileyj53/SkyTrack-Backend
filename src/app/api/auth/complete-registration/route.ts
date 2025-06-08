@@ -61,13 +61,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Try to find student by invitation token and email
-    const student = await Student.findOne({
+    const student = await (Student as any).findOne({
       invitation_token: invitation_token,
       contact_email: email.toLowerCase()
     });
 
     // Try to find instructor by invitation token and email
-    const instructor = await Instructor.findOne({
+    const instructor = await (Instructor as any).findOne({
       invitation_token: invitation_token,
       contact_email: email.toLowerCase()
     });
@@ -100,7 +100,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user with this email already exists
-    const existingUser = await User.findOne({ email: email.toLowerCase() });
+    const existingUser = await (User as any).findOne({ email: email.toLowerCase() });
     if (existingUser) {
       return NextResponse.json(
         { error: 'A user account with this email already exists' },
@@ -163,7 +163,7 @@ export async function POST(request: NextRequest) {
     });
 
     const Model = inviteeType === 'student' ? Student : Instructor;
-    const updatedInvitee = await Model.findByIdAndUpdate(
+    const updatedInvitee = await (Model as any).findByIdAndUpdate(
       invitee._id, 
       { 
         $set: updateData, 
@@ -183,7 +183,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Double-check the update by querying the database
-    const verifyInvitee = await Model.findById(invitee._id);
+    const verifyInvitee = await (Model as any).findById(invitee._id);
     console.log('Verification query result:', {
       inviteeFound: !!verifyInvitee,
       userId: verifyInvitee?.user_id,
@@ -214,7 +214,7 @@ export async function POST(request: NextRequest) {
       tokenPayload.instructor_id = newUser.instructor_id?.toString();
     }
 
-    const token = generateToken(tokenPayload);
+    const token = await generateToken(tokenPayload);
 
     console.log(JSON.stringify({
       type: `${inviteeType}_registration_completed`,
@@ -310,13 +310,13 @@ export async function GET(request: NextRequest) {
     }
 
     // Try to find student by invitation token and email
-    const student = await Student.findOne({
+    const student = await (Student as any).findOne({
       invitation_token: invitation_token,
       contact_email: email.toLowerCase()
     }).populate('school_id', 'name');
 
     // Try to find instructor by invitation token and email
-    const instructor = await Instructor.findOne({
+    const instructor = await (Instructor as any).findOne({
       invitation_token: invitation_token,
       contact_email: email.toLowerCase()
     }).populate('school_id', 'name');
