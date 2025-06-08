@@ -72,6 +72,10 @@ export interface StudentDocument extends Document {
     lastUpdated: Date;
   };
   studentNotes?: StudentNote[];
+  // Invitation fields for student onboarding
+  invitation_token?: string;
+  invitation_sent_at?: Date;
+  invitation_expires_at?: Date;
   created_at: Date;
   updated_at: Date;
 }
@@ -265,7 +269,21 @@ const StudentSchema = new Schema<StudentDocument>(
           type: String
         }
       }]
-    }]
+    }],
+    // Invitation fields for student onboarding
+    invitation_token: {
+      type: String,
+      required: false,
+      index: true
+    },
+    invitation_sent_at: {
+      type: Date,
+      required: false
+    },
+    invitation_expires_at: {
+      type: Date,
+      required: false
+    }
   },
   {
     timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }
@@ -273,7 +291,14 @@ const StudentSchema = new Schema<StudentDocument>(
 );
 
 // Create compound index for school_id and license_number to ensure uniqueness within a school
-StudentSchema.index({ school_id: 1, license_number: 1 }, { unique: true, sparse: true });
+// Use partialFilterExpression to only enforce uniqueness when license_number exists
+StudentSchema.index(
+  { school_id: 1, license_number: 1 }, 
+  { 
+    unique: true, 
+    partialFilterExpression: { license_number: { $ne: null } }
+  }
+);
 
 // Create the model if it doesn't exist, otherwise use the existing one
 const Student = mongoose.models.Student || mongoose.model('Student', StudentSchema);

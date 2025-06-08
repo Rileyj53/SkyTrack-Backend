@@ -4,16 +4,30 @@ import { verifyToken } from '../lib/jwt';
 // Middleware to authenticate requests
 export const authenticateRequest = async (req: NextRequest): Promise<NextResponse | null> => {
   try {
-    // Get the token from the Authorization header
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    // Get JWT token from either Authorization header or cookie
+    let token = req.headers.get('Authorization')?.split(' ')[1];
+    
+    // If no token in header, check cookies
+    if (!token) {
+      const cookieHeader = req.headers.get('cookie');
+      if (cookieHeader) {
+        const cookies = cookieHeader.split(';').reduce((acc, cookie) => {
+          const [name, value] = cookie.trim().split('=');
+          acc[name] = value;
+          return acc;
+        }, {} as Record<string, string>);
+        
+        // Check common cookie names for JWT
+        token = cookies['token'] || cookies['jwt'] || cookies['auth-token'];
+      }
+    }
+
+    if (!token) {
       return NextResponse.json(
         { error: 'Authentication token is required' },
         { status: 401 }
       );
     }
-
-    const token = authHeader.split(' ')[1];
     
     // Verify the token
     const decoded = verifyToken(token);

@@ -33,12 +33,12 @@ interface IHourlyRates {
 // Main instructor interface
 export interface IInstructor extends Document {
   school_id: mongoose.Types.ObjectId;
-  user_id: mongoose.Types.ObjectId;
+  user_id?: mongoose.Types.ObjectId;
   contact_email: string;
-  phone: string;
+  phone?: string;
   certifications: string[];
-  license_number: string;
-  emergency_contact: IEmergencyContact;
+  license_number?: string;
+  emergency_contact?: IEmergencyContact;
   specialties: string[];
   status: string;
   hourlyRates: IHourlyRates;
@@ -51,6 +51,10 @@ export interface IInstructor extends Document {
   availability_time: IAvailabilityTime;
   notes: string;
   documents: IDocument[];
+  // Invitation fields for instructor onboarding
+  invitation_token?: string;
+  invitation_sent_at?: Date;
+  invitation_expires_at?: Date;
   created_at: Date;
   updated_at: Date;
 }
@@ -66,7 +70,8 @@ const InstructorSchema = new Schema<IInstructor>(
     user_id: {
       type: Schema.Types.ObjectId,
       ref: 'User',
-      required: true,
+      required: false,
+      index: true
     },
     contact_email: {
       type: String,
@@ -76,7 +81,7 @@ const InstructorSchema = new Schema<IInstructor>(
     },
     phone: {
       type: String,
-      required: true,
+      required: false,
       trim: true,
     },
     certifications: [{
@@ -85,23 +90,23 @@ const InstructorSchema = new Schema<IInstructor>(
     }],
     license_number: {
       type: String,
-      required: true,
+      required: false,
       trim: true,
     },
     emergency_contact: {
       name: {
         type: String,
-        required: true,
+        required: false,
         trim: true,
       },
       relationship: {
         type: String,
-        required: true,
+        required: false,
         trim: true,
       },
       phone: {
         type: String,
-        required: true,
+        required: false,
         trim: true,
       },
     },
@@ -215,6 +220,21 @@ const InstructorSchema = new Schema<IInstructor>(
         trim: true,
       },
     }],
+    // Invitation fields for instructor onboarding
+    invitation_token: {
+      type: String,
+      required: false,
+      index: true,
+      sparse: true
+    },
+    invitation_sent_at: {
+      type: Date,
+      required: false
+    },
+    invitation_expires_at: {
+      type: Date,
+      required: false
+    }
   },
   {
     timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' },
@@ -223,8 +243,7 @@ const InstructorSchema = new Schema<IInstructor>(
 
 // Create indexes
 InstructorSchema.index({ school_id: 1 });
-InstructorSchema.index({ user_id: 1 }, { unique: true });
-InstructorSchema.index({ license_number: 1 }, { unique: true });
+InstructorSchema.index({ license_number: 1 }, { unique: true, sparse: true });
 InstructorSchema.index({ status: 1 });
 
 // Create and export the model

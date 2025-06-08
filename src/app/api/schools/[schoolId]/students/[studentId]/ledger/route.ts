@@ -1,23 +1,38 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
 import { validateApiKey } from '@/middleware/apiKeyAuth';
-import { authenticateRequest } from '@/lib/auth';
+import { authenticateRequest } from '@/middleware/auth';
 import { verifyToken } from '@/lib/jwt';
 import StudentLedger from '@/models/StudentLedger';
 import Student from '@/models/Student';
-import FlightCharge from '@/models/FlightCharge';
 import { School } from '@/models/School';
 import mongoose from 'mongoose';
 
+// Import FlightCharge to ensure the model is registered
+import '@/models/FlightCharge';
+
 /**
  * Check if user has permission to access a student's ledger
- * @param token JWT token
+ * @param request NextRequest object to extract token from
  * @param schoolId School ID from URL
  * @param studentId Student ID from URL
  * @returns Object with permission result and error if any
  */
-async function checkLedgerAccess(token: string, schoolId: string, studentId: string) {
+async function checkLedgerAccess(request: NextRequest, schoolId: string, studentId: string) {
   try {
+    // Extract token from either Authorization header or cookies
+    let token = null;
+    const authHeader = request.headers.get('Authorization');
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.split(' ')[1];
+    } else {
+      token = request.cookies.get('token')?.value;
+    }
+
+    if (!token) {
+      return { hasAccess: false, error: 'No token provided' };
+    }
+
     const decoded = verifyToken(token);
     if (!decoded) {
       return { hasAccess: false, error: 'Invalid token' };
@@ -73,16 +88,15 @@ export async function GET(
 
     // Authenticate user
     const authResult = await authenticateRequest(request);
-    if ('error' in authResult) {
-      return NextResponse.json({ error: authResult.error }, { status: 401 });
+    if (authResult instanceof NextResponse) {
+      return authResult;
     }
 
     // Connect to database
     await connectDB();
 
     // Check access permissions
-    const token = request.headers.get('Authorization')?.split(' ')[1];
-    const accessCheck = await checkLedgerAccess(token || '', params.schoolId, params.studentId);
+    const accessCheck = await checkLedgerAccess(request, params.schoolId, params.studentId);
     if (!accessCheck.hasAccess) {
       return NextResponse.json(
         { error: accessCheck.error },
@@ -167,15 +181,23 @@ export async function POST(
 
     // Authenticate user
     const authResult = await authenticateRequest(request);
-    if ('error' in authResult) {
-      return NextResponse.json({ error: authResult.error }, { status: 401 });
+    if (authResult instanceof NextResponse) {
+      return authResult;
     }
 
     // Connect to database
     await connectDB();
 
     // Check if user is school admin or system admin (only they can create ledgers)
-    const token = request.headers.get('Authorization')?.split(' ')[1];
+    // Extract token from either Authorization header or cookies
+    let token = null;
+    const authHeader = request.headers.get('Authorization');
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.split(' ')[1];
+    } else {
+      token = request.cookies.get('token')?.value;
+    }
+
     const decoded = verifyToken(token || '');
     if (decoded?.role !== 'school_admin' && decoded?.role !== 'sys_admin') {
       return NextResponse.json(
@@ -325,15 +347,23 @@ export async function PUT(
 
     // Authenticate user
     const authResult = await authenticateRequest(request);
-    if ('error' in authResult) {
-      return NextResponse.json({ error: authResult.error }, { status: 401 });
+    if (authResult instanceof NextResponse) {
+      return authResult;
     }
 
     // Connect to database
     await connectDB();
 
     // Check if user is school admin or system admin (only they can update ledgers)
-    const token = request.headers.get('Authorization')?.split(' ')[1];
+    // Extract token from either Authorization header or cookies
+    let token = null;
+    const authHeader = request.headers.get('Authorization');
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.split(' ')[1];
+    } else {
+      token = request.cookies.get('token')?.value;
+    }
+
     const decoded = verifyToken(token || '');
     if (decoded?.role !== 'school_admin' && decoded?.role !== 'sys_admin') {
       return NextResponse.json(
@@ -469,8 +499,8 @@ export async function DELETE(
 
     // Authenticate user
     const authResult = await authenticateRequest(request);
-    if ('error' in authResult) {
-      return NextResponse.json({ error: authResult.error }, { status: 401 });
+    if (authResult instanceof NextResponse) {
+      return authResult;
     }
 
     // Connect to database
@@ -485,7 +515,15 @@ export async function DELETE(
     }
 
     // Get user role from token for permission check
-    const token = request.headers.get('Authorization')?.split(' ')[1];
+    // Extract token from either Authorization header or cookies
+    let token = null;
+    const authHeader = request.headers.get('Authorization');
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.split(' ')[1];
+    } else {
+      token = request.cookies.get('token')?.value;
+    }
+
     const decoded = verifyToken(token || '');
     const isSystemAdmin = decoded?.role === 'sys_admin';
 

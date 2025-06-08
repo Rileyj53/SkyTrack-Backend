@@ -30,10 +30,26 @@ export async function GET(req: NextRequest, { params }: { params: { schoolId: st
       return NextResponse.json({ error: 'Invalid school ID' }, { status: 400 });
     }
 
-    // Get user role from token
-    const token = req.headers.get('Authorization')?.split(' ')[1];
+    // Get JWT token from either Authorization header or cookie
+    let token = req.headers.get('Authorization')?.split(' ')[1];
+    
+    // If no token in header, check cookies
     if (!token) {
-      return NextResponse.json({ error: 'No token provided' }, { status: 401 });
+      const cookieHeader = req.headers.get('cookie');
+      if (cookieHeader) {
+        const cookies = cookieHeader.split(';').reduce((acc, cookie) => {
+          const [name, value] = cookie.trim().split('=');
+          acc[name] = value;
+          return acc;
+        }, {} as Record<string, string>);
+        
+        // Check common cookie names for JWT
+        token = cookies['token'] || cookies['jwt'] || cookies['auth-token'];
+      }
+    }
+
+    if (!token) {
+      return NextResponse.json({ error: 'No token provided in Authorization header or cookies' }, { status: 401 });
     }
 
     const decoded = verifyToken(token);
@@ -85,16 +101,31 @@ export async function POST(
       );
     }
 
-    // Validate user authentication
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    // Get JWT token from either Authorization header or cookie
+    let token = request.headers.get('Authorization')?.split(' ')[1];
+    
+    // If no token in header, check cookies
+    if (!token) {
+      const cookieHeader = request.headers.get('cookie');
+      if (cookieHeader) {
+        const cookies = cookieHeader.split(';').reduce((acc, cookie) => {
+          const [name, value] = cookie.trim().split('=');
+          acc[name] = value;
+          return acc;
+        }, {} as Record<string, string>);
+        
+        // Check common cookie names for JWT
+        token = cookies['token'] || cookies['jwt'] || cookies['auth-token'];
+      }
+    }
+
+    if (!token) {
       return NextResponse.json(
-        { error: 'Missing or invalid authorization header' },
+        { error: 'No token provided in Authorization header or cookies' },
         { status: 401 }
       );
     }
 
-    const token = authHeader.split(' ')[1];
     const decoded = verifyToken(token);
     if (!decoded) {
       return NextResponse.json(

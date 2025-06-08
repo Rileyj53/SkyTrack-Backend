@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
 import { validateApiKey } from '@/middleware/apiKeyAuth';
-import { authenticateRequest } from '@/lib/auth';
+import { authenticateRequest } from '@/middleware/auth';
 import { verifyToken } from '@/lib/jwt';
 import StudentLedger from '@/models/StudentLedger';
-import FlightCharge from '@/models/FlightCharge';
 import Student from '@/models/Student';
 import mongoose from 'mongoose';
+
+// Import FlightCharge to ensure the model is registered
+import '@/models/FlightCharge';
 
 // POST /api/schools/[schoolId]/students/[studentId]/ledger/recalculate - Recalculate student ledger balance
 export async function POST(
@@ -16,14 +18,14 @@ export async function POST(
   try {
     // Validate API key
     const apiKeyResult = await validateApiKey(request);
-    if ('error' in apiKeyResult) {
-      return NextResponse.json({ error: apiKeyResult.error }, { status: 401 });
+    if (apiKeyResult instanceof NextResponse) {
+      return apiKeyResult;
     }
 
     // Authenticate user
     const authResult = await authenticateRequest(request);
-    if ('error' in authResult) {
-      return NextResponse.json({ error: authResult.error }, { status: 401 });
+    if (authResult instanceof NextResponse) {
+      return authResult;
     }
 
     // Connect to database
@@ -67,13 +69,19 @@ export async function POST(
     const oldBalance = ledger.balance;
 
     // Get all approved charges for this student
-    const allApprovedCharges = await (FlightCharge as any).find({
+    const allApprovedCharges = await mongoose.model('FlightCharge').find({
       _id: { $in: ledger.charges },
       status: 'approved'
     }).select('amount');
 
-    // Calculate the correct balance from all approved charges
-    const correctBalance = allApprovedCharges.reduce((total: number, charge: any) => total + charge.amount, 0);
+    // Calculate total charges
+    const totalCharges = allApprovedCharges.reduce((total: number, charge: any) => total + charge.amount, 0);
+    
+    // Calculate total payments
+    const totalPayments = ledger.payments.reduce((total: number, payment: any) => total + payment.amount, 0);
+    
+    // Calculate the correct balance: Total Charges - Total Payments
+    const correctBalance = totalCharges - totalPayments;
     
     // Update the balance
     ledger.balance = correctBalance;
@@ -83,6 +91,7 @@ export async function POST(
     const balanceDifference = correctBalance - oldBalance;
     
     console.log(`Manual recalculation for student ${params.studentId}: Old balance: ${oldBalance}, New balance: ${correctBalance}, Difference: ${balanceDifference}`);
+    console.log(`  - Total charges: ${totalCharges}, Total payments: ${totalPayments}`);
     
     return NextResponse.json({
       message: 'Ledger balance recalculated successfully',
@@ -90,8 +99,11 @@ export async function POST(
         old_balance: oldBalance,
         new_balance: correctBalance,
         difference: balanceDifference,
+        total_charges: totalCharges,
+        total_payments: totalPayments,
         approved_charges_count: allApprovedCharges.length,
-        total_charges_in_ledger: ledger.charges.length
+        total_charges_in_ledger: ledger.charges.length,
+        payments_count: ledger.payments.length
       }
     });
 

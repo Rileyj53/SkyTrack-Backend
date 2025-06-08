@@ -77,7 +77,24 @@ export const hasPermission = (role: string, resource: Resource, permission: Perm
 
 // Middleware to check if user has access to a school
 export const checkSchoolAccess = async (req: NextRequest, schoolId: string): Promise<boolean> => {
-  const token = req.headers.get('Authorization')?.split(' ')[1];
+  // Get JWT token from either Authorization header or cookie
+  let token = req.headers.get('Authorization')?.split(' ')[1];
+  
+  // If no token in header, check cookies
+  if (!token) {
+    const cookieHeader = req.headers.get('cookie');
+    if (cookieHeader) {
+      const cookies = cookieHeader.split(';').reduce((acc, cookie) => {
+        const [name, value] = cookie.trim().split('=');
+        acc[name] = value;
+        return acc;
+      }, {} as Record<string, string>);
+      
+      // Check common cookie names for JWT
+      token = cookies['token'] || cookies['jwt'] || cookies['auth-token'];
+    }
+  }
+  
   if (!token) return false;
   
   const decoded = verifyToken(token);
@@ -100,7 +117,24 @@ export const checkSchoolAccess = async (req: NextRequest, schoolId: string): Pro
 
 // Middleware to check if user has access to a student
 export const checkStudentAccess = async (req: NextRequest, studentId: string): Promise<boolean> => {
-  const token = req.headers.get('Authorization')?.split(' ')[1];
+  // Get JWT token from either Authorization header or cookie
+  let token = req.headers.get('Authorization')?.split(' ')[1];
+  
+  // If no token in header, check cookies
+  if (!token) {
+    const cookieHeader = req.headers.get('cookie');
+    if (cookieHeader) {
+      const cookies = cookieHeader.split(';').reduce((acc, cookie) => {
+        const [name, value] = cookie.trim().split('=');
+        acc[name] = value;
+        return acc;
+      }, {} as Record<string, string>);
+      
+      // Check common cookie names for JWT
+      token = cookies['token'] || cookies['jwt'] || cookies['auth-token'];
+    }
+  }
+  
   if (!token) return false;
   
   const decoded = verifyToken(token);
@@ -133,7 +167,24 @@ export const checkStudentAccess = async (req: NextRequest, studentId: string): P
 
 // Middleware to check if user has access to an instructor
 export const checkInstructorAccess = async (req: NextRequest, instructorId: string): Promise<boolean> => {
-  const token = req.headers.get('Authorization')?.split(' ')[1];
+  // Get JWT token from either Authorization header or cookie
+  let token = req.headers.get('Authorization')?.split(' ')[1];
+  
+  // If no token in header, check cookies
+  if (!token) {
+    const cookieHeader = req.headers.get('cookie');
+    if (cookieHeader) {
+      const cookies = cookieHeader.split(';').reduce((acc, cookie) => {
+        const [name, value] = cookie.trim().split('=');
+        acc[name] = value;
+        return acc;
+      }, {} as Record<string, string>);
+      
+      // Check common cookie names for JWT
+      token = cookies['token'] || cookies['jwt'] || cookies['auth-token'];
+    }
+  }
+  
   if (!token) return false;
   
   const decoded = verifyToken(token);
@@ -168,7 +219,24 @@ export const checkInstructorAccess = async (req: NextRequest, instructorId: stri
 
 // Middleware to check if user has access to a plane
 export const checkPlaneAccess = async (req: NextRequest, planeId: string): Promise<boolean> => {
-  const token = req.headers.get('Authorization')?.split(' ')[1];
+  // Get JWT token from either Authorization header or cookie
+  let token = req.headers.get('Authorization')?.split(' ')[1];
+  
+  // If no token in header, check cookies
+  if (!token) {
+    const cookieHeader = req.headers.get('cookie');
+    if (cookieHeader) {
+      const cookies = cookieHeader.split(';').reduce((acc, cookie) => {
+        const [name, value] = cookie.trim().split('=');
+        acc[name] = value;
+        return acc;
+      }, {} as Record<string, string>);
+      
+      // Check common cookie names for JWT
+      token = cookies['token'] || cookies['jwt'] || cookies['auth-token'];
+    }
+  }
+  
   if (!token) return false;
   
   const decoded = verifyToken(token);
@@ -208,10 +276,25 @@ export async function checkUserAccess(
   targetUserId: string
 ): Promise<boolean> {
   try {
-    // Get the token from the Authorization header
-    const authHeader = request.headers.get('Authorization');
-    const token = authHeader?.split(' ')[1] || '';
-    const decoded = verifyToken(token);
+    // Get JWT token from either Authorization header or cookie
+    let token = request.headers.get('Authorization')?.split(' ')[1];
+    
+    // If no token in header, check cookies
+    if (!token) {
+      const cookieHeader = request.headers.get('cookie');
+      if (cookieHeader) {
+        const cookies = cookieHeader.split(';').reduce((acc, cookie) => {
+          const [name, value] = cookie.trim().split('=');
+          acc[name] = value;
+          return acc;
+        }, {} as Record<string, string>);
+        
+        // Check common cookie names for JWT
+        token = cookies['token'] || cookies['jwt'] || cookies['auth-token'];
+      }
+    }
+    
+    const decoded = verifyToken(token || '');
     
     if (!decoded) {
       return false;
@@ -261,7 +344,24 @@ export const checkPermission = async (
   resource: Resource, 
   permission: Permission
 ): Promise<boolean> => {
-  const token = req.headers.get('Authorization')?.split(' ')[1];
+  // Get JWT token from either Authorization header or cookie
+  let token = req.headers.get('Authorization')?.split(' ')[1];
+  
+  // If no token in header, check cookies
+  if (!token) {
+    const cookieHeader = req.headers.get('cookie');
+    if (cookieHeader) {
+      const cookies = cookieHeader.split(';').reduce((acc, cookie) => {
+        const [name, value] = cookie.trim().split('=');
+        acc[name] = value;
+        return acc;
+      }, {} as Record<string, string>);
+      
+      // Check common cookie names for JWT
+      token = cookies['token'] || cookies['jwt'] || cookies['auth-token'];
+    }
+  }
+  
   if (!token) return false;
   
   const decoded = verifyToken(token);

@@ -27,16 +27,31 @@ export async function DELETE(
       return authResult;
     }
 
-    // Extract token from Authorization header
-    const authHeader = request.headers.get('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
+    // Get JWT token from either Authorization header or cookie
+    let token = request.headers.get('Authorization')?.split(' ')[1];
+    
+    // If no token in header, check cookies
+    if (!token) {
+      const cookieHeader = request.headers.get('cookie');
+      if (cookieHeader) {
+        const cookies = cookieHeader.split(';').reduce((acc, cookie) => {
+          const [name, value] = cookie.trim().split('=');
+          acc[name] = value;
+          return acc;
+        }, {} as Record<string, string>);
+        
+        // Check common cookie names for JWT
+        token = cookies['token'] || cookies['jwt'] || cookies['auth-token'];
+      }
+    }
+
+    if (!token) {
       return NextResponse.json(
-        { error: 'Invalid authorization header' },
+        { error: 'No token provided in Authorization header or cookies' },
         { status: 401 }
       );
     }
 
-    const token = authHeader.split(' ')[1];
     const decoded = verifyToken(token);
 
     // Check if user has sys_admin role or is a school admin/instructor
@@ -108,16 +123,31 @@ export async function PUT(
       return authResult;
     }
 
-    // Extract token from Authorization header
-    const authHeader = request.headers.get('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
+    // Get JWT token from either Authorization header or cookie
+    let token = request.headers.get('Authorization')?.split(' ')[1];
+    
+    // If no token in header, check cookies
+    if (!token) {
+      const cookieHeader = request.headers.get('cookie');
+      if (cookieHeader) {
+        const cookies = cookieHeader.split(';').reduce((acc, cookie) => {
+          const [name, value] = cookie.trim().split('=');
+          acc[name] = value;
+          return acc;
+        }, {} as Record<string, string>);
+        
+        // Check common cookie names for JWT
+        token = cookies['token'] || cookies['jwt'] || cookies['auth-token'];
+      }
+    }
+
+    if (!token) {
       return NextResponse.json(
-        { error: 'Invalid authorization header' },
+        { error: 'No token provided in Authorization header or cookies' },
         { status: 401 }
       );
     }
 
-    const token = authHeader.split(' ')[1];
     const decoded = verifyToken(token);
 
     // Validate school ID and student ID
@@ -233,16 +263,31 @@ export async function GET(
       return authResult;
     }
 
-    // Extract token from Authorization header
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    // Get JWT token from either Authorization header or cookie
+    let token = request.headers.get('Authorization')?.split(' ')[1];
+    
+    // If no token in header, check cookies
+    if (!token) {
+      const cookieHeader = request.headers.get('cookie');
+      if (cookieHeader) {
+        const cookies = cookieHeader.split(';').reduce((acc, cookie) => {
+          const [name, value] = cookie.trim().split('=');
+          acc[name] = value;
+          return acc;
+        }, {} as Record<string, string>);
+        
+        // Check common cookie names for JWT
+        token = cookies['token'] || cookies['jwt'] || cookies['auth-token'];
+      }
+    }
+
+    if (!token) {
       return NextResponse.json(
-        { error: 'No token provided' },
+        { error: 'No token provided in Authorization header or cookies' },
         { status: 401 }
       );
     }
 
-    const token = authHeader.split(' ')[1];
     const decoded = verifyToken(token);
 
     if (!decoded) {

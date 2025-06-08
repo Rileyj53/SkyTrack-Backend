@@ -68,9 +68,10 @@ export async function middleware(request: NextRequest) {
     }
     response = copyHeaders(corsResponse, response);
     
-    // Apply CSRF protection to all requests except login and register
+    // Apply CSRF protection to all requests except login, register, and complete-registration
     if (!pathname.startsWith('/api/auth/login') && 
         !pathname.startsWith('/api/auth/register') && 
+        !pathname.startsWith('/api/auth/complete-registration') && 
         !pathname.includes('/flight-logs/today')) {
       const csrfResponse = csrf(request);
       if (csrfResponse.status !== 200) {
