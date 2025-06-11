@@ -58,19 +58,20 @@ export async function GET(
       id: plane._id,
       registration: plane.registration,
       type: plane.type,
-      model: plane.model,
+      aircraftModel: plane.aircraftModel,
       year: plane.year,
       engineHours: plane.engineHours,
       tach_time: plane.tach_time,
       hopps_time: plane.hopps_time,
-      lastMaintenance: plane.lastMaintenance,
-      nextMaintenance: plane.nextMaintenance,
+      last_maintenance: plane.last_maintenance,
+      next_maintenance: plane.next_maintenance,
       status: plane.status,
       hourlyRates: plane.hourlyRates,
       specialRates: plane.specialRates,
       utilization: plane.utilization,
       location: plane.location,
-      notes: plane.notes
+      notes: plane.notes,
+      total_hours: plane.total_hours
     }));
     
     return NextResponse.json({
@@ -118,7 +119,7 @@ export async function POST(
     const requiredFields = [
       'registration',
       'type',
-      'model',
+      'aircraftModel',
       'year',
       'engineHours',
       'status',
@@ -175,19 +176,20 @@ export async function POST(
       id: plane._id,
       registration: plane.registration,
       type: plane.type,
-      model: plane.model,
+      aircraftModel: plane.aircraftModel,
       year: plane.year,
       engineHours: plane.engineHours,
       tach_time: plane.tach_time,
       hopps_time: plane.hopps_time,
-      lastMaintenance: plane.lastMaintenance,
-      nextMaintenance: plane.nextMaintenance,
+      last_maintenance: plane.last_maintenance,
+      next_maintenance: plane.next_maintenance,
       status: plane.status,
       hourlyRates: plane.hourlyRates,
       specialRates: plane.specialRates,
       utilization: plane.utilization,
       location: plane.location,
-      notes: plane.notes
+      notes: plane.notes,
+      total_hours: plane.total_hours
     };
 
     return NextResponse.json(

@@ -8141,6 +8141,403 @@
             ]
         },
         {
+            "name": "Schools",
+            "item": [{
+                    "name": "List All Schools",
+                    "request": {
+                        "method": "GET",
+                        "header": [{
+                                "key": "X-CSRF-Token",
+                                "value": "{{csrfToken}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-API-Key",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseURL}}/api/schools",
+                            "host": [
+                                "{{baseURL}}"
+                            ],
+                            "path": [
+                                "api",
+                                "schools"
+                            ]
+                        },
+                        "description": "Get all schools in the system. Only available to system administrators."
+                    },
+                    "response": [{
+                        "name": "200 Success",
+                        "originalRequest": {
+                            "method": "GET",
+                            "header": [{
+                                    "key": "X-CSRF-Token",
+                                    "value": "{{csrfToken}}",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "X-API-Key",
+                                    "value": "{{apiKey}}",
+                                    "type": "text"
+                                }
+                            ],
+                            "url": {
+                                "raw": "{{baseURL}}/api/schools",
+                                "host": [
+                                    "{{baseURL}}"
+                                ],
+                                "path": [
+                                    "api",
+                                    "schools"
+                                ]
+                            }
+                        },
+                        "status": "OK",
+                        "code": 200,
+                        "_postman_previewlanguage": "json",
+                        "header": [{
+                            "key": "Content-Type",
+                            "value": "application/json"
+                        }],
+                        "cookie": [],
+                        "body": "{\n  \"status\": \"success\",\n  \"data\": [\n    {\n      \"_id\": \"{{schoolId}}\",\n      \"name\": \"Example Flight Academy\",\n      \"location\": \"KORD - Chicago O'Hare\",\n      \"contact_info\": {\n        \"phone\": \"+1-555-0123\",\n        \"email\": \"info@exampleflightacademy.com\",\n        \"address\": \"123 Aviation Blvd, Chicago, IL 60666\"\n      },\n      \"subscription_plan\": \"premium\",\n      \"subscription_status\": \"active\",\n      \"payment_info\": {\n        \"plan_type\": \"per_transaction\",\n        \"transaction_fee\": 2.95,\n        \"monthly_base_fee\": 0,\n        \"billing_cycle\": \"monthly\",\n        \"last_usage_report_date\": \"2024-01-31T23:59:59.000Z\",\n        \"current_billing_cycle_start\": \"2024-02-01T00:00:00.000Z\",\n        \"current_billing_cycle_end\": \"2024-02-29T23:59:59.000Z\",\n        \"billing_notes\": \"Standard per-transaction billing\"\n      },\n      \"features\": {\n        \"advanced_analytics\": true,\n        \"mobile_app_access\": true,\n        \"api_access\": true,\n        \"custom_branding\": false\n      },\n      \"settings\": {\n        \"timezone\": \"America/Chicago\",\n        \"currency\": \"USD\",\n        \"date_format\": \"MM/DD/YYYY\"\n      },\n      \"created_at\": \"2024-01-15T08:30:00.000Z\",\n      \"updated_at\": \"2024-01-20T14:22:00.000Z\"\n    }\n  ]\n}"
+                    }]
+                },
+                {
+                    "name": "Create School",
+                    "request": {
+                        "method": "POST",
+                        "header": [{
+                                "key": "X-CSRF-Token",
+                                "value": "{{csrfToken}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-API-Key",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"New Flight Academy\",\n  \"location\": \"KJFK - John F. Kennedy International\",\n  \"contact_info\": {\n    \"phone\": \"+1-555-0789\",\n    \"email\": \"contact@newflightacademy.com\",\n    \"address\": \"456 Terminal Dr, Queens, NY 11430\"\n  },\n  \"subscription_plan\": \"basic\",\n  \"subscription_status\": \"active\",\n  \"payment_info\": {\n    \"plan_type\": \"monthly_flat\",\n    \"transaction_fee\": 0,\n    \"monthly_base_fee\": 99.99,\n    \"billing_cycle\": \"monthly\"\n  },\n  \"features\": {\n    \"advanced_analytics\": false,\n    \"mobile_app_access\": true,\n    \"api_access\": false,\n    \"custom_branding\": false\n  },\n  \"settings\": {\n    \"timezone\": \"America/New_York\",\n    \"currency\": \"USD\",\n    \"date_format\": \"MM/DD/YYYY\"\n  }\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{baseURL}}/api/schools",
+                            "host": [
+                                "{{baseURL}}"
+                            ],
+                            "path": [
+                                "api",
+                                "schools"
+                            ]
+                        },
+                        "description": "Create a new school. Available to system administrators and school administrators."
+                    },
+                    "response": [{
+                        "name": "201 Created",
+                        "originalRequest": {
+                            "method": "POST",
+                            "header": [{
+                                    "key": "X-CSRF-Token",
+                                    "value": "{{csrfToken}}",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "X-API-Key",
+                                    "value": "{{apiKey}}",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "Content-Type",
+                                    "value": "application/json"
+                                }
+                            ],
+                            "body": {
+                                "mode": "raw",
+                                "raw": "{\n  \"name\": \"New Flight Academy\",\n  \"location\": \"KJFK - John F. Kennedy International\",\n  \"contact_info\": {\n    \"phone\": \"+1-555-0789\",\n    \"email\": \"contact@newflightacademy.com\",\n    \"address\": \"456 Terminal Dr, Queens, NY 11430\"\n  },\n  \"subscription_plan\": \"basic\"\n}",
+                                "options": {
+                                    "raw": {
+                                        "language": "json"
+                                    }
+                                }
+                            },
+                            "url": {
+                                "raw": "{{baseURL}}/api/schools",
+                                "host": [
+                                    "{{baseURL}}"
+                                ],
+                                "path": [
+                                    "api",
+                                    "schools"
+                                ]
+                            }
+                        },
+                        "status": "Created",
+                        "code": 201,
+                        "_postman_previewlanguage": "json",
+                        "header": [{
+                            "key": "Content-Type",
+                            "value": "application/json"
+                        }],
+                        "cookie": [],
+                        "body": "{\n  \"message\": \"School created successfully\",\n  \"school\": {\n    \"_id\": \"{{schoolId}}\",\n    \"name\": \"New Flight Academy\",\n    \"location\": \"KJFK - John F. Kennedy International\",\n    \"contact_info\": {\n      \"phone\": \"+1-555-0789\",\n      \"email\": \"contact@newflightacademy.com\",\n      \"address\": \"456 Terminal Dr, Queens, NY 11430\"\n    },\n    \"subscription_plan\": \"basic\",\n    \"subscription_status\": \"active\",\n    \"created_at\": \"2024-01-20T15:30:00.000Z\",\n    \"updated_at\": \"2024-01-20T15:30:00.000Z\"\n  }\n}"
+                    }]
+                },
+                {
+                    "name": "Get School by ID",
+                    "request": {
+                        "method": "GET",
+                        "header": [{
+                                "key": "X-CSRF-Token",
+                                "value": "{{csrfToken}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-API-Key",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseURL}}/api/schools/:schoolId",
+                            "host": [
+                                "{{baseURL}}"
+                            ],
+                            "path": [
+                                "api",
+                                "schools",
+                                ":schoolId"
+                            ],
+                            "variable": [{
+                                "key": "schoolId",
+                                "value": "{{schoolId}}",
+                                "description": "ObjectId of the school"
+                            }]
+                        },
+                        "description": "Get a specific school by ID. Users can only access schools they have permission for."
+                    },
+                    "response": [{
+                        "name": "200 Success",
+                        "originalRequest": {
+                            "method": "GET",
+                            "header": [{
+                                    "key": "X-CSRF-Token",
+                                    "value": "{{csrfToken}}",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "X-API-Key",
+                                    "value": "{{apiKey}}",
+                                    "type": "text"
+                                }
+                            ],
+                            "url": {
+                                "raw": "{{baseURL}}/api/schools/{{schoolId}}",
+                                "host": [
+                                    "{{baseURL}}"
+                                ],
+                                "path": [
+                                    "api",
+                                    "schools",
+                                    "{{schoolId}}"
+                                ]
+                            }
+                        },
+                        "status": "OK",
+                        "code": 200,
+                        "_postman_previewlanguage": "json",
+                        "header": [{
+                            "key": "Content-Type",
+                            "value": "application/json"
+                        }],
+                        "cookie": [],
+                        "body": "{\n  \"school\": {\n    \"_id\": \"{{schoolId}}\",\n    \"name\": \"Example Flight Academy\",\n    \"location\": \"KORD - Chicago O'Hare\",\n    \"contact_info\": {\n      \"phone\": \"+1-555-0123\",\n      \"email\": \"info@exampleflightacademy.com\",\n      \"address\": \"123 Aviation Blvd, Chicago, IL 60666\"\n    },\n    \"subscription_plan\": \"premium\",\n    \"subscription_status\": \"active\",\n    \"payment_info\": {\n      \"plan_type\": \"per_transaction\",\n      \"transaction_fee\": 2.95,\n      \"monthly_base_fee\": 0,\n      \"billing_cycle\": \"monthly\",\n      \"last_usage_report_date\": \"2024-01-31T23:59:59.000Z\",\n      \"current_billing_cycle_start\": \"2024-02-01T00:00:00.000Z\",\n      \"current_billing_cycle_end\": \"2024-02-29T23:59:59.000Z\",\n      \"billing_notes\": \"Standard per-transaction billing\"\n    },\n    \"features\": {\n      \"advanced_analytics\": true,\n      \"mobile_app_access\": true,\n      \"api_access\": true,\n      \"custom_branding\": false\n    },\n    \"settings\": {\n      \"timezone\": \"America/Chicago\",\n      \"currency\": \"USD\",\n      \"date_format\": \"MM/DD/YYYY\"\n    },\n    \"created_at\": \"2024-01-15T08:30:00.000Z\",\n    \"updated_at\": \"2024-01-20T14:22:00.000Z\"\n  }\n}"
+                    }]
+                },
+                {
+                    "name": "Update School",
+                    "request": {
+                        "method": "PUT",
+                        "header": [{
+                                "key": "X-CSRF-Token",
+                                "value": "{{csrfToken}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-API-Key",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"Updated Flight Academy\",\n  \"location\": \"KORD - Chicago O'Hare International\",\n  \"contact_info\": {\n    \"phone\": \"+1-555-0456\",\n    \"email\": \"updated@flightacademy.com\",\n    \"address\": \"789 Updated Blvd, Chicago, IL 60666\"\n  },\n  \"subscription_plan\": \"enterprise\",\n  \"features\": {\n    \"advanced_analytics\": true,\n    \"mobile_app_access\": true,\n    \"api_access\": true,\n    \"custom_branding\": true\n  }\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{baseURL}}/api/schools/:schoolId",
+                            "host": [
+                                "{{baseURL}}"
+                            ],
+                            "path": [
+                                "api",
+                                "schools",
+                                ":schoolId"
+                            ],
+                            "variable": [{
+                                "key": "schoolId",
+                                "value": "{{schoolId}}",
+                                "description": "ObjectId of the school"
+                            }]
+                        },
+                        "description": "Update a school. System administrators can update any school, school administrators can only update their own school."
+                    },
+                    "response": [{
+                        "name": "200 Updated",
+                        "originalRequest": {
+                            "method": "PUT",
+                            "header": [{
+                                    "key": "X-CSRF-Token",
+                                    "value": "{{csrfToken}}",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "X-API-Key",
+                                    "value": "{{apiKey}}",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "Content-Type",
+                                    "value": "application/json"
+                                }
+                            ],
+                            "body": {
+                                "mode": "raw",
+                                "raw": "{\n  \"name\": \"Updated Flight Academy\",\n  \"subscription_plan\": \"enterprise\"\n}",
+                                "options": {
+                                    "raw": {
+                                        "language": "json"
+                                    }
+                                }
+                            },
+                            "url": {
+                                "raw": "{{baseURL}}/api/schools/{{schoolId}}",
+                                "host": [
+                                    "{{baseURL}}"
+                                ],
+                                "path": [
+                                    "api",
+                                    "schools",
+                                    "{{schoolId}}"
+                                ]
+                            }
+                        },
+                        "status": "OK",
+                        "code": 200,
+                        "_postman_previewlanguage": "json",
+                        "header": [{
+                            "key": "Content-Type",
+                            "value": "application/json"
+                        }],
+                        "cookie": [],
+                        "body": "{\n  \"status\": \"success\",\n  \"message\": \"School updated successfully\",\n  \"data\": {\n    \"_id\": \"{{schoolId}}\",\n    \"name\": \"Updated Flight Academy\",\n    \"location\": \"KORD - Chicago O'Hare International\",\n    \"contact_info\": {\n      \"phone\": \"+1-555-0456\",\n      \"email\": \"updated@flightacademy.com\",\n      \"address\": \"789 Updated Blvd, Chicago, IL 60666\"\n    },\n    \"subscription_plan\": \"enterprise\",\n    \"subscription_status\": \"active\",\n    \"features\": {\n      \"advanced_analytics\": true,\n      \"mobile_app_access\": true,\n      \"api_access\": true,\n      \"custom_branding\": true\n    },\n    \"created_at\": \"2024-01-15T08:30:00.000Z\",\n    \"updated_at\": \"2024-01-20T16:45:00.000Z\"\n  }\n}"
+                    }]
+                },
+                {
+                    "name": "Delete School",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [{
+                                "key": "X-CSRF-Token",
+                                "value": "{{csrfToken}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-API-Key",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseURL}}/api/schools/:schoolId",
+                            "host": [
+                                "{{baseURL}}"
+                            ],
+                            "path": [
+                                "api",
+                                "schools",
+                                ":schoolId"
+                            ],
+                            "variable": [{
+                                "key": "schoolId",
+                                "value": "{{schoolId}}",
+                                "description": "ObjectId of the school"
+                            }]
+                        },
+                        "description": "Delete a school. Only available to system administrators."
+                    },
+                    "response": [{
+                        "name": "200 Deleted",
+                        "originalRequest": {
+                            "method": "DELETE",
+                            "header": [{
+                                    "key": "X-CSRF-Token",
+                                    "value": "{{csrfToken}}",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "X-API-Key",
+                                    "value": "{{apiKey}}",
+                                    "type": "text"
+                                }
+                            ],
+                            "url": {
+                                "raw": "{{baseURL}}/api/schools/{{schoolId}}",
+                                "host": [
+                                    "{{baseURL}}"
+                                ],
+                                "path": [
+                                    "api",
+                                    "schools",
+                                    "{{schoolId}}"
+                                ]
+                            }
+                        },
+                        "status": "OK",
+                        "code": 200,
+                        "_postman_previewlanguage": "json",
+                        "header": [{
+                            "key": "Content-Type",
+                            "value": "application/json"
+                        }],
+                        "cookie": [],
+                        "body": "{\n  \"status\": \"success\",\n  \"message\": \"School deleted successfully\"\n}"
+                    }]
+                }
+            ]
+        },
+        {
             "name": "School Billing Usage",
             "item": [{
                     "name": "Get All Billing Usage Records",
