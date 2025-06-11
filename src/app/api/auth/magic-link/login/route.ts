@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Set CSRF token cookie
-    response.cookies.set('csrf-token', JSON.stringify(csrfToken), {
+    response.cookies.set('csrf-token', csrfToken.token, {
       httpOnly: false, // Allow JavaScript to read this cookie
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',

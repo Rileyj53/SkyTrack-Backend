@@ -31,7 +31,7 @@ export const csrf = (request: NextRequest) => {
   }
 
   // Get CSRF token from header
-  const csrfToken = request.headers.get('x-csrf-token');
+  const csrfToken = request.headers.get('X-CSRF-Token');
   if (!csrfToken) {
     return NextResponse.json(
       { error: 'CSRF token is required' },

@@ -8139,6 +8139,672 @@
                     ]
                 }
             ]
+        },
+        {
+            "name": "School Billing Usage",
+            "item": [{
+                    "name": "Get All Billing Usage Records",
+                    "request": {
+                        "method": "GET",
+                        "header": [{
+                                "key": "X-CSRF-Token",
+                                "value": "{{csrfToken}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-API-Key",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseURL}}/api/school-billing-usage?school_id={{schoolId}}&month=2025-06&billed=false&limit=50&skip=0",
+                            "host": [
+                                "{{baseURL}}"
+                            ],
+                            "path": [
+                                "api",
+                                "school-billing-usage"
+                            ],
+                            "query": [{
+                                    "key": "school_id",
+                                    "value": "{{schoolId}}",
+                                    "description": "Filter by school ID"
+                                },
+                                {
+                                    "key": "month",
+                                    "value": "2025-06",
+                                    "description": "Filter by month (YYYY-MM format)"
+                                },
+                                {
+                                    "key": "billed",
+                                    "value": "false",
+                                    "description": "Filter by billed status (true/false)"
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "50",
+                                    "description": "Number of records to return"
+                                },
+                                {
+                                    "key": "skip",
+                                    "value": "0",
+                                    "description": "Number of records to skip"
+                                }
+                            ]
+                        },
+                        "description": "Get all billing usage records with optional filters for school_id, month, billed status, pagination"
+                    },
+                    "response": [{
+                        "name": "200 Success",
+                        "originalRequest": {
+                            "method": "GET",
+                            "header": [{
+                                    "key": "X-CSRF-Token",
+                                    "value": "{{csrfToken}}",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "X-API-Key",
+                                    "value": "{{apiKey}}",
+                                    "type": "text"
+                                }
+                            ],
+                            "url": {
+                                "raw": "{{baseURL}}/api/school-billing-usage",
+                                "host": [
+                                    "{{baseURL}}"
+                                ],
+                                "path": [
+                                    "api",
+                                    "school-billing-usage"
+                                ]
+                            }
+                        },
+                        "status": "OK",
+                        "code": 200,
+                        "_postman_previewlanguage": "json",
+                        "header": [{
+                            "key": "Content-Type",
+                            "value": "application/json"
+                        }],
+                        "cookie": [],
+                        "body": "[\n  {\n    \"_id\": \"{{recordId}}\",\n    \"school_id\": {\n      \"_id\": \"{{schoolId}}\",\n      \"name\": \"Example Flight School\"\n    },\n    \"month\": \"2025-06\",\n    \"total_transactions\": 82,\n    \"stripe_transactions\": 57,\n    \"external_transactions\": 25,\n    \"last_updated\": \"2025-06-30T23:59:59.000Z\",\n    \"billed\": false,\n    \"stripe_invoice_id\": null,\n    \"createdAt\": \"2025-06-01T00:00:00.000Z\",\n    \"updatedAt\": \"2025-06-30T23:59:59.000Z\"\n  }\n]"
+                    }]
+                },
+                {
+                    "name": "Create or Update Billing Usage Record",
+                    "request": {
+                        "method": "POST",
+                        "header": [{
+                                "key": "X-CSRF-Token",
+                                "value": "{{csrfToken}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-API-Key",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"school_id\": \"{{schoolId}}\",\n  \"month\": \"2025-06\",\n  \"total_transactions\": 82,\n  \"stripe_transactions\": 57,\n  \"billed\": false,\n  \"stripe_invoice_id\": null\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{baseURL}}/api/school-billing-usage",
+                            "host": [
+                                "{{baseURL}}"
+                            ],
+                            "path": [
+                                "api",
+                                "school-billing-usage"
+                            ]
+                        },
+                        "description": "Create a new billing usage record or update an existing one (upsert). External transactions are automatically calculated."
+                    },
+                    "response": [{
+                        "name": "201 Created",
+                        "originalRequest": {
+                            "method": "POST",
+                            "header": [{
+                                    "key": "X-CSRF-Token",
+                                    "value": "{{csrfToken}}",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "X-API-Key",
+                                    "value": "{{apiKey}}",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "Content-Type",
+                                    "value": "application/json"
+                                }
+                            ],
+                            "body": {
+                                "mode": "raw",
+                                "raw": "{\n  \"school_id\": \"{{schoolId}}\",\n  \"month\": \"2025-06\",\n  \"total_transactions\": 82,\n  \"stripe_transactions\": 57\n}",
+                                "options": {
+                                    "raw": {
+                                        "language": "json"
+                                    }
+                                }
+                            },
+                            "url": {
+                                "raw": "{{baseURL}}/api/school-billing-usage",
+                                "host": [
+                                    "{{baseURL}}"
+                                ],
+                                "path": [
+                                    "api",
+                                    "school-billing-usage"
+                                ]
+                            }
+                        },
+                        "status": "Created",
+                        "code": 201,
+                        "_postman_previewlanguage": "json",
+                        "header": [{
+                            "key": "Content-Type",
+                            "value": "application/json"
+                        }],
+                        "cookie": [],
+                        "body": "{\n  \"_id\": \"{{recordId}}\",\n  \"school_id\": {\n    \"_id\": \"{{schoolId}}\",\n    \"name\": \"Example Flight School\"\n  },\n  \"month\": \"2025-06\",\n  \"total_transactions\": 82,\n  \"stripe_transactions\": 57,\n  \"external_transactions\": 25,\n  \"last_updated\": \"2025-06-30T23:59:59.000Z\",\n  \"billed\": false,\n  \"stripe_invoice_id\": null,\n  \"createdAt\": \"2025-06-01T00:00:00.000Z\",\n  \"updatedAt\": \"2025-06-30T23:59:59.000Z\"\n}"
+                    }]
+                },
+                {
+                    "name": "Get Specific Billing Usage Record",
+                    "request": {
+                        "method": "GET",
+                        "header": [{
+                                "key": "X-CSRF-Token",
+                                "value": "{{csrfToken}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-API-Key",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseURL}}/api/school-billing-usage/:recordId",
+                            "host": [
+                                "{{baseURL}}"
+                            ],
+                            "path": [
+                                "api",
+                                "school-billing-usage",
+                                ":recordId"
+                            ],
+                            "variable": [{
+                                "key": "recordId",
+                                "value": "{{recordId}}",
+                                "description": "ObjectId of the billing usage record"
+                            }]
+                        },
+                        "description": "Get a specific billing usage record by ID with populated school data"
+                    },
+                    "response": [{
+                        "name": "200 Success",
+                        "originalRequest": {
+                            "method": "GET",
+                            "header": [{
+                                    "key": "X-CSRF-Token",
+                                    "value": "{{csrfToken}}",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "X-API-Key",
+                                    "value": "{{apiKey}}",
+                                    "type": "text"
+                                }
+                            ],
+                            "url": {
+                                "raw": "{{baseURL}}/api/school-billing-usage/{{recordId}}",
+                                "host": [
+                                    "{{baseURL}}"
+                                ],
+                                "path": [
+                                    "api",
+                                    "school-billing-usage",
+                                    "{{recordId}}"
+                                ]
+                            }
+                        },
+                        "status": "OK",
+                        "code": 200,
+                        "_postman_previewlanguage": "json",
+                        "header": [{
+                            "key": "Content-Type",
+                            "value": "application/json"
+                        }],
+                        "cookie": [],
+                        "body": "{\n  \"_id\": \"{{recordId}}\",\n  \"school_id\": {\n    \"_id\": \"{{schoolId}}\",\n    \"name\": \"Example Flight School\"\n  },\n  \"month\": \"2025-06\",\n  \"total_transactions\": 82,\n  \"stripe_transactions\": 57,\n  \"external_transactions\": 25,\n  \"last_updated\": \"2025-06-30T23:59:59.000Z\",\n  \"billed\": false,\n  \"stripe_invoice_id\": null,\n  \"createdAt\": \"2025-06-01T00:00:00.000Z\",\n  \"updatedAt\": \"2025-06-30T23:59:59.000Z\"\n}"
+                    }]
+                },
+                {
+                    "name": "Update Billing Usage Record",
+                    "request": {
+                        "method": "PUT",
+                        "header": [{
+                                "key": "X-CSRF-Token",
+                                "value": "{{csrfToken}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-API-Key",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"total_transactions\": 95,\n  \"stripe_transactions\": 68,\n  \"stripe_invoice_id\": \"in_1234567890\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{baseURL}}/api/school-billing-usage/:recordId",
+                            "host": [
+                                "{{baseURL}}"
+                            ],
+                            "path": [
+                                "api",
+                                "school-billing-usage",
+                                ":recordId"
+                            ],
+                            "variable": [{
+                                "key": "recordId",
+                                "value": "{{recordId}}",
+                                "description": "ObjectId of the billing usage record"
+                            }]
+                        },
+                        "description": "Update a specific billing usage record. Cannot update school_id or month."
+                    },
+                    "response": [{
+                        "name": "200 Updated",
+                        "originalRequest": {
+                            "method": "PUT",
+                            "header": [{
+                                    "key": "X-CSRF-Token",
+                                    "value": "{{csrfToken}}",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "X-API-Key",
+                                    "value": "{{apiKey}}",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "Content-Type",
+                                    "value": "application/json"
+                                }
+                            ],
+                            "body": {
+                                "mode": "raw",
+                                "raw": "{\n  \"total_transactions\": 95,\n  \"stripe_transactions\": 68\n}",
+                                "options": {
+                                    "raw": {
+                                        "language": "json"
+                                    }
+                                }
+                            },
+                            "url": {
+                                "raw": "{{baseURL}}/api/school-billing-usage/{{recordId}}",
+                                "host": [
+                                    "{{baseURL}}"
+                                ],
+                                "path": [
+                                    "api",
+                                    "school-billing-usage",
+                                    "{{recordId}}"
+                                ]
+                            }
+                        },
+                        "status": "OK",
+                        "code": 200,
+                        "_postman_previewlanguage": "json",
+                        "header": [{
+                            "key": "Content-Type",
+                            "value": "application/json"
+                        }],
+                        "cookie": [],
+                        "body": "{\n  \"_id\": \"{{recordId}}\",\n  \"school_id\": {\n    \"_id\": \"{{schoolId}}\",\n    \"name\": \"Example Flight School\"\n  },\n  \"month\": \"2025-06\",\n  \"total_transactions\": 95,\n  \"stripe_transactions\": 68,\n  \"external_transactions\": 27,\n  \"last_updated\": \"2025-06-30T23:59:59.000Z\",\n  \"billed\": false,\n  \"stripe_invoice_id\": \"in_1234567890\",\n  \"createdAt\": \"2025-06-01T00:00:00.000Z\",\n  \"updatedAt\": \"2025-06-30T23:59:59.000Z\"\n}"
+                    }]
+                },
+                {
+                    "name": "Mark Record as Billed",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [{
+                                "key": "X-CSRF-Token",
+                                "value": "{{csrfToken}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-API-Key",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"stripe_invoice_id\": \"in_1234567890abcdef\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{baseURL}}/api/school-billing-usage/:recordId/mark-billed",
+                            "host": [
+                                "{{baseURL}}"
+                            ],
+                            "path": [
+                                "api",
+                                "school-billing-usage",
+                                ":recordId",
+                                "mark-billed"
+                            ],
+                            "variable": [{
+                                "key": "recordId",
+                                "value": "{{recordId}}",
+                                "description": "ObjectId of the billing usage record"
+                            }]
+                        },
+                        "description": "Mark a billing usage record as billed and optionally set the Stripe invoice ID"
+                    },
+                    "response": [{
+                        "name": "200 Marked as Billed",
+                        "originalRequest": {
+                            "method": "PATCH",
+                            "header": [{
+                                    "key": "X-CSRF-Token",
+                                    "value": "{{csrfToken}}",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "X-API-Key",
+                                    "value": "{{apiKey}}",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "Content-Type",
+                                    "value": "application/json"
+                                }
+                            ],
+                            "body": {
+                                "mode": "raw",
+                                "raw": "{\n  \"stripe_invoice_id\": \"in_1234567890abcdef\"\n}",
+                                "options": {
+                                    "raw": {
+                                        "language": "json"
+                                    }
+                                }
+                            },
+                            "url": {
+                                "raw": "{{baseURL}}/api/school-billing-usage/{{recordId}}/mark-billed",
+                                "host": [
+                                    "{{baseURL}}"
+                                ],
+                                "path": [
+                                    "api",
+                                    "school-billing-usage",
+                                    "{{recordId}}",
+                                    "mark-billed"
+                                ]
+                            }
+                        },
+                        "status": "OK",
+                        "code": 200,
+                        "_postman_previewlanguage": "json",
+                        "header": [{
+                            "key": "Content-Type",
+                            "value": "application/json"
+                        }],
+                        "cookie": [],
+                        "body": "{\n  \"_id\": \"{{recordId}}\",\n  \"school_id\": {\n    \"_id\": \"{{schoolId}}\",\n    \"name\": \"Example Flight School\"\n  },\n  \"month\": \"2025-06\",\n  \"total_transactions\": 82,\n  \"stripe_transactions\": 57,\n  \"external_transactions\": 25,\n  \"last_updated\": \"2025-06-30T23:59:59.000Z\",\n  \"billed\": true,\n  \"stripe_invoice_id\": \"in_1234567890abcdef\",\n  \"createdAt\": \"2025-06-01T00:00:00.000Z\",\n  \"updatedAt\": \"2025-06-30T23:59:59.000Z\"\n}"
+                    }]
+                },
+                {
+                    "name": "Get Billing Usage for School",
+                    "request": {
+                        "method": "GET",
+                        "header": [{
+                                "key": "X-CSRF-Token",
+                                "value": "{{csrfToken}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-API-Key",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseURL}}/api/school-billing-usage/school/:schoolId?limit=12",
+                            "host": [
+                                "{{baseURL}}"
+                            ],
+                            "path": [
+                                "api",
+                                "school-billing-usage",
+                                "school",
+                                ":schoolId"
+                            ],
+                            "query": [{
+                                "key": "limit",
+                                "value": "12",
+                                "description": "Number of months to return (default: 12)"
+                            }],
+                            "variable": [{
+                                "key": "schoolId",
+                                "value": "{{schoolId}}",
+                                "description": "ObjectId of the school"
+                            }]
+                        },
+                        "description": "Get all billing usage records for a specific school, sorted by month (newest first)"
+                    },
+                    "response": [{
+                        "name": "200 Success",
+                        "originalRequest": {
+                            "method": "GET",
+                            "header": [{
+                                    "key": "X-CSRF-Token",
+                                    "value": "{{csrfToken}}",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "X-API-Key",
+                                    "value": "{{apiKey}}",
+                                    "type": "text"
+                                }
+                            ],
+                            "url": {
+                                "raw": "{{baseURL}}/api/school-billing-usage/school/{{schoolId}}",
+                                "host": [
+                                    "{{baseURL}}"
+                                ],
+                                "path": [
+                                    "api",
+                                    "school-billing-usage",
+                                    "school",
+                                    "{{schoolId}}"
+                                ]
+                            }
+                        },
+                        "status": "OK",
+                        "code": 200,
+                        "_postman_previewlanguage": "json",
+                        "header": [{
+                            "key": "Content-Type",
+                            "value": "application/json"
+                        }],
+                        "cookie": [],
+                        "body": "[\n  {\n    \"_id\": \"{{recordId1}}\",\n    \"school_id\": \"{{schoolId}}\",\n    \"month\": \"2025-06\",\n    \"total_transactions\": 82,\n    \"stripe_transactions\": 57,\n    \"external_transactions\": 25,\n    \"last_updated\": \"2025-06-30T23:59:59.000Z\",\n    \"billed\": false,\n    \"stripe_invoice_id\": null,\n    \"createdAt\": \"2025-06-01T00:00:00.000Z\",\n    \"updatedAt\": \"2025-06-30T23:59:59.000Z\"\n  },\n  {\n    \"_id\": \"{{recordId2}}\",\n    \"school_id\": \"{{schoolId}}\",\n    \"month\": \"2025-05\",\n    \"total_transactions\": 71,\n    \"stripe_transactions\": 48,\n    \"external_transactions\": 23,\n    \"last_updated\": \"2025-05-31T23:59:59.000Z\",\n    \"billed\": true,\n    \"stripe_invoice_id\": \"in_0987654321\",\n    \"createdAt\": \"2025-05-01T00:00:00.000Z\",\n    \"updatedAt\": \"2025-05-31T23:59:59.000Z\"\n  }\n]"
+                    }]
+                },
+                {
+                    "name": "Get All Unbilled Records",
+                    "request": {
+                        "method": "GET",
+                        "header": [{
+                                "key": "X-CSRF-Token",
+                                "value": "{{csrfToken}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-API-Key",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseURL}}/api/school-billing-usage/unbilled",
+                            "host": [
+                                "{{baseURL}}"
+                            ],
+                            "path": [
+                                "api",
+                                "school-billing-usage",
+                                "unbilled"
+                            ]
+                        },
+                        "description": "Get all billing usage records that haven't been billed yet (billed: false) across all schools"
+                    },
+                    "response": [{
+                        "name": "200 Success",
+                        "originalRequest": {
+                            "method": "GET",
+                            "header": [{
+                                    "key": "X-CSRF-Token",
+                                    "value": "{{csrfToken}}",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "X-API-Key",
+                                    "value": "{{apiKey}}",
+                                    "type": "text"
+                                }
+                            ],
+                            "url": {
+                                "raw": "{{baseURL}}/api/school-billing-usage/unbilled",
+                                "host": [
+                                    "{{baseURL}}"
+                                ],
+                                "path": [
+                                    "api",
+                                    "school-billing-usage",
+                                    "unbilled"
+                                ]
+                            }
+                        },
+                        "status": "OK",
+                        "code": 200,
+                        "_postman_previewlanguage": "json",
+                        "header": [{
+                            "key": "Content-Type",
+                            "value": "application/json"
+                        }],
+                        "cookie": [],
+                        "body": "[\n  {\n    \"_id\": \"{{recordId1}}\",\n    \"school_id\": {\n      \"_id\": \"{{schoolId1}}\",\n      \"name\": \"Flight School A\"\n    },\n    \"month\": \"2025-06\",\n    \"total_transactions\": 82,\n    \"stripe_transactions\": 57,\n    \"external_transactions\": 25,\n    \"last_updated\": \"2025-06-30T23:59:59.000Z\",\n    \"billed\": false,\n    \"stripe_invoice_id\": null,\n    \"createdAt\": \"2025-06-01T00:00:00.000Z\",\n    \"updatedAt\": \"2025-06-30T23:59:59.000Z\"\n  },\n  {\n    \"_id\": \"{{recordId2}}\",\n    \"school_id\": {\n      \"_id\": \"{{schoolId2}}\",\n      \"name\": \"Flight School B\"\n    },\n    \"month\": \"2025-06\",\n    \"total_transactions\": 64,\n    \"stripe_transactions\": 41,\n    \"external_transactions\": 23,\n    \"last_updated\": \"2025-06-30T23:59:59.000Z\",\n    \"billed\": false,\n    \"stripe_invoice_id\": null,\n    \"createdAt\": \"2025-06-01T00:00:00.000Z\",\n    \"updatedAt\": \"2025-06-30T23:59:59.000Z\"\n  }\n]"
+                    }]
+                },
+                {
+                    "name": "Delete Billing Usage Record",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [{
+                                "key": "X-CSRF-Token",
+                                "value": "{{csrfToken}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-API-Key",
+                                "value": "{{apiKey}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseURL}}/api/school-billing-usage/:recordId",
+                            "host": [
+                                "{{baseURL}}"
+                            ],
+                            "path": [
+                                "api",
+                                "school-billing-usage",
+                                ":recordId"
+                            ],
+                            "variable": [{
+                                "key": "recordId",
+                                "value": "{{recordId}}",
+                                "description": "ObjectId of the billing usage record"
+                            }]
+                        },
+                        "description": "Delete a specific billing usage record"
+                    },
+                    "response": [{
+                        "name": "200 Deleted",
+                        "originalRequest": {
+                            "method": "DELETE",
+                            "header": [{
+                                    "key": "X-CSRF-Token",
+                                    "value": "{{csrfToken}}",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "X-API-Key",
+                                    "value": "{{apiKey}}",
+                                    "type": "text"
+                                }
+                            ],
+                            "url": {
+                                "raw": "{{baseURL}}/api/school-billing-usage/{{recordId}}",
+                                "host": [
+                                    "{{baseURL}}"
+                                ],
+                                "path": [
+                                    "api",
+                                    "school-billing-usage",
+                                    "{{recordId}}"
+                                ]
+                            }
+                        },
+                        "status": "OK",
+                        "code": 200,
+                        "_postman_previewlanguage": "json",
+                        "header": [{
+                            "key": "Content-Type",
+                            "value": "application/json"
+                        }],
+                        "cookie": [],
+                        "body": "{\n  \"message\": \"Billing usage record deleted successfully\"\n}"
+                    }]
+                }
+            ]
         }
     ],
     "event": [{
@@ -8181,6 +8847,12 @@
             "key": "apiKey",
             "value": "",
             "type": "default"
+        },
+        {
+            "key": "recordId",
+            "value": "",
+            "type": "string",
+            "description": "Billing usage record ObjectId"
         }
     ]
 }

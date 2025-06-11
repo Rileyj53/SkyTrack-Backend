@@ -38,21 +38,16 @@ export function validateEmail(email: string): boolean {
 
 export function authenticateRequest(request: NextRequest) {
   try {
-    // First try to get the token from the Authorization header
-    const authHeader = request.headers.get('Authorization');
-    let token = null;
+    // Get the token from cookies only
+    let token = request.cookies.get('token')?.value;
 
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      token = authHeader.split(' ')[1];
-    }
-
-    // If no Authorization header token, try to get from cookies
+    // If no token, try other common cookie names
     if (!token) {
-      token = request.cookies.get('token')?.value;
+      token = request.cookies.get('jwt')?.value || request.cookies.get('auth-token')?.value;
     }
 
     if (!token) {
-      return { success: false, message: 'No token provided in Authorization header or cookies' };
+      return { success: false, message: 'No token provided in cookies' };
     }
 
     // Verify the token
@@ -61,7 +56,7 @@ export function authenticateRequest(request: NextRequest) {
       return { success: false, message: 'Invalid token' };
     }
 
-    return { success: true, userId: decoded.userId, tokenSource: authHeader ? 'header' : 'cookie' };
+    return { success: true, userId: decoded.userId, tokenSource: 'cookie' };
   } catch (error) {
     console.error('Request authentication error');
     return { success: false, message: 'Authentication failed' };
@@ -76,8 +71,8 @@ export function authenticateCSRF(request: NextRequest) {
       return { success: false, message: 'No CSRF token provided' };
     }
     
-    // Get the stored CSRF token from the cookie
-    const storedToken = request.cookies.get('csrf_token')?.value;
+      // Get the stored CSRF token from the cookie
+  const storedToken = request.cookies.get('csrf-token')?.value;
     if (!storedToken) {
       return { success: false, message: 'No stored CSRF token' };
     }

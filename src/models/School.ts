@@ -10,11 +10,15 @@ interface Address {
 }
 
 interface PaymentInfo {
-  subscription_plan?: string;
-  billing_cycle?: string;
-  next_billing_date?: Date;
-  payment_status?: string;
-  stripe_customer_id?: string;
+  stripe_customer_id: string;
+  stripe_subscription_id: string;
+  stripe_subscription_item_id: string;
+  payment_status: 'active' | 'past_due' | 'canceled' | 'unpaid' | 'incomplete';
+  current_billing_cycle_start?: Date;
+  current_billing_cycle_end?: Date;
+  last_usage_report_date?: Date;
+
+  billing_notes?: string;
 }
 
 // Define the School document interface
@@ -67,14 +71,17 @@ const SchoolSchema = new Schema<SchoolDocument>(
     instructors: [{ type: Schema.Types.ObjectId, ref: 'User' }],
     payment_info: {
       type: {
-        subscription_plan: { type: String, default: null },
-        billing_cycle: { type: String, default: null },
-        next_billing_date: { type: Date, default: null },
-        payment_status: { type: String, default: null },
         stripe_customer_id: { type: String, default: null },
+        stripe_subscription_id: { type: String, default: null },
+        stripe_subscription_item_id: { type: String, default: null }, 
+        last_usage_report_date: { type: Date, default: null },
+        current_billing_cycle_start: { type: Date, default: null },
+        current_billing_cycle_end: { type: Date, default: null },
+        payment_status: { type: String, default: 'active' }, 
+        billing_notes: { type: String, default: null } 
       },
-      default: null,
-    },
+      default: null
+    }
   },
   {
     timestamps: true, // Automatically manage createdAt and updatedAt
