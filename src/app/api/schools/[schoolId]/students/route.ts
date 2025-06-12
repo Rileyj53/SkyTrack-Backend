@@ -66,12 +66,216 @@ export async function GET(req: NextRequest, { params }: { params: { schoolId: st
     // Connect to database
     await connectDB();
 
-    // Find all students for the school and populate user information
-    const students = await mongoose.model('Student').find({ 
-      school_id: new mongoose.Types.ObjectId(params.schoolId) 
-    }).populate('user_id', 'first_name last_name email role').lean();
+    // Parse query parameters
+    const { searchParams } = new URL(req.url);
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '50');
+    const search = searchParams.get('search') || '';
+    const status = searchParams.get('status') || '';
+    const program = searchParams.get('program') || '';
+    const certification = searchParams.get('certification') || '';
+    const enrollmentStartDate = searchParams.get('enrollment_start_date') || '';
+    const enrollmentEndDate = searchParams.get('enrollment_end_date') || '';
 
-    return NextResponse.json({ students });
+    // Validate pagination parameters
+    if (page < 1 || limit < 1 || limit > 200) {
+      return NextResponse.json({ 
+        error: 'Invalid pagination parameters. Page must be >= 1 and limit must be between 1 and 200' 
+      }, { status: 400 });
+    }
+
+    // Build the base query
+    const baseQuery: any = { 
+      school_id: new mongoose.Types.ObjectId(params.schoolId) 
+    };
+
+    // Add status filter
+    if (status) {
+      baseQuery.status = status;
+    }
+
+    // Add program filter
+    if (program) {
+      baseQuery.program = { $regex: program, $options: 'i' };
+    }
+
+    // Add certification filter
+    if (certification) {
+      baseQuery.certifications = { $in: [certification] };
+    }
+
+    // Add enrollment date range filter
+    if (enrollmentStartDate || enrollmentEndDate) {
+      baseQuery.enrollmentDate = {};
+      if (enrollmentStartDate) {
+        baseQuery.enrollmentDate.$gte = new Date(enrollmentStartDate);
+      }
+      if (enrollmentEndDate) {
+        baseQuery.enrollmentDate.$lte = new Date(enrollmentEndDate);
+      }
+    }
+
+    // Calculate skip value for pagination
+    const skip = (page - 1) * limit;
+
+    let students;
+    let totalCount;
+
+    if (search) {
+      // If search is provided, use aggregation pipeline for complex search
+      const searchRegex = new RegExp(search, 'i');
+      
+      const pipeline: any[] = [
+        // Match the base query first
+        { $match: baseQuery },
+        
+        // Lookup user information
+        {
+          $lookup: {
+            from: 'users',
+            localField: 'user_id',
+            foreignField: '_id',
+            as: 'user_info'
+          }
+        },
+        
+        // Add search conditions
+        {
+          $match: {
+            $or: [
+              { 'user_info.first_name': searchRegex },
+              { 'user_info.last_name': searchRegex },
+              { 'user_info.email': searchRegex },
+              { contact_email: searchRegex },
+              { phone: searchRegex },
+              { license_number: searchRegex },
+              { program: searchRegex },
+              { status: searchRegex },
+              { stage: searchRegex },
+              { nextMilestone: searchRegex },
+              { notes: searchRegex },
+              { 'emergency_contact.name': searchRegex },
+              { 'emergency_contact.phone': searchRegex },
+              // Search for concatenated full name
+              {
+                $expr: {
+                  $regexMatch: {
+                    input: {
+                      $concat: [
+                        { $ifNull: [{ $arrayElemAt: ['$user_info.first_name', 0] }, ''] },
+                        ' ',
+                        { $ifNull: [{ $arrayElemAt: ['$user_info.last_name', 0] }, ''] }
+                      ]
+                    },
+                    regex: search,
+                    options: 'i'
+                  }
+                }
+              }
+            ]
+          }
+        },
+        
+        // Add user info to the root level for easier access
+        {
+          $addFields: {
+            user_id: { $arrayElemAt: ['$user_info', 0] }
+          }
+        },
+        
+        // Remove the temporary user_info array
+        {
+          $unset: 'user_info'
+        },
+        
+        // Sort by enrollment date (most recent first)
+        { $sort: { enrollmentDate: -1 } },
+        
+        // Add pagination
+        { $skip: skip },
+        { $limit: limit }
+      ];
+
+      // Get total count for pagination info
+      const countPipeline: any[] = [
+        { $match: baseQuery },
+        {
+          $lookup: {
+            from: 'users',
+            localField: 'user_id',
+            foreignField: '_id',
+            as: 'user_info'
+          }
+        },
+        {
+          $match: {
+            $or: [
+              { 'user_info.first_name': searchRegex },
+              { 'user_info.last_name': searchRegex },
+              { 'user_info.email': searchRegex },
+              { contact_email: searchRegex },
+              { phone: searchRegex },
+              { license_number: searchRegex },
+              { program: searchRegex },
+              { status: searchRegex },
+              { stage: searchRegex },
+              { nextMilestone: searchRegex },
+              { notes: searchRegex },
+              { 'emergency_contact.name': searchRegex },
+              { 'emergency_contact.phone': searchRegex },
+              {
+                $expr: {
+                  $regexMatch: {
+                    input: {
+                      $concat: [
+                        { $ifNull: [{ $arrayElemAt: ['$user_info.first_name', 0] }, ''] },
+                        ' ',
+                        { $ifNull: [{ $arrayElemAt: ['$user_info.last_name', 0] }, ''] }
+                      ]
+                    },
+                    regex: search,
+                    options: 'i'
+                  }
+                }
+              }
+            ]
+          }
+        },
+        { $count: 'total' }
+      ];
+
+      students = await mongoose.model('Student').aggregate(pipeline);
+      const countResult = await mongoose.model('Student').aggregate(countPipeline);
+      totalCount = countResult.length > 0 ? countResult[0].total : 0;
+    } else {
+      // If no search, use regular find with populate
+      students = await mongoose.model('Student')
+        .find(baseQuery)
+        .populate('user_id', 'first_name last_name email role')
+        .sort({ enrollmentDate: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean();
+
+      totalCount = await mongoose.model('Student').countDocuments(baseQuery);
+    }
+
+    // Calculate pagination info
+    const totalPages = Math.ceil(totalCount / limit);
+    const hasNextPage = page < totalPages;
+    const hasPrevPage = page > 1;
+
+    return NextResponse.json({
+      students,
+      pagination: {
+        currentPage: page,
+        totalPages,
+        totalCount,
+        hasNextPage,
+        hasPrevPage,
+        limit
+      }
+    });
   } catch (error) {
     console.error('Error in GET /api/schools/[schoolId]/students:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

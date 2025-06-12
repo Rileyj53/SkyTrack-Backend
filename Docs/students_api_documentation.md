@@ -1,7 +1,13 @@
 # Students API Documentation
 
 ## Overview
-The Students API manages student records within flight schools, including enrollment, progress tracking, contact information, and academic progression through flight training programs.
+The Students API allows you to manage student records for flight schools, including comprehensive search functionality and pagination.
+
+## Enhanced Features
+- **Pagination**: Efficient handling of large student lists with customizable page size
+- **Search**: Comprehensive search across multiple fields including user names, emails, program details, and contact information
+- **Filtering**: Multiple filter options for status, program, certifications, and enrollment dates
+- **Sorting**: Results sorted by enrollment date (most recent first)
 
 ## Access Control
 
@@ -27,458 +33,224 @@ The Students API manages student records within flight schools, including enroll
   "_id": "ObjectId",
   "school_id": "ObjectId",
   "user_id": "ObjectId", // Optional - links to User account
-  "contact_email": "student@email.com",
-  "phone": "+1-555-0123",
-  "certifications": ["Private Pilot", "Instrument Rating"],
-  "license_number": "P12345678",
+  "contact_email": "student@example.com",
+  "phone": "555-123-4567",
+  "certifications": ["private", "instrument"],
+  "license_number": "STU001",
   "emergency_contact": {
     "name": "John Doe",
-    "phone": "+1-555-0124",
-    "relationship": "Father"
+    "relationship": "Father",
+    "phone": "555-987-6543"
   },
-  "enrollmentDate": "2024-01-15T00:00:00.000Z",
+  "enrollmentDate": "2023-01-15T00:00:00.000Z",
   "program": "Private Pilot License",
   "status": "Active",
-  "stage": "Solo Phase",
-  "nextMilestone": "First Solo Flight",
-  "notes": "Excellent progress in navigation skills",
-  "studentNotes": [
-    {
-      "_id": "ObjectId",
-      "student_id": "ObjectId",
-      "title": "Flight Review Session",
-      "content": "Reviewed stall recovery procedures",
-      "created_at": "2024-01-20T10:30:00.000Z",
-      "updated_at": "2024-01-20T10:30:00.000Z"
-    }
-  ],
+  "stage": "Stage 1",
+  "nextMilestone": "First Solo",
+  "notes": "Student notes here",
   "progress": {
-    "requirements": [
-      {
-        "name": "Dual Instruction",
-        "total_hours": 40,
-        "completed_hours": 25,
-        "type": "flight_time"
-      },
-      {
-        "name": "Solo Flight Time",
-        "total_hours": 10,
-        "completed_hours": 3,
-        "type": "solo_time"
-      }
-    ],
-    "milestones": [
-      {
-        "name": "First Solo Flight",
-        "description": "Complete first supervised solo flight",
-        "order": 1,
-        "completed": false
-      }
-    ],
-    "stages": [
-      {
-        "name": "Ground School",
-        "description": "Complete theoretical knowledge requirements",
-        "order": 1,
-        "completed": true
-      },
-      {
-        "name": "Solo Phase",
-        "description": "Build solo flight experience",
-        "order": 2,
-        "completed": false
-      }
-    ],
-    "lastUpdated": "2024-01-20T15:45:00.000Z"
+    "requirements": [],
+    "milestones": [],
+    "stages": [],
+    "lastUpdated": "2023-01-15T00:00:00.000Z"
   },
-  "created_at": "2024-01-15T08:00:00.000Z",
-  "updated_at": "2024-01-20T15:45:00.000Z"
+  "studentNotes": [],
+  "created_at": "2023-01-15T00:00:00.000Z",
+  "updated_at": "2023-01-15T00:00:00.000Z"
 }
 ```
 
 ## Endpoints
 
 ### GET /api/schools/{schoolId}/students
-List all students for a specific school.
+List students with enhanced pagination and search functionality.
 
-**Access Control:**
-- **Students:** ❌ Cannot list other students
-- **Instructors:** ✅ Can list students in their school
-- **School Admins:** ✅ Can list students in their school  
-- **System Admins:** ✅ Can list students in any school
+**Query Parameters:**
 
-**Path Parameters:**
-- `schoolId` - ObjectId of the school
+**Pagination:**
+- `page` - Page number (default: 1, min: 1)
+- `limit` - Items per page (default: 50, min: 1, max: 200)
 
-**Response:**
+**Search:**
+- `search` - Global search across multiple fields:
+  - User first name and last name (from linked User account)
+  - User email (from linked User account)
+  - Contact email
+  - Phone number
+  - License number
+  - Program name
+  - Status
+  - Stage
+  - Next milestone
+  - Notes
+  - Emergency contact name and phone
+  - Full name (concatenated first + last name)
+
+**Filters:**
+- `status` - Filter by status (Active, Inactive, Graduated, On Hold, Discontinued)
+- `program` - Filter by program name (partial match, case-insensitive)
+- `certification` - Filter by certification type (private, instrument, commercial, etc.)
+- `enrollment_start_date` - Filter by enrollment date >= this date (ISO format)
+- `enrollment_end_date` - Filter by enrollment date <= this date (ISO format)
+
+**Example Requests:**
+
+**Basic pagination:**
+```
+GET /api/schools/64a1b2c3d4e5f6789012345/students?page=1&limit=25
+```
+
+**Search for students:**
+```
+GET /api/schools/64a1b2c3d4e5f6789012345/students?search=john&page=1&limit=10
+```
+
+**Filter by status and program:**
+```
+GET /api/schools/64a1b2c3d4e5f6789012345/students?status=Active&program=Private%20Pilot&page=1
+```
+
+**Filter by certification:**
+```
+GET /api/schools/64a1b2c3d4e5f6789012345/students?certification=instrument
+```
+
+**Filter by enrollment date range:**
+```
+GET /api/schools/64a1b2c3d4e5f6789012345/students?enrollment_start_date=2023-01-01&enrollment_end_date=2023-12-31
+```
+
+**Combined search and filters:**
+```
+GET /api/schools/64a1b2c3d4e5f6789012345/students?search=smith&status=Active&program=Commercial&page=2&limit=15
+```
+
+**Response Format:**
 ```json
 {
   "students": [
     {
-      "_id": "6841e28c8d13949c514ac6dd",
-      "school_id": "68389c818d13949c514ac59c",
-      "contact_email": "john.student@email.com",
+      "_id": "ObjectId",
+      "school_id": "ObjectId",
+      "user_id": {
+        "_id": "ObjectId",
+        "first_name": "John",
+        "last_name": "Smith",
+        "email": "john.smith@example.com",
+        "role": "student"
+      },
+      "contact_email": "john.smith@example.com",
+      "phone": "555-123-4567",
+      "certifications": ["private"],
+      "license_number": "STU001",
+      "emergency_contact": {
+        "name": "Jane Smith",
+        "relationship": "Mother",
+        "phone": "555-987-6543"
+      },
+      "enrollmentDate": "2023-01-15T00:00:00.000Z",
       "program": "Private Pilot License",
       "status": "Active",
-      "user_id": {
-        "first_name": "John",
-        "last_name": "Student",
-        "email": "john.student@email.com",
-        "role": "student"
-      }
-      // ... other fields
+      "stage": "Stage 2",
+      "nextMilestone": "Cross Country Solo",
+      "notes": "Progressing well",
+      "progress": { /* ... */ },
+      "studentNotes": [],
+      "created_at": "2023-01-15T00:00:00.000Z",
+      "updated_at": "2023-01-15T00:00:00.000Z"
     }
-  ]
+    // ... more students
+  ],
+  "pagination": {
+    "currentPage": 1,
+    "totalPages": 5,
+    "totalCount": 125,
+    "hasNextPage": true,
+    "hasPrevPage": false,
+    "limit": 25
+  }
 }
 ```
-
-**Error Responses:**
-- `401` - Unauthorized (invalid API key or token)
-- `403` - Access denied (insufficient permissions)
-- `400` - Invalid school ID format
-- `500` - Internal server error
 
 ### POST /api/schools/{schoolId}/students
-Create a new student for a school.
-
-**Access Control:**
-- **Students:** ❌ Cannot create student records
-- **Instructors:** ❌ Cannot create student records
-- **School Admins:** ✅ Can create students in their school
-- **System Admins:** ✅ Can create students in any school
+Create a new student record.
 
 **Required Fields:**
-- `contact_email` - Student's contact email address
-- `program` - Program name (must exist in school's programs)
+- `contact_email` - Student's contact email
+- `program` - Program name that exists in the school
 
 **Optional Fields:**
-- `user_id` - ObjectId linking to User account
-- `phone` - Contact phone number
-- `certifications` - Array of existing certifications
-- `license_number` - Pilot license number
-- `emergency_contact` - Emergency contact object
+- `user_id` - Link to existing User account
+- `phone` - Phone number (format: 555-123-4567)
+- `certifications` - Array of certification types
+- `license_number` - Student license number
+- `emergency_contact` - Emergency contact information
 - `enrollmentDate` - Enrollment date (defaults to current date)
 - `status` - Student status (defaults to "Active")
-- `stage` - Current training stage
+- `stage` - Current stage in program
 - `nextMilestone` - Next milestone to achieve
 - `notes` - General notes about the student
-- `studentNotes` - Array of detailed note objects
-
-**Example Request:**
-```json
-{
-  "contact_email": "jane.pilot@email.com",
-  "phone": "+1-555-0125",
-  "program": "Private Pilot License",
-  "emergency_contact": {
-    "name": "Mary Pilot",
-    "phone": "+1-555-0126", 
-    "relationship": "Mother"
-  },
-  "enrollmentDate": "2024-01-15T00:00:00.000Z",
-  "notes": "Highly motivated student with previous aviation experience"
-}
-```
-
-**Response:**
-```json
-{
-  "message": "Student created successfully",
-  "student": {
-    "_id": "6841e28c8d13949c514ac6dd",
-    "school_id": "68389c818d13949c514ac59c",
-    "contact_email": "jane.pilot@email.com",
-    "program": "Private Pilot License",
-    "status": "Active",
-    "stage": "Ground School",
-    "nextMilestone": "Written Exam",
-    "progress": {
-      "requirements": [
-        {
-          "name": "Dual Instruction",
-          "total_hours": 40,
-          "completed_hours": 0,
-          "type": "flight_time"
-        }
-      ],
-      "milestones": [
-        {
-          "name": "Written Exam",
-          "description": "Pass FAA written examination",
-          "order": 1,
-          "completed": false
-        }
-      ],
-      "stages": [
-        {
-          "name": "Ground School", 
-          "description": "Complete theoretical knowledge requirements",
-          "order": 1,
-          "completed": false
-        }
-      ]
-    }
-    // ... other populated fields
-  }
-}
-```
-
-**Automatic Progress Initialization:**
-When a student is created, the system automatically:
-1. **Looks up the specified program** in the school's program database
-2. **Initializes progress tracking** with program requirements, milestones, and stages
-3. **Sets initial stage and milestone** from program configuration
-4. **Creates completion tracking** for all program elements
-
-**Error Responses:**
-- `400` - Missing required fields or invalid school ID format
-- `401` - Unauthorized (invalid API key or token)
-- `403` - Insufficient permissions
-- `404` - Program not found for this school
-- `500` - Internal server error
+- `studentNotes` - Array of detailed student notes
 
 ### GET /api/schools/{schoolId}/students/{studentId}
-Get a specific student by ID.
-
-**Access Control:**
-- **Students:** ✅ Can only view their own record
-- **Instructors:** ✅ Can view students in their school
-- **School Admins:** ✅ Can view students in their school
-- **System Admins:** ✅ Can view any student
-
-**Path Parameters:**
-- `schoolId` - ObjectId of the school
-- `studentId` - ObjectId of the student
-
-**Response:**
-```json
-{
-  "_id": "6841e28c8d13949c514ac6dd",
-  "school_id": "68389c818d13949c514ac59c",
-  "user_id": {
-    "first_name": "John",
-    "last_name": "Student", 
-    "email": "john.student@email.com",
-    "role": "student"
-  },
-  "contact_email": "john.student@email.com",
-  "phone": "+1-555-0123",
-  "program": "Private Pilot License",
-  "status": "Active",
-  "progress": {
-    // ... complete progress tracking
-  }
-  // ... all other student fields
-}
-```
-
-**Error Responses:**
-- `400` - Invalid student ID format
-- `401` - Unauthorized
-- `403` - Access denied (insufficient permissions)
-- `404` - Student not found
-- `500` - Internal server error
+Get a specific student with all details.
 
 ### PUT /api/schools/{schoolId}/students/{studentId}
-Update a student's information.
-
-**Access Control:**
-- **Students:** ✅ Can only update their own record
-- **Instructors:** ❌ Cannot update student records
-- **School Admins:** ✅ Can update students in their school
-- **System Admins:** ✅ Can update any student
-
-**Path Parameters:**
-- `schoolId` - ObjectId of the school
-- `studentId` - ObjectId of the student
-
-**Updatable Fields:**
-- `contact_email` - Contact email address
-- `phone` - Phone number
-- `certifications` - Array of certifications
-- `license_number` - Pilot license number
-- `emergency_contact` - Emergency contact object
-- `enrollmentDate` - Enrollment date
-- `program` - Training program
-- `status` - Student status
-- `stage` - Current training stage
-- `nextMilestone` - Next milestone
-- `notes` - General notes
-- `progress` - Progress tracking object
-- `studentNotes` - Array of note objects
-
-**Example Request:**
-```json
-{
-  "phone": "+1-555-0127",
-  "status": "Active",
-  "stage": "Solo Phase",
-  "nextMilestone": "Cross Country Solo",
-  "notes": "Progressing well, ready for solo cross-country",
-  "studentNotes": [
-    {
-      "title": "Solo Flight Review",
-      "content": "Completed first solo flight successfully. Excellent aircraft control and decision making.",
-      "created_at": "2024-01-25T14:30:00.000Z"
-    }
-  ]
-}
-```
-
-**Special Note Handling:**
-The system automatically handles student notes by:
-- **Removing temporary IDs** from new notes
-- **Preserving existing notes** with valid MongoDB ObjectIds
-- **Adding timestamps** to new notes
-- **Linking notes** to the student record
-
-**Response:**
-```json
-{
-  "message": "Student updated successfully",
-  "student": {
-    // ... updated student object with all fields
-  },
-  "status": "success"
-}
-```
-
-**Error Responses:**
-- `400` - Invalid student ID format
-- `401` - Unauthorized
-- `403` - Insufficient permissions ("You can only update your own student record" for students)
-- `404` - Student not found
-- `500` - Internal server error
+Update a student record.
 
 ### DELETE /api/schools/{schoolId}/students/{studentId}
 Delete a student record.
 
-**Access Control:**
-- **Students:** ❌ Cannot delete student records
-- **Instructors:** ❌ Cannot delete student records  
-- **School Admins:** ✅ Can delete students in their school
-- **System Admins:** ✅ Can delete any student
+## Search Functionality Details
 
-**Path Parameters:**
-- `schoolId` - ObjectId of the school
-- `studentId` - ObjectId of the student to delete
+The search feature uses a comprehensive approach:
 
-**Response:**
-```json
-{
-  "message": "Student deleted successfully",
-  "status": "success"
-}
-```
+1. **User Information Search**: Searches linked User accounts for first name, last name, and email
+2. **Student Field Search**: Searches across all relevant student fields
+3. **Partial Matching**: All text searches are case-insensitive and support partial matches
+4. **Full Name Search**: Combines first and last name for natural full name searching
+5. **Emergency Contact Search**: Includes emergency contact name and phone
 
-**Error Responses:**
-- `400` - Invalid school ID or student ID format
-- `401` - Unauthorized
-- `403` - Insufficient permissions to delete students
-- `404` - Student not found
-- `500` - Internal server error
+## Performance Considerations
 
-## Student Status Values
-
-Common student status values:
-- `Active` - Currently enrolled and attending
-- `Inactive` - Temporarily not attending
-- `Graduated` - Successfully completed program
-- `Withdrawn` - Left program before completion
-- `Suspended` - Temporarily suspended from program
-- `On Hold` - Program paused (medical, financial, etc.)
-
-## Progress Tracking System
-
-### Requirements Tracking
-Each student's progress includes detailed tracking of:
-- **Flight Time Requirements** - Dual instruction, solo time, cross-country, etc.
-- **Ground School Requirements** - Theoretical knowledge areas
-- **Practical Requirements** - Checkrides, endorsements, etc.
-
-### Milestone Management
-- **Ordered Progression** - Milestones have a specific sequence
-- **Completion Tracking** - Boolean completion status for each milestone
-- **Descriptions** - Detailed explanation of requirements
-
-### Stage Progression
-- **Training Phases** - Ground school, pre-solo, solo, cross-country, etc.
-- **Sequential Order** - Stages must be completed in order
-- **Status Tracking** - Current stage and completion status
-
-## Integration with Other Systems
-
-### User Account Linking
-Students can be linked to User accounts via the `user_id` field:
-- **Optional Linking** - Not all students need user accounts
-- **Authentication Access** - Linked students can log into the system
-- **Self-Service** - Students can view/update their own records
-
-### Program Integration
-Student creation automatically integrates with the school's program system:
-- **Requirement Initialization** - All program requirements are set up
-- **Progress Structure** - Milestones and stages from program definition
-- **Customization** - Schools can modify requirements per student
-
-### Financial Integration
-Students are linked to the financial system:
-- **Ledger Creation** - Automatic ledger creation when needed
-- **Charge Tracking** - Flight charges linked to student records
-- **Balance Management** - Financial status integrated with academic progress
+- **Pagination Limits**: Maximum 200 items per page to ensure good performance
+- **Search Optimization**: Uses MongoDB aggregation pipeline for efficient searching
+- **Indexed Fields**: Key fields like school_id and user_id are indexed for fast queries
+- **Default Sorting**: Results sorted by enrollment date (newest first) for relevance
 
 ## Error Handling
 
-### Permission Errors
-```json
-{
-  "error": "You can only update your own student record"
-}
-```
+**400 Bad Request:**
+- Invalid pagination parameters
+- Invalid school ID format
+- Invalid date formats
 
-```json
-{
-  "error": "Insufficient permissions to delete students"
-}
-```
+**401 Unauthorized:**
+- Missing or invalid API key
+- Missing or invalid authentication token
 
-### Validation Errors
-```json
-{
-  "error": "Missing required fields: contact_email and program are required"
-}
-```
+**403 Forbidden:**
+- Insufficient permissions to access school data
 
-```json
-{
-  "error": "Program not found for this school"
-}
-```
+**500 Internal Server Error:**
+- Database connection issues
+- Unexpected server errors
 
-### Access Control Errors
-```json
-{
-  "error": "You do not have access to this school"
-}
-```
+All errors return JSON with an `error` field describing the issue.
 
-## Use Cases
+## Status Values
+- `Active` - Currently enrolled and active
+- `Inactive` - Temporarily inactive
+- `Graduated` - Completed program
+- `On Hold` - Enrollment paused
+- `Discontinued` - No longer pursuing program
 
-### Scenario 1: New Student Enrollment
-1. **School admin creates student** with required contact info and program
-2. **System initializes progress** with all program requirements 
-3. **Student gets access** to view their progress and requirements
-4. **Instructors can track** student advancement through stages
-
-### Scenario 2: Student Self-Service Updates
-1. **Student logs in** and views their own record
-2. **Updates contact information** like phone or emergency contact
-3. **Views progress tracking** to see completion status
-4. **Cannot modify** academic progression or program requirements
-
-### Scenario 3: Academic Progress Management
-1. **Instructor updates stage** as student advances
-2. **Admin tracks milestones** and sets next objectives  
-3. **System maintains** complete progression history
-4. **Progress feeds into** scheduling and financial systems
-
-This comprehensive student management system provides complete lifecycle tracking from enrollment through graduation while maintaining appropriate access controls and integration with other flight school systems. 
+## Certification Types
+- `private` - Private Pilot License
+- `instrument` - Instrument Rating
+- `commercial` - Commercial Pilot License
+- `multi-engine` - Multi-Engine Rating
+- `cfi` - Certified Flight Instructor
+- `cfii` - Certified Flight Instructor Instrument
+- `mei` - Multi-Engine Instructor
+- `atp` - Airline Transport Pilot License
