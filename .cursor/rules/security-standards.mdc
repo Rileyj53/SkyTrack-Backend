@@ -1,0 +1,527 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+---
+description: Comprehensive SkyTrack Backend Development Rules - Authentication, Security, Logging & Documentation
+globs:
+  - "src/**/*.ts"
+  - "src/**/*.js" 
+  - "Docs/**/*.md"
+alwaysApply: true
+---
+
+# 🚀 SkyTrack Backend Development Standards
+
+## 🔐 Authentication & Authorization (MANDATORY)
+
+- **Always use** `secureApiRoute` from `@/middleware/security` for ALL protected routes
+- **Configure security** using `SecurityConfig` interface with appropriate options
+- **Required headers for all requests**:
+  - `X-API-Key`: API key validation (401 if missing/invalid) - use `requireApiKey: true`
+  - `X-CSRF-Token`: CSRF protection for POST/PUT/PATCH/DELETE (403 if missing/mismatched) - use `requireCSRF: true`
+  - `Authorization: Bearer <token>`: JWT authentication - use `requireAuth: true`
+- **Enterprise security features**:
+  - Fraud detection and risk scoring - use `enableFraudDetection: true`
+  - Geo-blocking and IP filtering - use `enableGeoBlocking: true`
+  - Advanced rate limiting with sliding windows - configure `rateLimiting: {}`
+  - Request signature verification - use `requireRequestSigning: true`
+  - Two-factor authentication - use `requireTwoFactor: true`
+- **Permission validation**:
+  - Use `allowedRoles: ['role1', 'role2']` for role-based access
+  - Use `requireSchoolAccess: true` for school-scoped data
+  - Use `hasPermission()` utility for granular permissions
+  
+```ts
+// Required pattern for all API routes
+import { NextRequest, NextResponse } from 'next/server';
+import { secureApiRoute, SecurityConfig } from '@/middleware/security';
+import { connectDB } from '@/lib/db';
+
+const SECURITY_CONFIG: SecurityConfig = {
+  requireAuth: true,
+  requireApiKey: true,
+  requireCSRF: true,
+  allowedRoles: ['school_admin', 'instructor'],
+  requireSchoolAccess: true,
+  enableFraudDetection: true,
+  rateLimiting: {
+    maxRequests: 100,
+    windowMs: 60000,
+    slidingWindow: true
+  }
+};
+
+export const POST = secureApiRoute(async (request, { params, securityContext }) => {
+  // Establish database connection with retry logic
+  await connectDB();
+  
+  // Security is automatically handled - you have access to:
+  // - securityContext.user (authenticated user)
+  // - securityContext.permissions (user permissions)
+  // - securityContext.schoolId (validated school access)
+  // - securityContext.riskScore (fraud detection score)
+  // - securityContext.auditId (unique audit ID)
+  
+  // Your route logic here
+  return NextResponse.json({ 
+    success: true,
+    auditId: securityContext.auditId 
+  });
+}, SECURITY_CONFIG);
+```
+
+## 🛡️ Security Headers & Protection (MANDATORY)
+
+- **Always use** `securityHeaders` middleware globally to set comprehensive security headers
+- **Enterprise security features** available in `secureApiRoute`:
+  - HTTPS enforcement - use `requireHttpsOnly: true`
+  - Request size validation - use `maxRequestSize: number`
+  - Client fingerprinting for fraud detection
+  - Session management with timeouts - use `sessionTimeout: number`
+- **Required security headers** (automatically applied globally):
+  - Content-Security-Policy with strict directives
+  - X-Content-Type-Options: nosniff
+  - X-Frame-Options: DENY
+  - Strict-Transport-Security for HTTPS enforcement
+- **Data protection**:
+  - Use `sanitizeData()` from `@/middleware/security` for sensitive data
+  - Use `dataClassification: 'public' | 'internal' | 'confidential' | 'restricted'`
+  - Validate PCI compliance with `validatePCICompliance()` for payment data
+  - Use `encryptSecure()` and `decryptSecure()` from `@/lib/encryption` for sensitive data
+  - Mask card numbers with `maskCardNumber()` utility
+- **Input sanitization**:
+  - Validate all inputs using Zod schemas when possible
+  - Use password validation functions from `@/lib/auth`
+  - Sanitize sensitive data in logs (passwords, tokens, keys)
+
+```ts
+// Payment processing with maximum security
+const PAYMENT_CONFIG: SecurityConfig = {
+  requireAuth: true,
+  requireCSRF: true,
+  requireHttpsOnly: true,
+  requireRequestSigning: true,
+  requireTwoFactor: true,
+  enableFraudDetection: true,
+  enableGeoBlocking: true,
+  allowedCountries: ['US', 'CA', 'GB'],
+  pciCompliance: true,
+  dataClassification: 'restricted',
+  maxRequestSize: 1024 * 1024, // 1MB
+  rateLimiting: {
+    maxRequests: 10,
+    windowMs: 60000,
+    slidingWindow: true
+  },
+  sessionTimeout: 15
+};
+```
+
+## 📊 Error Handling & Logging (MANDATORY)
+
+- **Always use** `secureApiRoute` which provides automatic error handling and audit logging
+- **Global error handling** via `errorHandler` from `@/middleware/errorHandler` (applied globally in middleware.ts)
+- **Vercel-compatible logging** - All console.log statements are automatically captured by Vercel
+- **Enterprise error features**:
+  - Comprehensive error classification with 15+ error types
+  - Security event logging for authentication/authorization failures
+  - Automatic sensitive data sanitization in logs
+  - Production vs development error exposure control
+  - Integration with monitoring services (Sentry, CloudWatch, etc.)
+- **Advanced audit features** available:
+  - Unique audit IDs for request tracing - access via `securityContext.auditId`
+  - Risk scoring and fraud flags - access via `securityContext.riskScore` and `securityContext.fraudFlags`
+  - Geographic location tracking - access via `securityContext.geoLocation`
+  - Performance metrics and processing time
+- **Standardized error responses** from enhanced error handler:
+  - Consistent error format with request/audit IDs
+  - Security context included for security-related errors
+  - Appropriate HTTP status codes (400, 401, 403, 404, 409, 429, 500, etc.)
+  - Environment-appropriate error detail exposure
+- **Vercel logging best practices**:
+  - Use structured logging with JSON format for better parsing
+  - Include timestamp, request ID, and severity level
+  - Avoid logging sensitive data (automatically sanitized)
+  - Use console.error for errors, console.warn for warnings, console.log for info
+- **Request logging**:
+  - All requests automatically logged via `requestLogger` middleware
+  - Additional security events logged via `enableAdvancedAudit: true`
+  - Error-specific logging with severity levels (INFO, WARN, ERROR, CRITICAL)
+  - Includes request ID, IP, user agent, response time, risk score
+  - Sensitive fields automatically redacted ([REDACTED])
+- **Security event logging**:
+  - Authentication failures, rate limiting violations, suspicious activity
+  - Integration with SIEM and security monitoring systems
+  - Fraud detection events with risk scoring
+
+```ts
+// Vercel-compatible structured logging
+export const POST = secureApiRoute(async (request, { securityContext }) => {
+  try {
+    // Establish database connection
+    await connectDB();
+    
+    // Structured logging for Vercel
+    console.log(JSON.stringify({
+      level: 'INFO',
+      message: 'Processing request',
+      auditId: securityContext.auditId,
+      riskScore: securityContext.riskScore,
+      timestamp: new Date().toISOString(),
+      endpoint: request.url
+    }));
+    
+    // Risk-based error handling
+    if (securityContext.riskScore > 80) {
+      // This will be automatically logged as a security event
+      console.warn(JSON.stringify({
+        level: 'WARN',
+        message: 'High risk request blocked',
+        auditId: securityContext.auditId,
+        riskScore: securityContext.riskScore,
+        fraudFlags: securityContext.fraudFlags,
+        timestamp: new Date().toISOString()
+      }));
+      
+      return NextResponse.json({
+        error: {
+          message: 'Request blocked due to security policy',
+          code: 'HIGH_RISK_BLOCKED',
+          requestId: securityContext.auditId,
+          timestamp: new Date().toISOString()
+        },
+        securityContext: {
+          riskScore: securityContext.riskScore,
+          fraudFlags: securityContext.fraudFlags
+        }
+      }, { status: 403 });
+    }
+    
+    // Your business logic here
+    const result = await processBusinessLogic();
+    
+    console.log(JSON.stringify({
+      level: 'INFO',
+      message: 'Request completed successfully',
+      auditId: securityContext.auditId,
+      processingTime: Date.now() - startTime,
+      timestamp: new Date().toISOString()
+    }));
+    
+    return NextResponse.json({
+      success: true,
+      data: result,
+      auditId: securityContext.auditId
+    });
+    
+  } catch (error) {
+    // Enhanced errorHandler will automatically:
+    // 1. Classify the error type
+    // 2. Log with appropriate severity level in Vercel-compatible format
+    // 3. Log security events if security-related
+    // 4. Sanitize sensitive data
+    // 5. Return standardized error response
+    // 6. Add security headers
+    
+    console.error(JSON.stringify({
+      level: 'ERROR',
+      message: error.message,
+      auditId: securityContext.auditId,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
+      timestamp: new Date().toISOString()
+    }));
+    
+    throw error; // Let the global errorHandler process it
+  }
+}, SECURITY_CONFIG);
+```
+
+## 🗄️ Database Connection Standards (MANDATORY)
+
+- **Always use** `connectDB()` from `@/lib/db` for Mongoose connections
+- **Always use** `connectEdgeDB()` from `@/lib/edgeDb` for edge runtime MongoDB connections
+- **Automatic retry logic** - Both connection functions include exponential backoff retry
+- **Connection pooling** - Optimized for production with proper pool sizes
+- **Health monitoring** - Use `checkDBHealth()` and `checkEdgeDBHealth()` for monitoring
+- **Graceful shutdown** - Automatic cleanup on process termination
+
+```ts
+// Standard database connection pattern
+import { connectDB, checkDBHealth } from '@/lib/db';
+
+export const POST = secureApiRoute(async (request, { securityContext }) => {
+  try {
+    // Establish connection with automatic retry
+    await connectDB();
+    
+    // Optional: Health check for monitoring
+    const isHealthy = await checkDBHealth();
+    if (!isHealthy) {
+      console.warn('Database health check failed, but connection established');
+    }
+    
+    // Your database operations here
+    const result = await YourModel.findOne({ _id: id });
+    
+    return NextResponse.json({ success: true, data: result });
+    
+  } catch (error) {
+    console.error('Database operation failed:', error.message);
+    throw error;
+  }
+}, SECURITY_CONFIG);
+
+// Edge runtime database connection
+import { connectEdgeDB, checkEdgeDBHealth } from '@/lib/edgeDb';
+
+export const GET = secureApiRoute(async (request, { securityContext }) => {
+  try {
+    // Edge-optimized connection with retry
+    const client = await connectEdgeDB();
+    const db = client.db();
+    
+    // Your edge database operations here
+    const result = await db.collection('users').findOne({ _id: id });
+    
+    return NextResponse.json({ success: true, data: result });
+    
+  } catch (error) {
+    console.error('Edge database operation failed:', error.message);
+    throw error;
+  }
+}, EDGE_SECURITY_CONFIG);
+```
+
+## 🔧 Required Library Usage
+
+- **Security**: Always use `secureApiRoute` from `@/middleware/security` for route protection
+- **Database**: 
+  - Use `connectDB()` from `@/lib/db` for Mongoose connections (includes retry logic)
+  - Use `connectEdgeDB()` from `@/lib/edgeDb` for edge runtime connections (includes retry logic)
+- **JWT**: Use `generateToken()` and JWT utilities from `@/lib/jwt`
+- **Encryption**: Use `encryptSecure()` and `decryptSecure()` from `@/lib/encryption` for sensitive data
+- **Email**: Use email service from `@/lib/email` for notifications
+- **Environment**: Import environment variables from `@/lib/env`
+- **Models**: Import Mongoose models from `@/models/` directory
+- **API Keys**: Use `@/lib/apiKeys` for API key management with secure encryption
+- **Authentication**: Use utilities from `@/lib/auth` for password hashing and validation
+- **CSRF**: Use CSRF utilities from `@/lib/csrf` for token generation
+- **Error Handling**: Use `@/lib/errors` for custom error classes and `@/lib/globalErrorHandler` for process-level errors
+
+## 📝 API Response Standards
+
+- **Consistent response format**:
+  ```ts
+  // Success responses
+  { 
+    success: true,
+    message?: "Operation successful", 
+    data: {...}, 
+    auditId: string,
+    timestamp?: string,
+    securityContext?: {
+      sessionId: string,
+      riskScore: number,
+      encryptionLevel: string
+    }
+  }
+  
+  // Error responses (from enhanced errorHandler)
+  { 
+    error: {
+      message: "Error description",
+      code: "ERROR_CODE", 
+      requestId: string,
+      auditId?: string,
+      timestamp: string
+    },
+    securityContext?: {
+      riskScore: number,
+      fraudFlags: string[]
+    }
+  }
+  
+  // Development error responses (additional debug info)
+  {
+    error: {
+      message: "Error description",
+      code: "ERROR_CODE",
+      requestId: string,
+      timestamp: string,
+      details?: {
+        type: "ErrorType",
+        stack: string[]
+      }
+    }
+  }
+  ```
+- **HTTP status codes** (automatically set by errorHandler):
+  - 200: Success
+  - 201: Created
+  - 400: Bad Request / Validation Error
+  - 401: Unauthorized (auth failure / token expired)
+  - 403: Forbidden (permission denied / high risk score)
+  - 404: Not Found
+  - 405: Method Not Allowed
+  - 409: Conflict (duplicate key / resource conflict)
+  - 413: Request Too Large
+  - 428: Precondition Required (MFA needed)
+  - 429: Too Many Requests (rate limited)
+  - 500: Internal Server Error
+  - 502: Network Error
+  - 503: Service Unavailable
+- **Error classification** (automatic via errorHandler):
+  - Security errors: JWT, API key, CSRF, authorization failures
+  - Validation errors: Input validation, data format issues
+  - Database errors: MongoDB errors, connection issues
+  - Network errors: External service failures
+  - Rate limiting: Too many requests, velocity checks
+
+## 📖 Documentation Requirements (MANDATORY)
+
+- **Every API endpoint MUST be documented** in corresponding `Docs/*.md` files
+- **Documentation structure**:
+  - Overview with base URL
+  - Security configuration used
+  - Authentication requirements
+  - Request/response examples with full JSON schemas  
+  - All possible error responses with codes
+  - Headers and parameters specifications
+  - Rate limiting information
+- **Include security information**:
+  - Required headers (X-API-Key, X-CSRF-Token, Authorization)
+  - Role permissions and access control
+  - Risk scoring and fraud detection behavior
+  - Geographic restrictions if applicable
+  - MFA requirements
+  - PCI compliance notes for payment endpoints
+
+## 🏗️ Code Organization Standards
+
+- **File structure**:
+  - API routes: `src/app/api/[endpoint]/route.ts`
+  - Security middleware: `src/middleware/security.ts`
+  - Other middleware: `src/middleware/`
+  - Libraries: `src/lib/`
+  - Models: `src/models/`
+  - Utilities: `src/utils/`
+- **Import standards**:
+  - Use absolute imports with `@/` prefix
+  - Group imports: Node.js built-ins, external packages, internal modules
+  - Import security configuration at top of files
+- **TypeScript**:
+  - Use `SecurityConfig` interface for security configuration
+  - Use `SecurityContext` interface for security context access
+  - Define interfaces for request/response types
+  - Use proper typing for database models
+
+## 🚦 Route Implementation Checklist
+
+Before implementing any API route, ensure:
+- [ ] `secureApiRoute` wrapper applied with appropriate `SecurityConfig`
+- [ ] Security requirements configured (auth, API key, CSRF, roles, etc.)
+- [ ] Rate limiting configured for endpoint sensitivity
+- [ ] Fraud detection enabled for sensitive operations
+- [ ] Data classification set appropriately
+- [ ] PCI compliance validated for payment endpoints
+- [ ] Geographic restrictions configured if needed
+- [ ] MFA requirements set for high-security operations
+- [ ] **Database connection established:**
+  - [ ] `await connectDB()` called for Mongoose operations
+  - [ ] `await connectEdgeDB()` called for edge runtime operations
+  - [ ] Connection includes automatic retry logic
+  - [ ] Health checks implemented for monitoring
+- [ ] **Error handling properly implemented:**
+  - [ ] Global `errorHandler` middleware applied in `middleware.ts`
+  - [ ] Errors include audit context (`auditId`, `riskScore`, `fraudFlags`)
+  - [ ] Manual error responses follow standardized format
+  - [ ] Sensitive data sanitized in error messages
+  - [ ] Appropriate HTTP status codes used
+  - [ ] Security events logged for auth/authorization failures
+- [ ] **Vercel-compatible logging implemented:**
+  - [ ] Structured JSON logging format used
+  - [ ] Appropriate log levels (INFO, WARN, ERROR, CRITICAL)
+  - [ ] Audit IDs included in all log entries
+  - [ ] Sensitive data automatically sanitized
+  - [ ] Timestamps included in ISO format
+- [ ] Request/response logging enabled
+- [ ] Security headers applied globally
+- [ ] Documentation updated in Docs/
+- [ ] Proper HTTP status codes used
+
+## 🔄 Database Operations
+
+- **Always** establish connection with `connectDB()` or `connectEdgeDB()` first
+- **Automatic retry logic** - Both functions include exponential backoff retry
+- **Always** handle database errors gracefully
+- **Use transactions** for multi-document operations
+- **Validate ObjectIds** before database queries
+- **Index frequently queried fields**
+- **Use lean queries** when full documents not needed
+- **Sanitize database responses** using `sanitizeData()` based on data classification
+- **Monitor connection health** using `checkDBHealth()` and `checkEdgeDBHealth()`
+
+## 🎯 Security Configuration Examples
+
+```ts
+// Public API (minimal security)
+const PUBLIC_CONFIG: SecurityConfig = {
+  requireApiKey: true,
+  enableFraudDetection: true,
+  dataClassification: 'public',
+  rateLimiting: { maxRequests: 1000, windowMs: 60000 }
+};
+
+// Standard protected endpoint
+const STANDARD_CONFIG: SecurityConfig = {
+  requireAuth: true,
+  requireCSRF: true,
+  allowedRoles: ['school_admin', 'instructor', 'student'],
+  requireSchoolAccess: true,
+  enableFraudDetection: true,
+  enableAdvancedAudit: true,
+  dataClassification: 'confidential',
+  rateLimiting: { maxRequests: 100, windowMs: 60000 }
+};
+
+// Maximum security (payments/sensitive operations)
+const MAX_SECURITY_CONFIG: SecurityConfig = {
+  requireAuth: true,
+  requireCSRF: true,
+  requireHttpsOnly: true,
+  requireRequestSigning: true,
+  requireTwoFactor: true,
+  enableFraudDetection: true,
+  enableGeoBlocking: true,
+  allowedCountries: ['US', 'CA', 'GB'],
+  allowedRoles: ['school_admin'],
+  pciCompliance: true,
+  dataClassification: 'restricted',
+  maxRequestSize: 1024 * 1024,
+  rateLimiting: { maxRequests: 10, windowMs: 60000, slidingWindow: true },
+  sessionTimeout: 15
+};
+```
+
+## 🔧 Required Middleware Usage
+
+- **Security**: Always use `secureApiRoute` from `@/middleware/security` for route protection
+- **Error Handling**: Always use global `errorHandler` from `@/middleware/errorHandler` 
+- **Global Headers**: Use `securityHeaders` from `@/middleware/securityHeaders` globally
+- **CORS**: Use `cors` from `@/middleware/cors` globally  
+- **Request Logging**: Use `requestLogger` from `@/middleware/requestLogger` globally
+- **Database**: 
+  - Always use `connectDB()` from `@/lib/db` before Mongoose operations (includes retry logic)
+  - Always use `connectEdgeDB()` from `@/lib/edgeDb` before edge runtime operations (includes retry logic)
+- **JWT**: Use `generateToken()` and JWT utilities from `@/lib/jwt`
+- **Encryption**: Use `encryptSecure()` and `decryptSecure()` from `@/lib/encryption` for sensitive data
+- **Email**: Use email service from `@/lib/email` for notifications
+- **Environment**: Import environment variables from `@/lib/env`
+- **Models**: Import Mongoose models from `@/models/` directory
+- **API Keys**: Use `@/lib/apiKeys` for API key management with secure encryption
+- **Authentication**: Use utilities from `@/lib/auth` for password hashing and validation
+- **CSRF**: Use CSRF utilities from `@/lib/csrf` for token generation
+
+Remember: The consolidated security system provides enterprise-grade protection with fraud detection, risk scoring, comprehensive audit logging, and automatic database retry logic. Every endpoint should use `secureApiRoute` with appropriate security configuration and proper database connection handling - there are no exceptions for protected routes.

@@ -1,48 +1,79 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyToken } from '@/lib/jwt';
+import { secureApiRoute, SecurityConfig } from '@/middleware/security';
+import { connectDB } from '@/lib/db';
 import { listApiKeys } from '@/lib/apiKeys';
 
-export async function GET(request: NextRequest) {
+// Maximum security configuration for API key listing
+const SECURITY_CONFIG: SecurityConfig = {
+  requireAuth: true,
+  requireApiKey: true,
+  requireCSRF: true,
+  requireHttpsOnly: true,
+  allowedRoles: ['sys_admin'],
+  enableFraudDetection: true,
+  enableAdvancedAudit: true,
+  dataClassification: 'restricted',
+  rateLimiting: {
+    maxRequests: 20,
+    windowMs: 60000,
+    slidingWindow: true
+  },
+  sessionTimeout: 15
+};
+
+export const GET = secureApiRoute(async (request, { params, securityContext }) => {
   try {
-    // Get the authorization header
-    const authHeader = request.headers.get('Authorization');
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
+    // Establish database connection with automatic retry logic
+    await connectDB();
+    
+    // Structured logging for Vercel
+    console.log(JSON.stringify({
+      level: 'INFO',
+      message: 'Fetching user-specific API keys list',
+      auditId: securityContext.auditId,
+      userId: securityContext.user?.userId,
+      riskScore: securityContext.riskScore,
+      timestamp: new Date().toISOString(),
+      endpoint: '/api/api-keys/keys'
+    }));
 
-    // Verify the token
-    const token = authHeader.split(' ')[1];
-    const decoded = verifyToken(token);
-    if (!decoded || !decoded.userId) {
-      return NextResponse.json(
-        { error: 'Invalid token' },
-        { status: 401 }
-      );
-    }
+    // Get the API keys for the authenticated user using the library function
+    const apiKeys = await listApiKeys(securityContext.user.userId);
 
-    // Check if the user has the sys_admin role
-    if (decoded.role !== 'sys_admin') {
-      return NextResponse.json(
-        { error: 'Forbidden: Only system administrators can list API keys' },
-        { status: 403 }
-      );
-    }
-
-    // Get the API keys
-    const apiKeys = await listApiKeys(decoded.userId);
+    console.log(JSON.stringify({
+      level: 'INFO',
+      message: 'Successfully retrieved user API keys list',
+      auditId: securityContext.auditId,
+      userId: securityContext.user?.userId,
+      count: apiKeys.length,
+      timestamp: new Date().toISOString()
+    }));
 
     return NextResponse.json({
-      status: 'success',
-      data: apiKeys
+      success: true,
+      message: 'API keys retrieved successfully',
+      data: apiKeys,
+      auditId: securityContext.auditId,
+      timestamp: new Date().toISOString(),
+      securityContext: {
+        sessionId: securityContext.sessionId,
+        riskScore: securityContext.riskScore,
+        encryptionLevel: 'AES-256'
+      }
     });
+
   } catch (error) {
-    console.error('API key listing error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    // Enhanced error logging
+    console.error(JSON.stringify({
+      level: 'ERROR',
+      message: 'Failed to retrieve user API keys',
+      auditId: securityContext.auditId,
+      userId: securityContext.user?.userId,
+      error: error.message,
+      timestamp: new Date().toISOString()
+    }));
+    
+    // Let the global errorHandler process the error
+    throw error;
   }
-} 
+}, SECURITY_CONFIG); 

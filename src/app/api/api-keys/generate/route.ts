@@ -1,69 +1,163 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyToken } from '@/lib/jwt';
+import { secureApiRoute, SecurityConfig } from '@/middleware/security';
 import { connectDB } from '@/lib/db';
 import { ApiKey } from '@/models/ApiKey';
 import { User } from '@/models/User';
 import { generateAPIKey } from '@/lib/apiKeys';
 
-export async function POST(request: NextRequest) {
+// Maximum security configuration for API key generation
+const SECURITY_CONFIG: SecurityConfig = {
+  requireAuth: true,
+  requireApiKey: true,
+  requireCSRF: true,
+  requireHttpsOnly: true,
+  requireRequestSigning: true,
+  allowedRoles: ['sys_admin'],
+  enableFraudDetection: true,
+  enableAdvancedAudit: true,
+  dataClassification: 'restricted',
+  rateLimiting: {
+    maxRequests: 5,
+    windowMs: 300000, // 5 minutes for very sensitive operations
+    slidingWindow: true
+  },
+  sessionTimeout: 15,
+  maxRequestSize: 1024 // 1KB - small requests only
+};
+
+export const POST = secureApiRoute(async (request, { params, securityContext }) => {
   try {
-    // Connect to the database
+    // Establish database connection with automatic retry logic
     await connectDB();
+    
+    // Structured logging for Vercel
+    console.log(JSON.stringify({
+      level: 'INFO',
+      message: 'API key generation request initiated',
+      auditId: securityContext.auditId,
+      userId: securityContext.user?.userId,
+      riskScore: securityContext.riskScore,
+      timestamp: new Date().toISOString(),
+      endpoint: '/api/api-keys/generate'
+    }));
 
-    // Check for authorization header
-    const authHeader = request.headers.get('Authorization');
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+    // Additional risk assessment for API key generation
+    if (securityContext.riskScore > 50) {
+      console.warn(JSON.stringify({
+        level: 'WARN',
+        message: 'High risk API key generation attempt blocked',
+        auditId: securityContext.auditId,
+        userId: securityContext.user?.userId,
+        riskScore: securityContext.riskScore,
+        fraudFlags: securityContext.fraudFlags,
+        timestamp: new Date().toISOString()
+      }));
+      
+      return NextResponse.json({
+        error: {
+          message: 'Request blocked due to security policy',
+          code: 'HIGH_RISK_BLOCKED',
+          requestId: securityContext.auditId,
+          timestamp: new Date().toISOString()
+        },
+        securityContext: {
+          riskScore: securityContext.riskScore,
+          fraudFlags: securityContext.fraudFlags
+        }
+      }, { status: 403 });
     }
 
-    // Verify the token and check for sys_admin role
-    const token = authHeader.split(' ')[1];
-    const decoded = verifyToken(token);
-    if (!decoded || !decoded.userId) {
-      return NextResponse.json(
-        { error: 'Invalid token' },
-        { status: 401 }
-      );
-    }
-
-    // Check if the user has the sys_admin role
-    if (decoded.role !== 'sys_admin') {
-      return NextResponse.json(
-        { error: 'Forbidden: Only system administrators can generate API keys' },
-        { status: 403 }
-      );
-    }
-
-    // Get the user from the database
-    const user = await User.findById(decoded.userId);
+    // Get the user from the database to verify existence
+    const user = await User.findById(securityContext.user.userId);
     if (!user) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      );
+      console.error(JSON.stringify({
+        level: 'ERROR',
+        message: 'Authenticated user not found in database',
+        auditId: securityContext.auditId,
+        userId: securityContext.user?.userId,
+        timestamp: new Date().toISOString()
+      }));
+      
+      return NextResponse.json({
+        error: {
+          message: 'User not found',
+          code: 'USER_NOT_FOUND',
+          requestId: securityContext.auditId,
+          timestamp: new Date().toISOString()
+        }
+      }, { status: 404 });
     }
 
-    // Parse request body
+    // Parse and validate request body
     const body = await request.json();
     const { label, durationValue, durationType } = body;
 
-    // Validate required fields
+    // Comprehensive input validation
     if (!label || !durationValue || !durationType) {
-      return NextResponse.json(
-        { error: 'Missing required fields: label, durationValue, and durationType are required' },
-        { status: 400 }
-      );
+      console.warn(JSON.stringify({
+        level: 'WARN',
+        message: 'Missing required fields in API key generation request',
+        auditId: securityContext.auditId,
+        userId: securityContext.user?.userId,
+        providedFields: { hasLabel: !!label, hasDurationValue: !!durationValue, hasDurationType: !!durationType },
+        timestamp: new Date().toISOString()
+      }));
+      
+      return NextResponse.json({
+        error: {
+          message: 'Missing required fields: label, durationValue, and durationType are required',
+          code: 'MISSING_REQUIRED_FIELDS',
+          requestId: securityContext.auditId,
+          timestamp: new Date().toISOString()
+        }
+      }, { status: 400 });
     }
 
     // Validate duration type
-    if (!['days', 'months', 'years'].includes(durationType)) {
-      return NextResponse.json(
-        { error: 'Invalid duration type. Must be one of: days, months, years' },
-        { status: 400 }
-      );
+    const validDurationTypes = ['days', 'months', 'years'];
+    if (!validDurationTypes.includes(durationType)) {
+      console.warn(JSON.stringify({
+        level: 'WARN',
+        message: 'Invalid duration type provided',
+        auditId: securityContext.auditId,
+        userId: securityContext.user?.userId,
+        providedDurationType: durationType,
+        validTypes: validDurationTypes,
+        timestamp: new Date().toISOString()
+      }));
+      
+      return NextResponse.json({
+        error: {
+          message: 'Invalid duration type. Must be one of: days, months, years',
+          code: 'INVALID_DURATION_TYPE',
+          requestId: securityContext.auditId,
+          timestamp: new Date().toISOString()
+        }
+      }, { status: 400 });
+    }
+
+    // Validate duration value (reasonable limits)
+    const maxDurations = { days: 365, months: 12, years: 5 };
+    if (durationValue <= 0 || durationValue > maxDurations[durationType]) {
+      console.warn(JSON.stringify({
+        level: 'WARN',
+        message: 'Invalid duration value provided',
+        auditId: securityContext.auditId,
+        userId: securityContext.user?.userId,
+        durationValue: durationValue,
+        durationType: durationType,
+        maxAllowed: maxDurations[durationType],
+        timestamp: new Date().toISOString()
+      }));
+      
+      return NextResponse.json({
+        error: {
+          message: `Invalid duration value. Must be between 1 and ${maxDurations[durationType]} ${durationType}`,
+          code: 'INVALID_DURATION_VALUE',
+          requestId: securityContext.auditId,
+          timestamp: new Date().toISOString()
+        }
+      }, { status: 400 });
     }
 
     // Calculate expiration date
@@ -80,18 +174,26 @@ export async function POST(request: NextRequest) {
         break;
     }
 
-    // Generate a new API key
+    // Generate a new API key using the secure library function
     const apiKey = generateAPIKey();
 
-    // Hash the API key for storage (to match validation middleware expectations)
+    // Hash the API key for secure storage
     const encoder = new TextEncoder();
     const data = encoder.encode(apiKey);
     const hashBuffer = await crypto.subtle.digest('SHA-256', data);
     const hashArray = Array.from(new Uint8Array(hashBuffer));
     const hashedKey = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 
-    console.log('Generated API key:', apiKey);
-    console.log('Hashed key being stored:', hashedKey);
+    console.log(JSON.stringify({
+      level: 'INFO',
+      message: 'API key generated and hashed',
+      auditId: securityContext.auditId,
+      userId: securityContext.user?.userId,
+      label: label,
+      expiresAt: expirationDate.toISOString(),
+      lastSix: apiKey.slice(-6),
+      timestamp: new Date().toISOString()
+    }));
 
     // Create a new API key document
     const newApiKey = new ApiKey({
@@ -105,22 +207,48 @@ export async function POST(request: NextRequest) {
     // Save the API key to the database
     await newApiKey.save();
 
-    console.log('API key saved to database with hash:', hashedKey);
+    console.log(JSON.stringify({
+      level: 'INFO',
+      message: 'API key successfully saved to database',
+      auditId: securityContext.auditId,
+      userId: securityContext.user?.userId,
+      apiKeyId: newApiKey._id,
+      label: label,
+      timestamp: new Date().toISOString()
+    }));
 
     return NextResponse.json({
-      status: 'success',
+      success: true,
       message: 'API key generated successfully',
       data: {
-        apiKey,
-        label,
-        expiresAt: expirationDate
+        apiKey: apiKey, // Return the unhashed key only once
+        apiKeyId: newApiKey._id,
+        label: label,
+        lastSix: apiKey.slice(-6),
+        expiresAt: expirationDate,
+        createdAt: newApiKey.created_at
+      },
+      auditId: securityContext.auditId,
+      timestamp: new Date().toISOString(),
+      securityContext: {
+        sessionId: securityContext.sessionId,
+        riskScore: securityContext.riskScore,
+        encryptionLevel: 'AES-256'
       }
     });
+
   } catch (error) {
-    console.error('Error generating API key:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    // Enhanced error logging
+    console.error(JSON.stringify({
+      level: 'ERROR',
+      message: 'Failed to generate API key',
+      auditId: securityContext.auditId,
+      userId: securityContext.user?.userId,
+      error: error.message,
+      timestamp: new Date().toISOString()
+    }));
+    
+    // Let the global errorHandler process the error
+    throw error;
   }
-} 
+}, SECURITY_CONFIG); 
