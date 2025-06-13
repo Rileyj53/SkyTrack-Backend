@@ -60,6 +60,9 @@ export async function GET(
     const planeId = url.searchParams.get('plane_id');
     const instructorId = url.searchParams.get('instructor_id');
     const studentId = url.searchParams.get('student_id');
+    const sortField = url.searchParams.get('sortField') || 'scheduled_start_time';
+    const sortDirection = url.searchParams.get('sortDirection') || 'asc';
+    const statusOrder = url.searchParams.get('statusOrder') || 'In-progress,Scheduled,Completed,Canceled';
 
     // Build filter object
     const filter: any = { school_id: params.schoolId };
@@ -72,18 +75,15 @@ export async function GET(
     if (startDate || endDate) {
       filter.scheduled_start_time = {};
       if (startDate) {
-        // Expand start date by 24 hours earlier to account for timezone differences
-        // This ensures we catch flights that are on the same local date but different UTC date
         const startOfDay = new Date(startDate);
         startOfDay.setUTCHours(0, 0, 0, 0);
-        startOfDay.setUTCDate(startOfDay.getUTCDate() - 1); // Go back 1 day
+        startOfDay.setUTCDate(startOfDay.getUTCDate() - 1);
         filter.scheduled_start_time.$gte = startOfDay;
       }
       if (endDate) {
-        // Expand end date by 24 hours later to account for timezone differences
         const endOfDay = new Date(endDate);
         endOfDay.setUTCHours(23, 59, 59, 999);
-        endOfDay.setUTCDate(endOfDay.getUTCDate() + 1); // Go forward 1 day
+        endOfDay.setUTCDate(endOfDay.getUTCDate() + 1);
         filter.scheduled_start_time.$lte = endOfDay;
       }
     }
@@ -91,8 +91,11 @@ export async function GET(
     // Calculate pagination
     const skip = (page - 1) * limit;
 
+    // Create status order array for sorting
+    const statusOrderArray = statusOrder.split(',').map(s => s.trim());
+
     // Get flight schedules with populated data
-    const schedules = await (FlightSchedule as any)
+    const allSchedules = await (FlightSchedule as any)
       .find(filter)
       .populate({
         path: 'school_id',
@@ -116,10 +119,43 @@ export async function GET(
           select: 'first_name last_name email'
         }
       })
-      .sort({ scheduled_start_time: -1 })
-      .skip(skip)
-      .limit(limit)
       .lean();
+
+    // Sort the results according to custom status order and then by time
+    const sortedSchedules = allSchedules.sort((a: any, b: any) => {
+      // First sort by status order (case-insensitive)
+      const statusOrderA = statusOrderArray.findIndex(status => 
+        status.toLowerCase() === a.status.toLowerCase()
+      );
+      const statusOrderB = statusOrderArray.findIndex(status => 
+        status.toLowerCase() === b.status.toLowerCase()
+      );
+      
+      const orderA = statusOrderA === -1 ? 999 : statusOrderA;
+      const orderB = statusOrderB === -1 ? 999 : statusOrderB;
+      
+      if (orderA !== orderB) {
+        return orderA - orderB;
+      }
+      
+      // If status is the same, sort by the specified field
+      const fieldA = a[sortField];
+      const fieldB = b[sortField];
+      
+      if (sortField.includes('time') && fieldA && fieldB) {
+        const timeA = new Date(fieldA).getTime();
+        const timeB = new Date(fieldB).getTime();
+        return sortDirection === 'asc' ? timeA - timeB : timeB - timeA;
+      }
+      
+      // For non-time fields, do string comparison
+      if (fieldA < fieldB) return sortDirection === 'asc' ? -1 : 1;
+      if (fieldA > fieldB) return sortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
+
+    // Apply pagination to sorted results
+    const schedules = sortedSchedules.slice(skip, skip + limit);
 
     // Get total count for pagination
     const total = await FlightSchedule.countDocuments(filter);
