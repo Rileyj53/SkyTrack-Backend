@@ -39,7 +39,7 @@ export async function connectEdgeDB(): Promise<MongoClient> {
       await client.db('admin').command({ ping: 1 });
       return client;
     } catch (error) {
-      console.warn('⚠️ Existing edge DB connection failed ping test, reconnecting...');
+      console.warn('Existing edge DB connection failed ping test, reconnecting...');
       client = null;
     }
   }
@@ -75,7 +75,7 @@ export async function connectEdgeDB(): Promise<MongoClient> {
       await client.db('admin').command({ ping: 1 });
       
       connectionAttempts = 0;
-      console.log('✅ Edge DB connected successfully');
+      console.log('Edge DB connected successfully');
       
       return client;
       
@@ -83,7 +83,7 @@ export async function connectEdgeDB(): Promise<MongoClient> {
       lastError = error as Error;
       connectionAttempts++;
       
-      console.error(`❌ Edge DB connection attempt ${attempt + 1} failed:`, {
+      console.error(`Edge DB connection attempt ${attempt + 1} failed:`, {
         error: error.message,
         attempt: attempt + 1,
         maxAttempts: MAX_RETRY_ATTEMPTS
@@ -102,7 +102,7 @@ export async function connectEdgeDB(): Promise<MongoClient> {
       // Don't retry on the last attempt
       if (attempt < MAX_RETRY_ATTEMPTS - 1) {
         const delay = calculateRetryDelay(attempt);
-        console.log(`⏳ Retrying edge DB connection in ${delay}ms...`);
+        console.log(`Retrying edge DB connection in ${delay}ms...`);
         await sleep(delay);
       }
     }
@@ -113,7 +113,7 @@ export async function connectEdgeDB(): Promise<MongoClient> {
     `Failed to connect to edge database after ${MAX_RETRY_ATTEMPTS} attempts. Last error: ${lastError?.message}`
   );
   
-  console.error('💥 Edge DB connection failed permanently:', {
+  console.error('Edge DB connection failed permanently:', {
     attempts: MAX_RETRY_ATTEMPTS,
     lastError: lastError?.message,
     mongoURI: mongoURI.replace(/\/\/[^:]+:[^@]+@/, '//***:***@') // Hide credentials in logs
@@ -126,9 +126,9 @@ export async function disconnectEdgeDB(): Promise<void> {
   if (client) {
     try {
       await client.close();
-      console.log('✅ Edge DB disconnected successfully');
+      console.log('Edge DB disconnected successfully');
     } catch (error) {
-      console.error('❌ Edge DB disconnection error:', error.message);
+              console.error('Edge DB disconnection error:', error.message);
       throw error;
     } finally {
       client = null;
@@ -154,7 +154,7 @@ export async function checkEdgeDBHealth(): Promise<boolean> {
 
 // Reconnection function for edge DB
 export async function reconnectEdgeDB(): Promise<MongoClient> {
-  console.log('🔄 Attempting edge DB reconnection...');
+  console.log('Attempting edge DB reconnection...');
   client = null;
   return await connectEdgeDB();
 } 

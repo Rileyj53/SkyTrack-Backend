@@ -42,12 +42,12 @@ async function getEmailTransporter() {
       throw new Error('SMTP connection verification failed');
     }
     
-    console.log('✅ SMTP connection successful');
+    console.log('SMTP connection successful');
     initializationError = null;
     return emailConfig;
     
   } catch (error) {
-    console.error('❌ SMTP connection failed:', error.message);
+    console.error('SMTP connection failed:', error.message);
     initializationError = error.message;
     
     // Return mock transporter
