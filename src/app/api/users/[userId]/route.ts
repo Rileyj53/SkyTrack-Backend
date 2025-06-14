@@ -1,235 +1,343 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { secureApiRoute, SecurityConfig } from '@/middleware/security';
 import { connectDB } from '@/lib/db';
-import { validateApiKey } from '@/middleware/apiKeyAuth';
-import { authenticateRequest } from '@/middleware/auth';
-import { verifyToken } from '@/lib/jwt';
 import mongoose from 'mongoose';
 import { User } from '@/models/User';
-import { checkUserAccess } from '@/middleware/permissions';
 
-// Connect to MongoDB
-connectDB();
+// Security configuration for user operations
+const USER_SECURITY_CONFIG: SecurityConfig = {
+  requireAuth: true,
+  requireApiKey: true,
+  requireCSRF: false, // GET operations don't need CSRF
+  allowedRoles: ['sys_admin', 'school_admin', 'instructor', 'student'],
+  enableFraudDetection: true,
+  enableAdvancedAudit: true,
+  dataClassification: 'confidential',
+  rateLimiting: {
+    maxRequests: 100,
+    windowMs: 60000,
+    slidingWindow: true
+  }
+};
+
+const USER_MODIFY_SECURITY_CONFIG: SecurityConfig = {
+  requireAuth: true,
+  requireApiKey: true,
+  requireCSRF: true, // PUT operations need CSRF
+  allowedRoles: ['sys_admin', 'school_admin', 'instructor', 'student'],
+  enableFraudDetection: true,
+  enableAdvancedAudit: true,
+  dataClassification: 'confidential',
+  rateLimiting: {
+    maxRequests: 50,
+    windowMs: 60000,
+    slidingWindow: true
+  }
+};
 
 // GET /api/users/[userId] - Get user information
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { userId: string } }
-) {
-  try {
-    // Validate API key first
-    const authResult = await validateApiKey(request);
-    if (authResult instanceof NextResponse) {
-      return authResult;
-    }
+export const GET = secureApiRoute(async (request, { params, securityContext }) => {
+  const startTime = Date.now();
+  
+  // Establish database connection with retry logic
+  await connectDB();
 
-    // Authenticate the request
-    const authError = await authenticateRequest(request);
-    if (authError) return authError;
+  console.log(JSON.stringify({
+    level: 'INFO',
+    message: 'Processing user information request',
+    auditId: securityContext.auditId,
+    targetUserId: params.userId,
+    requestingUserId: securityContext.user.id,
+    requestingUserRole: securityContext.user.role,
+    timestamp: new Date().toISOString()
+  }));
 
-    // Get the token from the Authorization header to extract role
-    const authHeader = request.headers.get('Authorization');
-    const token = authHeader?.split(' ')[1] || '';
-    const decoded = verifyToken(token);
-    
-    if (!decoded) {
-      return NextResponse.json(
-        { error: 'Invalid token' },
-        { status: 401 }
-      );
-    }
-
-    // Validate user ID
-    if (!mongoose.Types.ObjectId.isValid(params.userId)) {
-      return NextResponse.json(
-        { error: 'Invalid user ID' },
-        { status: 400 }
-      );
-    }
-
-    // Find user by ID - exclude sensitive fields
-    const user = await User.findById(params.userId);
-    
-    if (!user) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      );
-    }
-
-    // Check if user has permission to view this user
-    const hasAccess = await checkUserAccess(request, params.userId);
-    if (!hasAccess) {
-      return NextResponse.json(
-        { error: 'Insufficient permissions' },
-        { status: 403 }
-      );
-    }
-
-    // Create a safe user object without sensitive data
-    const safeUser = {
-      _id: user._id,
-      email: user.email,
-      first_name: user.first_name,
-      last_name: user.last_name,
-      role: user.role,
-      school_id: user.school_id,
-      isActive: user.isActive,
-      emailVerified: user.emailVerified,
-      mfaEnabled: user.mfaEnabled,
-      mfaVerified: user.mfaVerified,
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt
-    };
-
+  // Validate user ID
+  if (!mongoose.Types.ObjectId.isValid(params.userId)) {
     return NextResponse.json({
-      user: safeUser
-    });
-  } catch (error) {
-    console.error('Error getting user:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+      error: {
+        message: 'Invalid user ID format',
+        code: 'INVALID_USER_ID',
+        requestId: securityContext.auditId,
+        timestamp: new Date().toISOString()
+      }
+    }, { status: 400 });
   }
-}
+
+  // Find user by ID
+  const user = await User.findById(params.userId);
+  
+  if (!user) {
+    return NextResponse.json({
+      error: {
+        message: 'User not found',
+        code: 'USER_NOT_FOUND',
+        requestId: securityContext.auditId,
+        timestamp: new Date().toISOString()
+      }
+    }, { status: 404 });
+  }
+
+  // Access control: Users can only view their own profile unless they're admin/instructor
+  const canViewUser = 
+    securityContext.user.id === params.userId || // Own profile
+    securityContext.user.role === 'sys_admin' || // System admin can view all
+    (securityContext.user.role === 'school_admin' && user.school_id?.toString() === securityContext.schoolId) || // School admin can view users in their school
+    (securityContext.user.role === 'instructor' && user.school_id?.toString() === securityContext.schoolId); // Instructor can view users in their school
+
+  if (!canViewUser) {
+    return NextResponse.json({
+      error: {
+        message: 'Insufficient permissions to view this user',
+        code: 'INSUFFICIENT_PERMISSIONS',
+        requestId: securityContext.auditId,
+        timestamp: new Date().toISOString()
+      }
+    }, { status: 403 });
+  }
+
+  // Create a safe user object without sensitive data
+  const safeUser = {
+    _id: user._id,
+    email: user.email,
+    first_name: user.first_name,
+    last_name: user.last_name,
+    role: user.role,
+    school_id: user.school_id,
+    isActive: user.isActive,
+    emailVerified: user.emailVerified,
+    mfaEnabled: user.mfaEnabled,
+    mfaVerified: user.mfaVerified,
+    createdAt: user.createdAt,
+    updatedAt: user.updatedAt
+  };
+
+  const processingTime = Date.now() - startTime;
+
+  console.log(JSON.stringify({
+    level: 'INFO',
+    message: 'User information retrieved successfully',
+    auditId: securityContext.auditId,
+    targetUserId: params.userId,
+    userRole: user.role,
+    userSchoolId: user.school_id,
+    processingTime,
+    timestamp: new Date().toISOString()
+  }));
+
+  return NextResponse.json({
+    success: true,
+    message: 'User information retrieved successfully',
+    data: { user: safeUser },
+    auditId: securityContext.auditId,
+    timestamp: new Date().toISOString()
+  });
+}, USER_SECURITY_CONFIG);
 
 // PUT /api/users/[userId] - Update user information
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: { userId: string } }
-) {
-  try {
-    // Validate API key first
-    const authResult = await validateApiKey(request);
-    if (authResult instanceof NextResponse) {
-      return authResult;
-    }
+export const PUT = secureApiRoute(async (request, { params, securityContext }) => {
+  const startTime = Date.now();
+  
+  // Establish database connection with retry logic
+  await connectDB();
 
-    // Authenticate the request
-    const authError = await authenticateRequest(request);
-    if (authError) return authError;
+  console.log(JSON.stringify({
+    level: 'INFO',
+    message: 'Processing user update request',
+    auditId: securityContext.auditId,
+    targetUserId: params.userId,
+    requestingUserId: securityContext.user.id,
+    requestingUserRole: securityContext.user.role,
+    timestamp: new Date().toISOString()
+  }));
 
-    // Get the token from the Authorization header to extract role
-    const authHeader = request.headers.get('Authorization');
-    const token = authHeader?.split(' ')[1] || '';
-    const decoded = verifyToken(token);
-    
-    if (!decoded) {
-      return NextResponse.json(
-        { error: 'Invalid token' },
-        { status: 401 }
-      );
-    }
-
-    // Validate user ID
-    if (!mongoose.Types.ObjectId.isValid(params.userId)) {
-      return NextResponse.json(
-        { error: 'Invalid user ID' },
-        { status: 400 }
-      );
-    }
-
-    // Find user by ID
-    const user = await User.findById(params.userId);
-    
-    if (!user) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      );
-    }
-
-    // Check if user has permission to update this user
-    const hasAccess = await checkUserAccess(request, params.userId);
-    if (!hasAccess) {
-      return NextResponse.json(
-        { error: 'Insufficient permissions' },
-        { status: 403 }
-      );
-    }
-
-    // Get request body
-    const body = await request.json();
-    
-    // Get the fields that can be updated
-    const allowedFields = [
-      'email',
-      'first_name',
-      'last_name',
-      'role',
-      'school_id',
-      'isActive',
-      'emailVerified',
-      'mfaEnabled',
-      'mfaVerified'
-    ];
-
-    // Filter out fields that are not allowed to be updated
-    const updates = Object.keys(body)
-      .filter(key => allowedFields.includes(key))
-      .reduce((obj, key) => {
-        obj[key] = body[key];
-        return obj;
-      }, {} as any);
-
-    // If email is being changed, check if it already exists
-    if (updates.email && updates.email !== user.email) {
-      const existingUser = await User.findOne({ email: updates.email });
-      if (existingUser) {
-        return NextResponse.json(
-          { error: 'Email already in use' },
-          { status: 400 }
-        );
-      }
-    }
-
-    // If role is being changed, only sys_admin can change roles
-    if (updates.role && updates.role !== user.role && decoded.role !== 'sys_admin') {
-      return NextResponse.json(
-        { error: 'Only system administrators can change user roles' },
-        { status: 403 }
-      );
-    }
-
-    // Update user
-    const updatedUser = await User.findByIdAndUpdate(
-      params.userId,
-      { $set: updates },
-      { new: true, runValidators: true }
-    );
-    
-    if (!updatedUser) {
-      return NextResponse.json(
-        { error: 'Failed to update user' },
-        { status: 500 }
-      );
-    }
-
-    // Create a safe user object without sensitive data
-    const safeUser = {
-      _id: updatedUser._id,
-      email: updatedUser.email,
-      first_name: updatedUser.first_name,
-      last_name: updatedUser.last_name,
-      role: updatedUser.role,
-      school_id: updatedUser.school_id,
-      isActive: updatedUser.isActive,
-      emailVerified: updatedUser.emailVerified,
-      mfaEnabled: updatedUser.mfaEnabled,
-      mfaVerified: updatedUser.mfaVerified,
-      createdAt: updatedUser.createdAt,
-      updatedAt: updatedUser.updatedAt
-    };
-    
+  // Validate user ID
+  if (!mongoose.Types.ObjectId.isValid(params.userId)) {
     return NextResponse.json({
-      message: 'User updated successfully',
-      user: safeUser
-    });
-  } catch (error) {
-    console.error('Error updating user:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+      error: {
+        message: 'Invalid user ID format',
+        code: 'INVALID_USER_ID',
+        requestId: securityContext.auditId,
+        timestamp: new Date().toISOString()
+      }
+    }, { status: 400 });
   }
-} 
+
+  // Find user by ID
+  const user = await User.findById(params.userId);
+  
+  if (!user) {
+    return NextResponse.json({
+      error: {
+        message: 'User not found',
+        code: 'USER_NOT_FOUND',
+        requestId: securityContext.auditId,
+        timestamp: new Date().toISOString()
+      }
+    }, { status: 404 });
+  }
+
+  // Access control: Users can only update their own profile unless they're admin
+  const canUpdateUser = 
+    securityContext.user.id === params.userId || // Own profile
+    securityContext.user.role === 'sys_admin' || // System admin can update all
+    (securityContext.user.role === 'school_admin' && user.school_id?.toString() === securityContext.schoolId); // School admin can update users in their school
+
+  if (!canUpdateUser) {
+    return NextResponse.json({
+      error: {
+        message: 'Insufficient permissions to update this user',
+        code: 'INSUFFICIENT_PERMISSIONS',
+        requestId: securityContext.auditId,
+        timestamp: new Date().toISOString()
+      }
+    }, { status: 403 });
+  }
+
+  // Get request body
+  const body = await request.json();
+  
+  // Get the fields that can be updated
+  const allowedFields = [
+    'email',
+    'first_name',
+    'last_name',
+    'role',
+    'school_id',
+    'isActive',
+    'emailVerified',
+    'mfaEnabled',
+    'mfaVerified'
+  ];
+
+  // Filter out fields that are not allowed to be updated
+  const updates = Object.keys(body)
+    .filter(key => allowedFields.includes(key))
+    .reduce((obj, key) => {
+      obj[key] = body[key];
+      return obj;
+    }, {} as any);
+
+  // Validate email format if being updated
+  if (updates.email) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(updates.email)) {
+      return NextResponse.json({
+        error: {
+          message: 'Invalid email format',
+          code: 'INVALID_EMAIL_FORMAT',
+          requestId: securityContext.auditId,
+          timestamp: new Date().toISOString()
+        }
+      }, { status: 400 });
+    }
+  }
+
+  // If email is being changed, check if it already exists
+  if (updates.email && updates.email !== user.email) {
+    const existingUser = await User.findOne({ email: updates.email });
+    if (existingUser) {
+      return NextResponse.json({
+        error: {
+          message: 'Email already in use',
+          code: 'EMAIL_ALREADY_EXISTS',
+          requestId: securityContext.auditId,
+          timestamp: new Date().toISOString()
+        }
+      }, { status: 409 });
+    }
+  }
+
+  // If role is being changed, only sys_admin can change roles
+  if (updates.role && updates.role !== user.role && securityContext.user.role !== 'sys_admin') {
+    return NextResponse.json({
+      error: {
+        message: 'Only system administrators can change user roles',
+        code: 'ROLE_CHANGE_FORBIDDEN',
+        requestId: securityContext.auditId,
+        timestamp: new Date().toISOString()
+      }
+    }, { status: 403 });
+  }
+
+  // Validate role if being updated
+  if (updates.role) {
+    const validRoles = ['sys_admin', 'school_admin', 'instructor', 'student'];
+    if (!validRoles.includes(updates.role)) {
+      return NextResponse.json({
+        error: {
+          message: 'Invalid role specified',
+          code: 'INVALID_ROLE',
+          requestId: securityContext.auditId,
+          timestamp: new Date().toISOString()
+        }
+      }, { status: 400 });
+    }
+  }
+
+  // Validate school_id if being updated
+  if (updates.school_id && !mongoose.Types.ObjectId.isValid(updates.school_id)) {
+    return NextResponse.json({
+      error: {
+        message: 'Invalid school ID format',
+        code: 'INVALID_SCHOOL_ID',
+        requestId: securityContext.auditId,
+        timestamp: new Date().toISOString()
+      }
+    }, { status: 400 });
+  }
+
+  // Update user
+  const updatedUser = await User.findByIdAndUpdate(
+    params.userId,
+    { $set: updates },
+    { new: true, runValidators: true }
+  );
+  
+  if (!updatedUser) {
+    return NextResponse.json({
+      error: {
+        message: 'Failed to update user',
+        code: 'UPDATE_FAILED',
+        requestId: securityContext.auditId,
+        timestamp: new Date().toISOString()
+      }
+    }, { status: 500 });
+  }
+
+  // Create a safe user object without sensitive data
+  const safeUser = {
+    _id: updatedUser._id,
+    email: updatedUser.email,
+    first_name: updatedUser.first_name,
+    last_name: updatedUser.last_name,
+    role: updatedUser.role,
+    school_id: updatedUser.school_id,
+    isActive: updatedUser.isActive,
+    emailVerified: updatedUser.emailVerified,
+    mfaEnabled: updatedUser.mfaEnabled,
+    mfaVerified: updatedUser.mfaVerified,
+    createdAt: updatedUser.createdAt,
+    updatedAt: updatedUser.updatedAt
+  };
+
+  const processingTime = Date.now() - startTime;
+
+  console.log(JSON.stringify({
+    level: 'INFO',
+    message: 'User updated successfully',
+    auditId: securityContext.auditId,
+    targetUserId: params.userId,
+    updatedFields: Object.keys(updates),
+    processingTime,
+    timestamp: new Date().toISOString()
+  }));
+  
+  return NextResponse.json({
+    success: true,
+    message: 'User updated successfully',
+    data: { user: safeUser },
+    auditId: securityContext.auditId,
+    timestamp: new Date().toISOString()
+  });
+}, USER_MODIFY_SECURITY_CONFIG); 

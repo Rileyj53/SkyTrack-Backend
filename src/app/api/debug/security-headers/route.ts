@@ -1,14 +1,32 @@
 import { NextResponse } from 'next/server';
+import { secureApiRoute, SecurityConfig } from '@/middleware/security';
+
+// Debug endpoint configuration - public endpoint for testing security headers
+const DEBUG_CONFIG: SecurityConfig = {
+  requireApiKey: true,
+  enableFraudDetection: true,
+  dataClassification: 'public',
+  rateLimiting: { maxRequests: 100, windowMs: 60000 }
+};
 
 /**
  * Debug endpoint to verify and test security headers
  * @returns A response with comprehensive security headers for testing
  */
-export async function GET() {
+export const GET = secureApiRoute(async (request, { securityContext }) => {
+  console.log(JSON.stringify({
+    level: 'INFO',
+    message: 'Security headers debug endpoint accessed',
+    auditId: securityContext.auditId,
+    timestamp: new Date().toISOString()
+  }));
+
   // Create a response
   const response = NextResponse.json({
+    success: true,
     status: 'success',
     message: 'Security headers debug endpoint',
+    auditId: securityContext.auditId,
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV || 'development',
     headersApplied: [
@@ -84,4 +102,4 @@ export async function GET() {
   headers.set('Expect-CT', 'enforce, max-age=30');
   
   return response;
-} 
+}, DEBUG_CONFIG); 

@@ -1,26 +1,39 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken, decodeToken, generateToken } from '@/lib/jwt';
-import { validateApiKey } from '@/middleware/apiKeyAuth';
 import { User } from '@/models/User';
 import { connectDB } from '@/lib/db';
+import { secureApiRoute, SecurityConfig } from '@/middleware/security';
 
-connectDB();
+// Debug endpoint configuration - requires API key
+const DEBUG_CONFIG: SecurityConfig = {
+  requireApiKey: true,
+  enableFraudDetection: true,
+  enableAdvancedAudit: true,
+  dataClassification: 'internal',
+  rateLimiting: { maxRequests: 30, windowMs: 60000 }
+};
 
-export async function POST(request: NextRequest) {
+export const POST = secureApiRoute(async (request: NextRequest, { securityContext }) => {
   try {
-    // Validate API key
-    const authResult = await validateApiKey(request);
-    if (authResult instanceof NextResponse) {
-      return authResult;
-    }
+    // Establish database connection with retry logic
+    await connectDB();
+
+    console.log(JSON.stringify({
+      level: 'INFO',
+      message: 'JWT debug endpoint accessed',
+      auditId: securityContext.auditId,
+      timestamp: new Date().toISOString()
+    }));
 
     const { token, action } = await request.json();
 
     if (!token) {
-      return NextResponse.json(
-        { error: 'JWT token is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({
+        success: false,
+        error: 'JWT token is required',
+        auditId: securityContext.auditId,
+        timestamp: new Date().toISOString()
+      }, { status: 400 });
     }
 
     const startTime = Date.now();
@@ -117,28 +130,44 @@ export async function POST(request: NextRequest) {
       timestamp: new Date().toISOString()
     };
 
+    console.log(JSON.stringify({
+      level: 'INFO',
+      message: 'JWT token analysis completed',
+      auditId: securityContext.auditId,
+      tokenValid: (result.validation as any)?.status === 'valid',
+      userFound: (result.user as any)?.status === 'found',
+      responseTime: (result.timing as any)?.totalResponseTime,
+      timestamp: new Date().toISOString()
+    }));
+
     return NextResponse.json({
+      success: true,
       message: 'JWT token analysis complete',
+      auditId: securityContext.auditId,
       ...result
     });
 
   } catch (error) {
-    console.error('JWT debug endpoint error:', error);
-    return NextResponse.json({
+    console.error(JSON.stringify({
+      level: 'ERROR',
       message: 'JWT debug endpoint error',
+      auditId: securityContext.auditId,
       error: error.message,
       timestamp: new Date().toISOString()
-    }, { status: 500 });
-  }
-}
+    }));
 
-export async function GET(request: NextRequest) {
+    throw error;
+  }
+}, DEBUG_CONFIG);
+
+export const GET = secureApiRoute(async (request: NextRequest, { securityContext }) => {
   try {
-    // Validate API key
-    const authResult = await validateApiKey(request);
-    if (authResult instanceof NextResponse) {
-      return authResult;
-    }
+    console.log(JSON.stringify({
+      level: 'INFO',
+      message: 'JWT info endpoint accessed',
+      auditId: securityContext.auditId,
+      timestamp: new Date().toISOString()
+    }));
 
     // Generate a sample token for testing
     const sampleUser = {
@@ -152,7 +181,9 @@ export async function GET(request: NextRequest) {
     const sampleToken = await generateToken(sampleUser as any);
 
     return NextResponse.json({
+      success: true,
       message: 'JWT debug endpoint information',
+      auditId: securityContext.auditId,
       timestamp: new Date().toISOString(),
       sampleToken: {
         token: sampleToken,
@@ -190,11 +221,14 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('JWT info endpoint error:', error);
-    return NextResponse.json({
+    console.error(JSON.stringify({
+      level: 'ERROR',
       message: 'JWT info endpoint error',
+      auditId: securityContext.auditId,
       error: error.message,
       timestamp: new Date().toISOString()
-    }, { status: 500 });
+    }));
+
+    throw error;
   }
-} 
+}, DEBUG_CONFIG); 

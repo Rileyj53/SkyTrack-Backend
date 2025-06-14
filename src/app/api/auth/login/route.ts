@@ -1,82 +1,191 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { secureApiRoute, SecurityConfig } from '@/middleware/security';
 import { connectDB } from '@/lib/db';
 import { comparePasswords } from '@/lib/auth';
 import { generateToken } from '@/lib/jwt';
 import { generateCSRFToken } from '@/lib/csrf';
 import { User } from '@/models/User';
-import mongoose from 'mongoose';
 
-export async function POST(request: NextRequest) {
-  try {
+// Security configuration for login endpoint
+const SECURITY_CONFIG: SecurityConfig = {
+  requireAuth: false, // Not required for login
+  requireApiKey: true, // API key still required
+  requireCSRF: false, // Not required for initial login
+  enableFraudDetection: true, // Critical for login attempts
+  enableAdvancedAudit: true, // Track login attempts
+  dataClassification: 'confidential', // Login contains sensitive data
+  rateLimiting: {
+    maxRequests: 10, // Strict rate limiting to prevent brute force
+    windowMs: 60000, // 1 minute window
+    slidingWindow: true
+  },
+  maxRequestSize: 1024 * 2 // 2KB max for login requests
+};
+
+export const POST = secureApiRoute(async (request, { params, securityContext }) => {
+  const startTime = Date.now();
+  
+  // Structured logging for Vercel
+  console.log(JSON.stringify({
+    level: 'INFO',
+    message: 'Login attempt initiated',
+    auditId: securityContext.auditId,
+    riskScore: securityContext.riskScore,
+    timestamp: new Date().toISOString(),
+    endpoint: 'POST /api/auth/login'
+  }));
+
+  // Check risk score early - block high-risk login attempts
+  if (securityContext.riskScore > 70) {
+    console.warn(JSON.stringify({
+      level: 'WARN',
+      message: 'High risk login attempt blocked',
+      auditId: securityContext.auditId,
+      riskScore: securityContext.riskScore,
+      fraudFlags: securityContext.fraudFlags,
+      timestamp: new Date().toISOString()
+    }));
+    
+    return NextResponse.json({
+      error: {
+        message: 'Login attempt blocked due to security policy',
+        code: 'HIGH_RISK_LOGIN_BLOCKED',
+        requestId: securityContext.auditId,
+        timestamp: new Date().toISOString()
+      },
+      securityContext: {
+        riskScore: securityContext.riskScore,
+        fraudFlags: securityContext.fraudFlags
+      }
+    }, { status: 403 });
+  }
+
+  // Establish database connection with retry logic
+  await connectDB();
+
   const { email, password, token } = await request.json();
 
   // Validate input
   if (!email || !password) {
-    return NextResponse.json(
-      { error: 'Email and password are required' },
-      { status: 400 }
-    );
+    console.warn(JSON.stringify({
+      level: 'WARN',
+      message: 'Login attempt with missing credentials',
+      auditId: securityContext.auditId,
+      timestamp: new Date().toISOString()
+    }));
+    
+    return NextResponse.json({
+      error: {
+        message: 'Email and password are required',
+        code: 'MISSING_CREDENTIALS',
+        requestId: securityContext.auditId,
+        timestamp: new Date().toISOString()
+      }
+    }, { status: 400 });
   }
 
-  await connectDB();
-  const db = mongoose.connection;
-  const users = db.collection('users');
-
   // Find user by email
-  const user = await users.findOne({ email });
+  const user = await User.findOne({ email }).select('+password +mfaSecret +mfaBackupCodes +mfaEnabled');
   if (!user) {
-    return NextResponse.json(
-      { error: 'Invalid email or password' },
-      { status: 401 }
-    );
+    console.warn(JSON.stringify({
+      level: 'WARN',
+      message: 'Login attempt with invalid email',
+      auditId: securityContext.auditId,
+      email: email, // Safe to log email for security monitoring
+      timestamp: new Date().toISOString()
+    }));
+    
+    return NextResponse.json({
+      error: {
+        message: 'Invalid email or password',
+        code: 'INVALID_CREDENTIALS',
+        requestId: securityContext.auditId,
+        timestamp: new Date().toISOString()
+      }
+    }, { status: 401 });
   }
 
   // Verify password
   const isValidPassword = await comparePasswords(password, user.password);
   if (!isValidPassword) {
-    return NextResponse.json(
-      { error: 'Invalid email or password' },
-      { status: 401 }
-    );
+    console.warn(JSON.stringify({
+      level: 'WARN',
+      message: 'Login attempt with invalid password',
+      auditId: securityContext.auditId,
+      userId: user._id.toString(),
+      email: email,
+      timestamp: new Date().toISOString()
+    }));
+    
+    return NextResponse.json({
+      error: {
+        message: 'Invalid email or password',
+        code: 'INVALID_CREDENTIALS',
+        requestId: securityContext.auditId,
+        timestamp: new Date().toISOString()
+      }
+    }, { status: 401 });
   }
 
   // Check if MFA is required - MFA should be required on EVERY login when enabled
   if (user.mfaEnabled) {
     // If no token provided, return MFA required response
     if (!token) {
-      return NextResponse.json(
-        { 
-          message: 'MFA verification required',
-          requiresMFA: true 
-        },
-        { status: 401 }
-      );
+      console.log(JSON.stringify({
+        level: 'INFO',
+        message: 'MFA verification required for user',
+        auditId: securityContext.auditId,
+        userId: user._id.toString(),
+        timestamp: new Date().toISOString()
+      }));
+      
+      return NextResponse.json({
+        message: 'MFA verification required',
+        requiresMFA: true,
+        auditId: securityContext.auditId,
+        timestamp: new Date().toISOString()
+      }, { status: 428 }); // 428 Precondition Required
     }
 
-    // Verify MFA token using the User model method
+    // Verify MFA token
     if (!user.mfaSecret) {
-      return NextResponse.json(
-        { error: 'MFA secret not found' },
-        { status: 500 }
-      );
-    }
-
-    // Get the user document to use the verifyMFAToken method
-    const userDoc = await User.findById(user._id).select('+mfaSecret +mfaBackupCodes');
-    if (!userDoc) {
-      return NextResponse.json(
-        { error: 'User document not found' },
-        { status: 500 }
-      );
+      console.error(JSON.stringify({
+        level: 'ERROR',
+        message: 'MFA enabled but secret not found',
+        auditId: securityContext.auditId,
+        userId: user._id.toString(),
+        timestamp: new Date().toISOString()
+      }));
+      
+      return NextResponse.json({
+        error: {
+          message: 'MFA configuration error',
+          code: 'MFA_CONFIG_ERROR',
+          requestId: securityContext.auditId,
+          timestamp: new Date().toISOString()
+        }
+      }, { status: 500 });
     }
 
     // Verify the MFA token
-    const isValidToken = await userDoc.verifyMFAToken(token);
+    const isValidToken = await user.verifyMFAToken(token);
     if (!isValidToken) {
-      return NextResponse.json(
-        { error: 'Invalid MFA token' },
-        { status: 401 }
-    );
+      console.warn(JSON.stringify({
+        level: 'WARN',
+        message: 'Invalid MFA token provided',
+        auditId: securityContext.auditId,
+        userId: user._id.toString(),
+        timestamp: new Date().toISOString()
+      }));
+      
+      return NextResponse.json({
+        error: {
+          message: 'Invalid MFA token',
+          code: 'INVALID_MFA_TOKEN',
+          requestId: securityContext.auditId,
+          timestamp: new Date().toISOString()
+        }
+      }, { status: 401 });
     }
   }
 
@@ -85,12 +194,41 @@ export async function POST(request: NextRequest) {
 
   // Generate new CSRF token
   const csrfToken = generateCSRFToken();
+  
+  const processingTime = Date.now() - startTime;
+
+  console.log(JSON.stringify({
+    level: 'INFO',
+    message: 'Login successful',
+    auditId: securityContext.auditId,
+    userId: user._id.toString(),
+    mfaUsed: user.mfaEnabled,
+    processingTime,
+    timestamp: new Date().toISOString()
+  }));
 
   // Create response
   const response = NextResponse.json({
+    success: true,
     message: 'Login successful',
-    token: jwtToken,
-    csrfToken: csrfToken.token
+    data: {
+      token: jwtToken,
+      csrfToken: csrfToken.token,
+             user: {
+         id: user._id,
+         email: user.email,
+         role: user.role,
+         schoolId: user.school_id,
+         mfaEnabled: user.mfaEnabled
+       }
+    },
+    auditId: securityContext.auditId,
+    timestamp: new Date().toISOString(),
+    securityContext: {
+      sessionId: securityContext.auditId,
+      riskScore: securityContext.riskScore,
+      encryptionLevel: 'AES-256'
+    }
   });
 
   // Set JWT token cookie
@@ -112,36 +250,4 @@ export async function POST(request: NextRequest) {
   });
 
   return response;
-  } catch (error) {
-    // Handle errors manually since we're not using createAPIHandler
-    console.error('Login error:', error);
-    
-    if (error instanceof Error) {
-      // Handle known error types
-      if (error.message.includes('BadRequest')) {
-        return NextResponse.json(
-          { error: error.message },
-          { status: 400 }
-        );
-      }
-      if (error.message.includes('Unauthorized')) {
-        return NextResponse.json(
-          { error: error.message },
-          { status: 401 }
-        );
-      }
-      if (error.message.includes('InternalServerError')) {
-        return NextResponse.json(
-          { error: error.message },
-          { status: 500 }
-        );
-      }
-    }
-    
-    // Default error response
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
-  }
-}
+}, SECURITY_CONFIG);

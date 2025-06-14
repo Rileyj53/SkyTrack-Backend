@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
 import mongoose from 'mongoose';
+import { secureApiRoute, SecurityConfig } from '@/middleware/security';
 
 interface HealthCheck {
   status: 'ok' | 'error';
@@ -29,7 +30,15 @@ interface HealthCheck {
   };
 }
 
-export async function GET(request: NextRequest) {
+// Debug endpoint configuration - public health check with minimal security
+const DEBUG_CONFIG: SecurityConfig = {
+  requireApiKey: true,
+  enableFraudDetection: true,
+  dataClassification: 'public',
+  rateLimiting: { maxRequests: 100, windowMs: 60000 }
+};
+
+export const GET = secureApiRoute(async (request: NextRequest, { securityContext }) => {
   const startTime = Date.now();
   const healthCheck: HealthCheck = {
     status: 'ok',
@@ -58,6 +67,13 @@ export async function GET(request: NextRequest) {
   };
 
   try {
+    console.log(JSON.stringify({
+      level: 'INFO',
+      message: 'Health check endpoint accessed',
+      auditId: securityContext.auditId,
+      timestamp: new Date().toISOString()
+    }));
+
     // Check database connection and performance
     const dbStartTime = Date.now();
     await connectDB();
@@ -88,12 +104,22 @@ export async function GET(request: NextRequest) {
 
     // Log health check results
     console.log(JSON.stringify({
-      type: 'health_check',
-      ...healthCheck,
+      level: 'INFO',
+      message: 'Health check completed',
+      auditId: securityContext.auditId,
+      status: healthCheck.status,
+      responseTime: healthCheck.api.responseTime,
+      memoryUsage: healthCheck.memory.percentage,
+      dbResponseTime: healthCheck.database.responseTime,
       timestamp: new Date().toISOString()
     }));
 
-    return NextResponse.json(healthCheck);
+    return NextResponse.json({
+      success: true,
+      auditId: securityContext.auditId,
+      ...healthCheck
+    });
+
   } catch (error) {
     healthCheck.status = 'error';
     healthCheck.database.status = 'error';
@@ -101,12 +127,17 @@ export async function GET(request: NextRequest) {
     healthCheck.api.status = 'error';
 
     console.error(JSON.stringify({
-      type: 'health_check_error',
-      ...healthCheck,
+      level: 'ERROR',
+      message: 'Health check failed',
+      auditId: securityContext.auditId,
       error: error.message,
       timestamp: new Date().toISOString()
     }));
     
-    return NextResponse.json(healthCheck, { status: 500 });
+    return NextResponse.json({
+      success: false,
+      auditId: securityContext.auditId,
+      ...healthCheck
+    }, { status: 500 });
   }
-} 
+}, DEBUG_CONFIG); 

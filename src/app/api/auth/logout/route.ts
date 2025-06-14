@@ -1,33 +1,69 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { connectDB } from '../../../../lib/db';
-import { BlacklistedToken } from '../../../../models/BlacklistedToken';
-import { decodeToken } from '../../../../lib/jwt';
-import { validateApiKey } from '@/middleware/apiKeyAuth';
-import { authenticateRequest } from '@/lib/auth';
+import { secureApiRoute, SecurityConfig } from '@/middleware/security';
+import { connectDB } from '@/lib/db';
+import { BlacklistedToken } from '@/models/BlacklistedToken';
+import { decodeToken } from '@/lib/jwt';
 
-// Connect to MongoDB
-connectDB();
+// Security configuration for logout endpoint
+const SECURITY_CONFIG: SecurityConfig = {
+  requireAuth: true, // Authentication required for logout
+  requireApiKey: true, // API key required
+  requireCSRF: true, // CSRF protection for logout
+  allowedRoles: ['school_admin', 'instructor', 'student'], // All authenticated users can logout
+  enableFraudDetection: true, // Monitor logout patterns
+  enableAdvancedAudit: true, // Track logout events
+  dataClassification: 'confidential', // Logout contains session data
+  rateLimiting: {
+    maxRequests: 50, // More lenient than login
+    windowMs: 60000, // 1 minute window
+    slidingWindow: true
+  },
+  maxRequestSize: 1024 // 1KB max for logout requests
+};
 
-export async function POST(request: NextRequest) {
-  try {
-    // Validate API key first
-    const authResult = await validateApiKey(request);
-    if (authResult instanceof NextResponse) {
-      return authResult;
-    }
+export const POST = secureApiRoute(async (request, { params, securityContext }) => {
+  const startTime = Date.now();
+  
+  // Structured logging for Vercel
+  console.log(JSON.stringify({
+    level: 'INFO',
+    message: 'Logout request initiated',
+    auditId: securityContext.auditId,
+    userId: securityContext.user?.id,
+    riskScore: securityContext.riskScore,
+    timestamp: new Date().toISOString(),
+    endpoint: 'POST /api/auth/logout'
+  }));
 
-    const auth = await authenticateRequest(request);
-    if (!auth.success) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
+  // Check risk score - monitor suspicious logout patterns
+  if (securityContext.riskScore > 80) {
+    console.warn(JSON.stringify({
+      level: 'WARN',
+      message: 'High risk logout attempt detected',
+      auditId: securityContext.auditId,
+      userId: securityContext.user?.id,
+      riskScore: securityContext.riskScore,
+      fraudFlags: securityContext.fraudFlags,
+      timestamp: new Date().toISOString()
+    }));
+  }
 
-    // Get the token from the Authorization header
-    const token = request.headers.get('Authorization')?.split(' ')[1];
+  // Establish database connection with retry logic
+  await connectDB();
 
-    if (token) {
+  // Get the token from the Authorization header
+  const token = request.headers.get('Authorization')?.split(' ')[1];
+
+  if (token) {
+    try {
+      console.log(JSON.stringify({
+        level: 'INFO',
+        message: 'Adding token to blacklist',
+        auditId: securityContext.auditId,
+        userId: securityContext.user?.id,
+        timestamp: new Date().toISOString()
+      }));
+
       // Decode the token to get its expiration
       const decoded = decodeToken(token);
       if (decoded && decoded.exp) {
@@ -36,50 +72,93 @@ export async function POST(request: NextRequest) {
           token,
           blacklistedAt: new Date(),
           expiresAt: new Date(decoded.exp * 1000), // Convert seconds to milliseconds
+          userId: securityContext.user?.id, // Track which user blacklisted the token
+          auditId: securityContext.auditId // Link to audit trail
         });
+        
         await blacklistedToken.save();
+
+        console.log(JSON.stringify({
+          level: 'INFO',
+          message: 'Token successfully blacklisted',
+          auditId: securityContext.auditId,
+          userId: securityContext.user?.id,
+          tokenExpiry: new Date(decoded.exp * 1000).toISOString(),
+          timestamp: new Date().toISOString()
+        }));
+      } else {
+        console.warn(JSON.stringify({
+          level: 'WARN',
+          message: 'Unable to decode token for blacklisting',
+          auditId: securityContext.auditId,
+          userId: securityContext.user?.id,
+          timestamp: new Date().toISOString()
+        }));
       }
+    } catch (blacklistError) {
+      console.error(JSON.stringify({
+        level: 'ERROR',
+        message: 'Failed to blacklist token',
+        auditId: securityContext.auditId,
+        userId: securityContext.user?.id,
+        error: blacklistError.message,
+        timestamp: new Date().toISOString()
+      }));
+      
+      // Continue with logout even if blacklisting fails
+      // The token will still be invalid due to cookie clearing
     }
-
-    // Create response
-    const response = NextResponse.json({
-      message: 'Logged out successfully',
-    });
-
-    // Clear the token cookie
-    response.cookies.set('token', '', {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      path: '/',
-      maxAge: 0
-    });
-
-    // Clear the CSRF token cookie
-    response.cookies.set('csrf-token', '', {
-      httpOnly: false,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      path: '/',
-      maxAge: 0
-    });
-
-    console.log(JSON.stringify({
-      type: 'logout_success',
-      userId: auth.userId,
+  } else {
+    console.warn(JSON.stringify({
+      level: 'WARN',
+      message: 'No token found in Authorization header during logout',
+      auditId: securityContext.auditId,
+      userId: securityContext.user?.id,
       timestamp: new Date().toISOString()
     }));
-
-    return response;
-  } catch (error) {
-    console.error(JSON.stringify({
-      type: 'logout_error',
-      error: error.message,
-      timestamp: new Date().toISOString()
-    }));
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
   }
-}
+
+  const processingTime = Date.now() - startTime;
+
+  console.log(JSON.stringify({
+    level: 'INFO',
+    message: 'Logout completed successfully',
+    auditId: securityContext.auditId,
+    userId: securityContext.user?.id,
+    processingTime,
+    timestamp: new Date().toISOString()
+  }));
+
+  // Create response
+  const response = NextResponse.json({
+    success: true,
+    message: 'Logged out successfully',
+    auditId: securityContext.auditId,
+    timestamp: new Date().toISOString(),
+    securityContext: {
+      sessionId: securityContext.auditId,
+      riskScore: securityContext.riskScore,
+      encryptionLevel: 'AES-256'
+    }
+  });
+
+  // Clear the token cookie
+  response.cookies.set('token', '', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    path: '/',
+    maxAge: 0
+  });
+
+  // Clear the CSRF token cookie
+  response.cookies.set('csrf-token', '', {
+    httpOnly: false,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    path: '/',
+    maxAge: 0
+  });
+
+  return response;
+}, SECURITY_CONFIG);

@@ -1,63 +1,62 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { validateApiKey } from '@/middleware/apiKeyAuth';
-import { verifyToken } from '@/lib/jwt';
+import { secureApiRoute, SecurityConfig } from '@/middleware/security';
 
-export async function GET(request: NextRequest) {
+// Debug endpoint configuration - requires sys_admin role
+const DEBUG_CONFIG: SecurityConfig = {
+  requireAuth: true,
+  requireApiKey: true,
+  allowedRoles: ['sys_admin'],
+  enableFraudDetection: true,
+  enableAdvancedAudit: true,
+  dataClassification: 'confidential',
+  rateLimiting: { maxRequests: 30, windowMs: 60000 }
+};
+
+export const GET = secureApiRoute(async (request: NextRequest, { securityContext }) => {
   try {
-    // Validate API key
-    const authResult = await validateApiKey(request);
-    if (authResult instanceof NextResponse) {
-      return authResult;
-    }
-
-    const { userId, apiKeyDoc } = authResult;
-
-    // Check for authorization header
-    const authHeader = request.headers.get('Authorization');
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return NextResponse.json(
-        { error: 'Unauthorized - Bearer token required' },
-        { status: 401 }
-      );
-    }
-
-    // Verify the token and check for sys_admin role
-    const token = authHeader.split(' ')[1];
-    const decoded = verifyToken(token);
-    if (!decoded || !decoded.userId) {
-      return NextResponse.json(
-        { error: 'Invalid token' },
-        { status: 401 }
-      );
-    }
-
-    // Check if the user has the sys_admin role
-    if (decoded.role !== 'sys_admin') {
-      return NextResponse.json(
-        { error: 'Forbidden: Only system administrators can access this endpoint' },
-        { status: 403 }
-      );
-    }
+    console.log(JSON.stringify({
+      level: 'INFO',
+      message: 'System admin protected test endpoint accessed',
+      auditId: securityContext.auditId,
+      userId: securityContext.user?.userId,
+      userRole: securityContext.user?.role,
+      timestamp: new Date().toISOString()
+    }));
 
     // Return success response with debug information
     return NextResponse.json({
+      success: true,
       message: 'System admin protected endpoint accessed successfully',
-      userId,
-      userRole: decoded.role,
-      apiKeyLabel: apiKeyDoc?.label || 'Unknown',
+      auditId: securityContext.auditId,
+      data: {
+        userId: securityContext.user?.userId,
+        userRole: securityContext.user?.role,
+        apiKeyLabel: securityContext.apiKey?.label || 'Unknown'
+      },
       timestamp: new Date().toISOString(),
       debugInfo: {
-        tokenUserId: decoded.userId,
-        tokenRole: decoded.role,
-        apiKeyUsed: !!apiKeyDoc,
-        requestMethod: request.method
+        tokenUserId: securityContext.user?.userId,
+        tokenRole: securityContext.user?.role,
+        apiKeyUsed: !!securityContext.apiKey,
+        requestMethod: request.method,
+        securityContext: {
+          riskScore: securityContext.riskScore,
+          sessionId: securityContext.sessionId,
+          geoLocation: securityContext.geoLocation,
+          fraudFlags: securityContext.fraudFlags
+        }
       }
     });
+
   } catch (error) {
-    console.error('Protected test endpoint error:', error);
-    return NextResponse.json(
-      { error: 'Authentication failed' },
-      { status: 500 }
-    );
+    console.error(JSON.stringify({
+      level: 'ERROR',
+      message: 'Protected test endpoint error',
+      auditId: securityContext.auditId,
+      error: error.message,
+      timestamp: new Date().toISOString()
+    }));
+
+    throw error;
   }
-} 
+}, DEBUG_CONFIG); 

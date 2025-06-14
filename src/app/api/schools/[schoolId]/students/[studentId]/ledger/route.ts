@@ -1,452 +1,405 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { secureApiRoute, SecurityConfig } from '@/middleware/security';
 import { connectDB } from '@/lib/db';
-import { validateApiKey } from '@/middleware/apiKeyAuth';
-import { authenticateRequest } from '@/middleware/auth';
-import { verifyToken } from '@/lib/jwt';
 import StudentLedger from '@/models/StudentLedger';
 import Student from '@/models/Student';
 import { School } from '@/models/School';
 import mongoose from 'mongoose';
+import FlightInvoice from '@/models/FlightInvoice';
 
 // Import FlightInvoice to ensure the model is registered
 import '@/models/FlightInvoice';
 
-/**
- * Check if user has permission to access a student's ledger
- * @param request NextRequest object to extract token from
- * @param schoolId School ID from URL
- * @param studentId Student ID from URL
- * @returns Object with permission result and error if any
- */
-async function checkLedgerAccess(request: NextRequest, schoolId: string, studentId: string) {
-  try {
-    // Extract token from either Authorization header or cookies
-    let token = null;
-    const authHeader = request.headers.get('Authorization');
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      token = authHeader.split(' ')[1];
-    } else {
-      token = request.cookies.get('token')?.value;
-    }
-
-    if (!token) {
-      return { hasAccess: false, error: 'No token provided' };
-    }
-
-    const decoded = verifyToken(token);
-    if (!decoded) {
-      return { hasAccess: false, error: 'Invalid token' };
-    }
-
-    // System admins can access any ledger
-    if (decoded.role === 'sys_admin') {
-      return { hasAccess: true };
-    }
-
-    // School admins can access ledgers in their school
-    if (decoded.role === 'school_admin') {
-      // For now, allow school admins to access any ledger in the school they're requesting
-      // In a more complex setup, you'd verify the admin actually belongs to this school
-      return { hasAccess: true };
-    }
-
-    // Students can only access their own ledger
-    if (decoded.role === 'student') {
-      const student = await (Student as any).findOne({
-        _id: studentId,
-        user_id: decoded.userId,
-        school_id: schoolId
-      });
-
-      if (student) {
-        return { hasAccess: true };
-      } else {
-        return { hasAccess: false, error: 'Students can only access their own ledger' };
-      }
-    }
-
-    // Instructors and other roles cannot access ledgers
-    return { hasAccess: false, error: 'Insufficient permissions to access student ledger' };
-
-  } catch (error) {
-    console.error('Error checking ledger access:', error);
-    return { hasAccess: false, error: 'Error validating permissions' };
+// Security configuration for student ledger operations
+const STUDENT_LEDGER_SECURITY_CONFIG: SecurityConfig = {
+  requireAuth: true,
+  requireApiKey: true,
+  requireCSRF: false, // GET operations don't need CSRF
+  allowedRoles: ['sys_admin', 'school_admin', 'instructor', 'student'],
+  requireSchoolAccess: true,
+  enableFraudDetection: true,
+  enableAdvancedAudit: true,
+  dataClassification: 'confidential',
+  rateLimiting: {
+    maxRequests: 100,
+    windowMs: 60000,
+    slidingWindow: true
   }
-}
+};
+
+const STUDENT_LEDGER_MODIFY_SECURITY_CONFIG: SecurityConfig = {
+  requireAuth: true,
+  requireApiKey: true,
+  requireCSRF: true, // POST/PUT operations need CSRF
+  allowedRoles: ['sys_admin', 'school_admin'],
+  requireSchoolAccess: true,
+  enableFraudDetection: true,
+  enableAdvancedAudit: true,
+  dataClassification: 'confidential',
+  rateLimiting: {
+    maxRequests: 50,
+    windowMs: 60000,
+    slidingWindow: true
+  }
+};
+
+const STUDENT_LEDGER_DELETE_SECURITY_CONFIG: SecurityConfig = {
+  requireAuth: true,
+  requireApiKey: true,
+  requireCSRF: true,
+  allowedRoles: ['sys_admin'],
+  requireSchoolAccess: true,
+  enableFraudDetection: true,
+  enableAdvancedAudit: true,
+  dataClassification: 'confidential',
+  rateLimiting: {
+    maxRequests: 20,
+    windowMs: 60000,
+    slidingWindow: true
+  }
+};
 
 // GET /api/schools/[schoolId]/students/[studentId]/ledger - Get student ledger
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { schoolId: string; studentId: string } }
-) {
-  try {
-    // Validate API key
-    const apiKeyResult = await validateApiKey(request);
-    if ('error' in apiKeyResult) {
-      return NextResponse.json({ error: apiKeyResult.error }, { status: 401 });
-    }
+export const GET = secureApiRoute(async (request, { params, securityContext }) => {
+  const startTime = Date.now();
+  
+  // Establish database connection with retry logic
+  await connectDB();
 
-    // Authenticate user
-    const authResult = await authenticateRequest(request);
-    if (authResult instanceof NextResponse) {
-      return authResult;
-    }
+  console.log(JSON.stringify({
+    level: 'INFO',
+    message: 'Processing student ledger request',
+    auditId: securityContext.auditId,
+    schoolId: params.schoolId,
+    studentId: params.studentId,
+    userId: securityContext.user.id,
+    timestamp: new Date().toISOString()
+  }));
 
-    // Connect to database
-    await connectDB();
-
-    // Check access permissions
-    const accessCheck = await checkLedgerAccess(request, params.schoolId, params.studentId);
-    if (!accessCheck.hasAccess) {
-      return NextResponse.json(
-        { error: accessCheck.error },
-        { status: 403 }
-      );
-    }
-
-    // Validate IDs
-    if (!mongoose.Types.ObjectId.isValid(params.schoolId) || !mongoose.Types.ObjectId.isValid(params.studentId)) {
-      return NextResponse.json(
-        { error: 'Invalid school ID or student ID format' },
-        { status: 400 }
-      );
-    }
-
-    // Check if student exists and belongs to the school
-    const student = await (Student as any).findOne({
-      _id: params.studentId,
-      school_id: params.schoolId
-    });
-
-    if (!student) {
-      return NextResponse.json(
-        { error: 'Student not found in this school' },
-        { status: 404 }
-      );
-    }
-
-    // Find the student ledger with populated data
-    const ledger = await (StudentLedger as any)
-      .findOne({
-        student_id: params.studentId,
-        school_id: params.schoolId
-      })
-      .populate({
-        path: 'school_id',
-        select: 'name address airport phone email'
-      })
-      .populate({
-        path: 'student_id',
-        populate: {
-          path: 'user_id',
-          select: 'first_name last_name email'
-        }
-      })
-      .populate({
-        path: 'charges',
-        model: 'FlightInvoice',
-        select: 'total_amount status invoice_number flight_schedule_id created_at',
-        match: { status: 'approved' } // Only show approved invoices
-      })
-      .lean();
-
-    if (!ledger) {
-      return NextResponse.json(
-        { error: 'Student ledger not found' },
-        { status: 404 }
-      );
-    }
-
-    return NextResponse.json({ ledger });
-
-  } catch (error) {
-    console.error('Error in GET /api/schools/[schoolId]/students/[studentId]/ledger:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+  // Validate IDs
+  if (!mongoose.Types.ObjectId.isValid(params.schoolId) || !mongoose.Types.ObjectId.isValid(params.studentId)) {
+    return NextResponse.json({
+      error: {
+        message: 'Invalid school ID or student ID format',
+        code: 'INVALID_ID_FORMAT',
+        requestId: securityContext.auditId,
+        timestamp: new Date().toISOString()
+      }
+    }, { status: 400 });
   }
-}
 
-// POST /api/schools/[schoolId]/students/[studentId]/ledger - Create student ledger
-export async function POST(
-  request: NextRequest,
-  { params }: { params: { schoolId: string; studentId: string } }
-) {
-  try {
-    // Validate API key
-    const apiKeyResult = await validateApiKey(request);
-    if ('error' in apiKeyResult) {
-      return NextResponse.json({ error: apiKeyResult.error }, { status: 401 });
-    }
+  // Check if student exists and belongs to the school
+  const student = await (Student as any).findOne({
+    _id: params.studentId,
+    school_id: params.schoolId
+  });
 
-    // Authenticate user
-    const authResult = await authenticateRequest(request);
-    if (authResult instanceof NextResponse) {
-      return authResult;
-    }
-
-    // Connect to database
-    await connectDB();
-
-    // Check if user is school admin or system admin (only they can create ledgers)
-    // Extract token from either Authorization header or cookies
-    let token = null;
-    const authHeader = request.headers.get('Authorization');
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      token = authHeader.split(' ')[1];
-    } else {
-      token = request.cookies.get('token')?.value;
-    }
-
-    const decoded = verifyToken(token || '');
-    if (decoded?.role !== 'school_admin' && decoded?.role !== 'sys_admin') {
-      return NextResponse.json(
-        { error: 'Insufficient permissions. Only school administrators or system administrators can create ledgers.' },
-        { status: 403 }
-      );
-    }
-
-    // Validate IDs
-    if (!mongoose.Types.ObjectId.isValid(params.schoolId) || !mongoose.Types.ObjectId.isValid(params.studentId)) {
-      return NextResponse.json(
-        { error: 'Invalid school ID or student ID format' },
-        { status: 400 }
-      );
-    }
-
-    // Check if student exists and belongs to the school
-    const student = await (Student as any).findOne({
-      _id: params.studentId,
-      school_id: params.schoolId
-    });
-
-    if (!student) {
-      return NextResponse.json(
-        { error: 'Student not found in this school' },
-        { status: 404 }
-      );
-    }
-
-    // Check if ledger already exists
-    const existingLedger = await (StudentLedger as any).findOne({
-      student_id: params.studentId,
-      school_id: params.schoolId
-    });
-
-    if (existingLedger) {
-      return NextResponse.json(
-        { error: 'Student ledger already exists' },
-        { status: 409 }
-      );
-    }
-
-    // Get request body
-    const body = await request.json();
-
-    // Validate balance (allow negative values)
-    if (body.balance !== undefined && typeof body.balance !== 'number') {
-      return NextResponse.json(
-        { error: 'Balance must be a number' },
-        { status: 400 }
-      );
-    }
-
-    // Validate charges array if provided
-    if (body.charges && Array.isArray(body.charges)) {
-      for (const chargeId of body.charges) {
-        if (!mongoose.Types.ObjectId.isValid(chargeId)) {
-          return NextResponse.json(
-            { error: 'Invalid charge ID in charges array' },
-            { status: 400 }
-          );
-        }
+  if (!student) {
+    return NextResponse.json({
+      error: {
+        message: 'Student not found in this school',
+        code: 'STUDENT_NOT_FOUND',
+        requestId: securityContext.auditId,
+        timestamp: new Date().toISOString()
       }
-    }
+    }, { status: 404 });
+  }
 
-    // Validate payments array if provided
-    if (body.payments && Array.isArray(body.payments)) {
-      for (const payment of body.payments) {
-        if (!payment.payment_id || !payment.amount || typeof payment.amount !== 'number') {
-          return NextResponse.json(
-            { error: 'Each payment must have payment_id and amount' },
-            { status: 400 }
-          );
+  // Additional access control for students - they can only view their own ledger
+  if (securityContext.user.role === 'student') {
+    const studentData = student as any;
+    if (!studentData.user_id || studentData.user_id.toString() !== securityContext.user.id) {
+      return NextResponse.json({
+        error: {
+          message: 'Students can only access their own ledger',
+          code: 'INSUFFICIENT_PERMISSIONS',
+          requestId: securityContext.auditId,
+          timestamp: new Date().toISOString()
         }
-        if (payment.amount < 0) {
-          return NextResponse.json(
-            { error: 'Payment amounts cannot be negative' },
-            { status: 400 }
-          );
-        }
-        if (payment.timestamp && isNaN(new Date(payment.timestamp).getTime())) {
-          return NextResponse.json(
-            { error: 'Invalid payment timestamp format' },
-            { status: 400 }
-          );
-        }
-      }
+      }, { status: 403 });
     }
+  }
 
-    // Create new student ledger
-    const ledger = new StudentLedger({
+  // Find or create student ledger
+  let ledger = await (StudentLedger as any).findOne({
+    school_id: params.schoolId,
+    student_id: params.studentId
+  })
+  .populate({
+    path: 'charges',
+    select: 'amount description status created_at flight_schedule_id',
+    populate: {
+      path: 'flight_schedule_id',
+      select: 'scheduled_start_time flight_type'
+    }
+  })
+  .populate({
+    path: 'payments',
+    select: 'amount payment_method status created_at transaction_id'
+  })
+  .lean();
+
+  // If ledger doesn't exist, create a new one
+  if (!ledger) {
+    const newLedger = new StudentLedger({
       school_id: params.schoolId,
       student_id: params.studentId,
-      balance: body.balance || 0.00,
-      charges: body.charges || [],
-      payments: body.payments || []
+      balance: 0.00,
+      charges: [],
+      payments: []
     });
 
-    await ledger.save();
+    await newLedger.save();
 
-    // Populate the created ledger with related data
-    const populatedLedger = await (StudentLedger as any)
-      .findById(ledger._id)
-      .populate({
-        path: 'school_id',
-        select: 'name address airport phone email'
-      })
-      .populate({
-        path: 'student_id',
-        populate: {
-          path: 'user_id',
-          select: 'first_name last_name email'
-        }
-      })
-      .populate({
-        path: 'charges',
-        model: 'FlightInvoice',
-        select: 'total_amount status invoice_number flight_schedule_id created_at'
-      })
-      .lean();
-
-    return NextResponse.json({
-      message: 'Student ledger created successfully',
-      ledger: populatedLedger
-    }, { status: 201 });
-
-  } catch (error) {
-    console.error('Error in POST /api/schools/[schoolId]/students/[studentId]/ledger:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
-  }
-}
-
-// PUT /api/schools/[schoolId]/students/[studentId]/ledger - Update student ledger
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: { schoolId: string; studentId: string } }
-) {
-  try {
-    // Validate API key
-    const apiKeyResult = await validateApiKey(request);
-    if ('error' in apiKeyResult) {
-      return NextResponse.json({ error: apiKeyResult.error }, { status: 401 });
-    }
-
-    // Authenticate user
-    const authResult = await authenticateRequest(request);
-    if (authResult instanceof NextResponse) {
-      return authResult;
-    }
-
-    // Connect to database
-    await connectDB();
-
-    // Check if user is school admin or system admin (only they can update ledgers)
-    // Extract token from either Authorization header or cookies
-    let token = null;
-    const authHeader = request.headers.get('Authorization');
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      token = authHeader.split(' ')[1];
-    } else {
-      token = request.cookies.get('token')?.value;
-    }
-
-    const decoded = verifyToken(token || '');
-    if (decoded?.role !== 'school_admin' && decoded?.role !== 'sys_admin') {
-      return NextResponse.json(
-        { error: 'Insufficient permissions. Only school administrators or system administrators can update ledgers.' },
-        { status: 403 }
-      );
-    }
-
-    // Validate IDs
-    if (!mongoose.Types.ObjectId.isValid(params.schoolId) || !mongoose.Types.ObjectId.isValid(params.studentId)) {
-      return NextResponse.json(
-        { error: 'Invalid school ID or student ID format' },
-        { status: 400 }
-      );
-    }
-
-    // Find existing ledger
-    const existingLedger = await (StudentLedger as any).findOne({
+    ledger = {
+      _id: newLedger._id,
+      school_id: params.schoolId,
       student_id: params.studentId,
-      school_id: params.schoolId
-    });
+      balance: 0.00,
+      charges: [],
+      payments: [],
+      created_at: newLedger.created_at,
+      updated_at: newLedger.updated_at
+    };
 
-    if (!existingLedger) {
-      return NextResponse.json(
-        { error: 'Student ledger not found' },
-        { status: 404 }
-      );
+    console.log(JSON.stringify({
+      level: 'INFO',
+      message: 'Created new student ledger',
+      auditId: securityContext.auditId,
+      studentId: params.studentId,
+      ledgerId: newLedger._id,
+      timestamp: new Date().toISOString()
+    }));
+  }
+
+  // Parse query parameters for filtering
+  const url = new URL(request.url);
+  const includeTransactionHistory = url.searchParams.get('include_history') === 'true';
+  const startDate = url.searchParams.get('start_date');
+  const endDate = url.searchParams.get('end_date');
+
+  // Calculate summary statistics
+  const totalCharges = ledger.charges?.reduce((sum: number, charge: any) => sum + (charge.amount || 0), 0) || 0;
+  const totalPayments = ledger.payments?.reduce((sum: number, payment: any) => sum + (payment.amount || 0), 0) || 0;
+  const pendingCharges = ledger.charges?.filter((charge: any) => charge.status === 'pending').length || 0;
+  const pendingPayments = ledger.payments?.filter((payment: any) => payment.status === 'pending').length || 0;
+
+  // Prepare response data
+  const responseData: any = {
+    ledger: {
+      _id: ledger._id,
+      school_id: ledger.school_id,
+      student_id: ledger.student_id,
+      balance: ledger.balance,
+      created_at: ledger.created_at,
+      updated_at: ledger.updated_at
+    },
+    summary: {
+      total_charges: totalCharges,
+      total_payments: totalPayments,
+      current_balance: ledger.balance,
+      pending_charges: pendingCharges,
+      pending_payments: pendingPayments,
+      charges_count: ledger.charges?.length || 0,
+      payments_count: ledger.payments?.length || 0
     }
+  };
 
-    // Get request body
-    const body = await request.json();
+  // Include transaction history if requested
+  if (includeTransactionHistory) {
+    let charges = ledger.charges || [];
+    let payments = ledger.payments || [];
 
-    // Validate balance if provided
-    if (body.balance !== undefined && typeof body.balance !== 'number') {
-      return NextResponse.json(
-        { error: 'Balance must be a number' },
-        { status: 400 }
-      );
-    }
+    // Apply date filtering if provided
+    if (startDate || endDate) {
+      const start = startDate ? new Date(startDate) : null;
+      const end = endDate ? new Date(endDate) : null;
 
-    // Validate charges array if provided
-    if (body.charges && Array.isArray(body.charges)) {
-      for (const chargeId of body.charges) {
-        if (!mongoose.Types.ObjectId.isValid(chargeId)) {
-          return NextResponse.json(
-            { error: 'Invalid charge ID in charges array' },
-            { status: 400 }
-          );
-        }
+      if (start) {
+        charges = charges.filter((charge: any) => new Date(charge.created_at) >= start);
+        payments = payments.filter((payment: any) => new Date(payment.created_at) >= start);
+      }
+
+      if (end) {
+        charges = charges.filter((charge: any) => new Date(charge.created_at) <= end);
+        payments = payments.filter((payment: any) => new Date(payment.created_at) <= end);
       }
     }
 
-    // Validate payments array if provided
-    if (body.payments && Array.isArray(body.payments)) {
-      for (const payment of body.payments) {
-        if (!payment.payment_id || !payment.amount || typeof payment.amount !== 'number') {
-          return NextResponse.json(
-            { error: 'Each payment must have payment_id and amount' },
-            { status: 400 }
-          );
-        }
-        if (payment.amount < 0) {
-          return NextResponse.json(
-            { error: 'Payment amounts cannot be negative' },
-            { status: 400 }
-          );
-        }
-        if (payment.timestamp && isNaN(new Date(payment.timestamp).getTime())) {
-          return NextResponse.json(
-            { error: 'Invalid payment timestamp format' },
-            { status: 400 }
-          );
-        }
+    responseData.transactions = {
+      charges,
+      payments
+    };
+  }
+
+  const processingTime = Date.now() - startTime;
+
+  console.log(JSON.stringify({
+    level: 'INFO',
+    message: 'Student ledger retrieved successfully',
+    auditId: securityContext.auditId,
+    schoolId: params.schoolId,
+    studentId: params.studentId,
+    balance: ledger.balance,
+    chargesCount: ledger.charges?.length || 0,
+    paymentsCount: ledger.payments?.length || 0,
+    processingTime,
+    timestamp: new Date().toISOString()
+  }));
+
+  return NextResponse.json({
+    success: true,
+    message: 'Student ledger retrieved successfully',
+    data: responseData,
+    auditId: securityContext.auditId,
+    timestamp: new Date().toISOString()
+  });
+}, STUDENT_LEDGER_SECURITY_CONFIG);
+
+// POST /api/schools/[schoolId]/students/[studentId]/ledger - Create student ledger
+export const POST = secureApiRoute(async (request, { params, securityContext }) => {
+  const startTime = Date.now();
+  
+  // Establish database connection with retry logic
+  await connectDB();
+
+  console.log(JSON.stringify({
+    level: 'INFO',
+    message: 'Processing student ledger creation request',
+    auditId: securityContext.auditId,
+    schoolId: params.schoolId,
+    studentId: params.studentId,
+    userId: securityContext.user.id,
+    timestamp: new Date().toISOString()
+  }));
+
+  // Validate IDs
+  if (!mongoose.Types.ObjectId.isValid(params.schoolId) || !mongoose.Types.ObjectId.isValid(params.studentId)) {
+    return NextResponse.json({
+      error: {
+        message: 'Invalid school ID or student ID format',
+        code: 'INVALID_ID_FORMAT',
+        requestId: securityContext.auditId,
+        timestamp: new Date().toISOString()
+      }
+    }, { status: 400 });
+  }
+
+  // Check if student exists and belongs to the school
+  const student = await (Student as any).findOne({
+    _id: params.studentId,
+    school_id: params.schoolId
+  });
+
+  if (!student) {
+    return NextResponse.json({
+      error: {
+        message: 'Student not found in this school',
+        code: 'STUDENT_NOT_FOUND',
+        requestId: securityContext.auditId,
+        timestamp: new Date().toISOString()
+      }
+    }, { status: 404 });
+  }
+
+  // Check if ledger already exists
+  const existingLedger = await (StudentLedger as any).findOne({
+    student_id: params.studentId,
+    school_id: params.schoolId
+  });
+
+  if (existingLedger) {
+    return NextResponse.json({
+      error: {
+        message: 'Student ledger already exists',
+        code: 'LEDGER_ALREADY_EXISTS',
+        requestId: securityContext.auditId,
+        timestamp: new Date().toISOString()
+      }
+    }, { status: 409 });
+  }
+
+  // Get request body
+  const body = await request.json();
+
+  // Validate balance (allow negative values)
+  if (body.balance !== undefined && typeof body.balance !== 'number') {
+    return NextResponse.json({
+      error: {
+        message: 'Balance must be a number',
+        code: 'INVALID_BALANCE',
+        requestId: securityContext.auditId,
+        timestamp: new Date().toISOString()
+      }
+    }, { status: 400 });
+  }
+
+  // Validate charges array if provided
+  if (body.charges && Array.isArray(body.charges)) {
+    for (const chargeId of body.charges) {
+      if (!mongoose.Types.ObjectId.isValid(chargeId)) {
+        return NextResponse.json({
+          error: {
+            message: 'Invalid charge ID in charges array',
+            code: 'INVALID_CHARGE_ID',
+            requestId: securityContext.auditId,
+            timestamp: new Date().toISOString()
+          }
+        }, { status: 400 });
       }
     }
+  }
 
-    // Update the student ledger
-    const updatedLedger = await (StudentLedger as any).findByIdAndUpdate(
-      existingLedger._id,
-      { $set: body },
-      { new: true, runValidators: true }
-    )
+  // Validate payments array if provided
+  if (body.payments && Array.isArray(body.payments)) {
+    for (const payment of body.payments) {
+      if (!payment.payment_id || !payment.amount || typeof payment.amount !== 'number') {
+        return NextResponse.json({
+          error: {
+            message: 'Each payment must have payment_id and amount',
+            code: 'INVALID_PAYMENT_DATA',
+            requestId: securityContext.auditId,
+            timestamp: new Date().toISOString()
+          }
+        }, { status: 400 });
+      }
+      if (payment.amount < 0) {
+        return NextResponse.json({
+          error: {
+            message: 'Payment amounts cannot be negative',
+            code: 'NEGATIVE_PAYMENT_AMOUNT',
+            requestId: securityContext.auditId,
+            timestamp: new Date().toISOString()
+          }
+        }, { status: 400 });
+      }
+      if (payment.timestamp && isNaN(new Date(payment.timestamp).getTime())) {
+        return NextResponse.json({
+          error: {
+            message: 'Invalid payment timestamp format',
+            code: 'INVALID_PAYMENT_TIMESTAMP',
+            requestId: securityContext.auditId,
+            timestamp: new Date().toISOString()
+          }
+        }, { status: 400 });
+      }
+    }
+  }
+
+  // Create new student ledger
+  const ledger = new StudentLedger({
+    school_id: params.schoolId,
+    student_id: params.studentId,
+    balance: body.balance || 0.00,
+    charges: body.charges || [],
+    payments: body.payments || []
+  });
+
+  await ledger.save();
+
+  // Populate the created ledger with related data
+  const populatedLedger = await (StudentLedger as any)
+    .findById(ledger._id)
     .populate({
       path: 'school_id',
       select: 'name address airport phone email'
@@ -465,100 +418,262 @@ export async function PUT(
     })
     .lean();
 
-    if (!updatedLedger) {
-      return NextResponse.json(
-        { error: 'Failed to update student ledger' },
-        { status: 500 }
-      );
-    }
+  const processingTime = Date.now() - startTime;
 
+  console.log(JSON.stringify({
+    level: 'INFO',
+    message: 'Student ledger created successfully',
+    auditId: securityContext.auditId,
+    schoolId: params.schoolId,
+    studentId: params.studentId,
+    ledgerId: ledger._id,
+    processingTime,
+    timestamp: new Date().toISOString()
+  }));
+
+  return NextResponse.json({
+    success: true,
+    message: 'Student ledger created successfully',
+    data: { ledger: populatedLedger },
+    auditId: securityContext.auditId,
+    timestamp: new Date().toISOString()
+  }, { status: 201 });
+}, STUDENT_LEDGER_MODIFY_SECURITY_CONFIG);
+
+// PUT /api/schools/[schoolId]/students/[studentId]/ledger - Update student ledger
+export const PUT = secureApiRoute(async (request, { params, securityContext }) => {
+  const startTime = Date.now();
+  
+  // Establish database connection with retry logic
+  await connectDB();
+
+  console.log(JSON.stringify({
+    level: 'INFO',
+    message: 'Processing student ledger update request',
+    auditId: securityContext.auditId,
+    schoolId: params.schoolId,
+    studentId: params.studentId,
+    userId: securityContext.user.id,
+    timestamp: new Date().toISOString()
+  }));
+
+  // Validate IDs
+  if (!mongoose.Types.ObjectId.isValid(params.schoolId) || !mongoose.Types.ObjectId.isValid(params.studentId)) {
     return NextResponse.json({
-      message: 'Student ledger updated successfully',
-      ledger: updatedLedger
-    });
-
-  } catch (error) {
-    console.error('Error in PUT /api/schools/[schoolId]/students/[studentId]/ledger:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+      error: {
+        message: 'Invalid school ID or student ID format',
+        code: 'INVALID_ID_FORMAT',
+        requestId: securityContext.auditId,
+        timestamp: new Date().toISOString()
+      }
+    }, { status: 400 });
   }
-}
+
+  // Find existing ledger
+  const existingLedger = await (StudentLedger as any).findOne({
+    student_id: params.studentId,
+    school_id: params.schoolId
+  });
+
+  if (!existingLedger) {
+    return NextResponse.json({
+      error: {
+        message: 'Student ledger not found',
+        code: 'LEDGER_NOT_FOUND',
+        requestId: securityContext.auditId,
+        timestamp: new Date().toISOString()
+      }
+    }, { status: 404 });
+  }
+
+  // Get request body
+  const body = await request.json();
+
+  // Validate balance if provided
+  if (body.balance !== undefined && typeof body.balance !== 'number') {
+    return NextResponse.json({
+      error: {
+        message: 'Balance must be a number',
+        code: 'INVALID_BALANCE',
+        requestId: securityContext.auditId,
+        timestamp: new Date().toISOString()
+      }
+    }, { status: 400 });
+  }
+
+  // Validate charges array if provided
+  if (body.charges && Array.isArray(body.charges)) {
+    for (const chargeId of body.charges) {
+      if (!mongoose.Types.ObjectId.isValid(chargeId)) {
+        return NextResponse.json({
+          error: {
+            message: 'Invalid charge ID in charges array',
+            code: 'INVALID_CHARGE_ID',
+            requestId: securityContext.auditId,
+            timestamp: new Date().toISOString()
+          }
+        }, { status: 400 });
+      }
+    }
+  }
+
+  // Validate payments array if provided
+  if (body.payments && Array.isArray(body.payments)) {
+    for (const payment of body.payments) {
+      if (!payment.payment_id || !payment.amount || typeof payment.amount !== 'number') {
+        return NextResponse.json({
+          error: {
+            message: 'Each payment must have payment_id and amount',
+            code: 'INVALID_PAYMENT_DATA',
+            requestId: securityContext.auditId,
+            timestamp: new Date().toISOString()
+          }
+        }, { status: 400 });
+      }
+      if (payment.amount < 0) {
+        return NextResponse.json({
+          error: {
+            message: 'Payment amounts cannot be negative',
+            code: 'NEGATIVE_PAYMENT_AMOUNT',
+            requestId: securityContext.auditId,
+            timestamp: new Date().toISOString()
+          }
+        }, { status: 400 });
+      }
+      if (payment.timestamp && isNaN(new Date(payment.timestamp).getTime())) {
+        return NextResponse.json({
+          error: {
+            message: 'Invalid payment timestamp format',
+            code: 'INVALID_PAYMENT_TIMESTAMP',
+            requestId: securityContext.auditId,
+            timestamp: new Date().toISOString()
+          }
+        }, { status: 400 });
+      }
+    }
+  }
+
+  // Update the student ledger
+  const updatedLedger = await (StudentLedger as any).findByIdAndUpdate(
+    existingLedger._id,
+    { $set: body },
+    { new: true, runValidators: true }
+  )
+  .populate({
+    path: 'school_id',
+    select: 'name address airport phone email'
+  })
+  .populate({
+    path: 'student_id',
+    populate: {
+      path: 'user_id',
+      select: 'first_name last_name email'
+    }
+  })
+  .populate({
+    path: 'charges',
+    model: 'FlightInvoice',
+    select: 'total_amount status invoice_number flight_schedule_id created_at'
+  })
+  .lean();
+
+  if (!updatedLedger) {
+    return NextResponse.json({
+      error: {
+        message: 'Failed to update student ledger',
+        code: 'UPDATE_FAILED',
+        requestId: securityContext.auditId,
+        timestamp: new Date().toISOString()
+      }
+    }, { status: 500 });
+  }
+
+  const processingTime = Date.now() - startTime;
+
+  console.log(JSON.stringify({
+    level: 'INFO',
+    message: 'Student ledger updated successfully',
+    auditId: securityContext.auditId,
+    schoolId: params.schoolId,
+    studentId: params.studentId,
+    ledgerId: updatedLedger._id,
+    processingTime,
+    timestamp: new Date().toISOString()
+  }));
+
+  return NextResponse.json({
+    success: true,
+    message: 'Student ledger updated successfully',
+    data: { ledger: updatedLedger },
+    auditId: securityContext.auditId,
+    timestamp: new Date().toISOString()
+  });
+}, STUDENT_LEDGER_MODIFY_SECURITY_CONFIG);
 
 // DELETE /api/schools/[schoolId]/students/[studentId]/ledger - Delete student ledger
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { schoolId: string; studentId: string } }
-) {
-  try {
-    // Validate API key
-    const apiKeyResult = await validateApiKey(request);
-    if ('error' in apiKeyResult) {
-      return NextResponse.json({ error: apiKeyResult.error }, { status: 401 });
-    }
+export const DELETE = secureApiRoute(async (request, { params, securityContext }) => {
+  const startTime = Date.now();
+  
+  // Establish database connection with retry logic
+  await connectDB();
 
-    // Authenticate user
-    const authResult = await authenticateRequest(request);
-    if (authResult instanceof NextResponse) {
-      return authResult;
-    }
+  console.log(JSON.stringify({
+    level: 'INFO',
+    message: 'Processing student ledger deletion request',
+    auditId: securityContext.auditId,
+    schoolId: params.schoolId,
+    studentId: params.studentId,
+    userId: securityContext.user.id,
+    timestamp: new Date().toISOString()
+  }));
 
-    // Connect to database
-    await connectDB();
-
-    // Validate IDs
-    if (!mongoose.Types.ObjectId.isValid(params.schoolId) || !mongoose.Types.ObjectId.isValid(params.studentId)) {
-      return NextResponse.json(
-        { error: 'Invalid school ID or student ID format' },
-        { status: 400 }
-      );
-    }
-
-    // Get user role from token for permission check
-    // Extract token from either Authorization header or cookies
-    let token = null;
-    const authHeader = request.headers.get('Authorization');
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      token = authHeader.split(' ')[1];
-    } else {
-      token = request.cookies.get('token')?.value;
-    }
-
-    const decoded = verifyToken(token || '');
-    const isSystemAdmin = decoded?.role === 'sys_admin';
-
-    // Only system admins should be able to delete ledgers
-    if (!isSystemAdmin) {
-      return NextResponse.json(
-        { error: 'Insufficient permissions to delete ledger' },
-        { status: 403 }
-      );
-    }
-
-    // Find and delete the student ledger
-    const deletedLedger = await (StudentLedger as any).findOneAndDelete({
-      student_id: params.studentId,
-      school_id: params.schoolId
-    });
-
-    if (!deletedLedger) {
-      return NextResponse.json(
-        { error: 'Student ledger not found' },
-        { status: 404 }
-      );
-    }
-
+  // Validate IDs
+  if (!mongoose.Types.ObjectId.isValid(params.schoolId) || !mongoose.Types.ObjectId.isValid(params.studentId)) {
     return NextResponse.json({
-      message: 'Student ledger deleted successfully',
-      ledger_id: deletedLedger._id
-    });
-
-  } catch (error) {
-    console.error('Error in DELETE /api/schools/[schoolId]/students/[studentId]/ledger:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+      error: {
+        message: 'Invalid school ID or student ID format',
+        code: 'INVALID_ID_FORMAT',
+        requestId: securityContext.auditId,
+        timestamp: new Date().toISOString()
+      }
+    }, { status: 400 });
   }
-} 
+
+  // Find and delete the student ledger
+  const deletedLedger = await (StudentLedger as any).findOneAndDelete({
+    student_id: params.studentId,
+    school_id: params.schoolId
+  });
+
+  if (!deletedLedger) {
+    return NextResponse.json({
+      error: {
+        message: 'Student ledger not found',
+        code: 'LEDGER_NOT_FOUND',
+        requestId: securityContext.auditId,
+        timestamp: new Date().toISOString()
+      }
+    }, { status: 404 });
+  }
+
+  const processingTime = Date.now() - startTime;
+
+  console.log(JSON.stringify({
+    level: 'INFO',
+    message: 'Student ledger deleted successfully',
+    auditId: securityContext.auditId,
+    schoolId: params.schoolId,
+    studentId: params.studentId,
+    ledgerId: deletedLedger._id,
+    processingTime,
+    timestamp: new Date().toISOString()
+  }));
+
+  return NextResponse.json({
+    success: true,
+    message: 'Student ledger deleted successfully',
+    data: { ledger_id: deletedLedger._id },
+    auditId: securityContext.auditId,
+    timestamp: new Date().toISOString()
+  });
+}, STUDENT_LEDGER_DELETE_SECURITY_CONFIG); 

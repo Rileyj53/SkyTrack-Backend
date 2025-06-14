@@ -2,15 +2,25 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
 import { User, School, Student, Instructor, FlightSchedule } from '@/models';
 import mongoose from 'mongoose';
-import { validateApiKey } from '@/middleware/apiKeyAuth';
+import { secureApiRoute, SecurityConfig } from '@/middleware/security';
 
-export async function GET(request: NextRequest) {
+// Debug endpoint configuration - requires API key
+const DEBUG_CONFIG: SecurityConfig = {
+  requireApiKey: true,
+  enableFraudDetection: true,
+  enableAdvancedAudit: true,
+  dataClassification: 'internal',
+  rateLimiting: { maxRequests: 20, windowMs: 60000 }
+};
+
+export const GET = secureApiRoute(async (request: NextRequest, { securityContext }) => {
   try {
-    // Validate API key
-    const authResult = await validateApiKey(request);
-    if (authResult instanceof NextResponse) {
-      return authResult;
-    }
+    console.log(JSON.stringify({
+      level: 'INFO',
+      message: 'Database debug endpoint accessed',
+      auditId: securityContext.auditId,
+      timestamp: new Date().toISOString()
+    }));
 
     const startTime = Date.now();
     await connectDB();
@@ -108,19 +118,32 @@ export async function GET(request: NextRequest) {
       };
     }
 
+    console.log(JSON.stringify({
+      level: 'INFO',
+      message: 'Database connectivity test completed',
+      auditId: securityContext.auditId,
+      totalResponseTime: Date.now() - startTime,
+      timestamp: new Date().toISOString()
+    }));
+
     return NextResponse.json({
+      success: true,
       message: 'Database connectivity and operations test',
+      auditId: securityContext.auditId,
       timestamp: new Date().toISOString(),
       totalResponseTime: Date.now() - startTime,
       ...tests
     });
 
   } catch (error) {
-    console.error('Database test error:', error);
-    return NextResponse.json({
+    console.error(JSON.stringify({
+      level: 'ERROR',
       message: 'Database test failed',
+      auditId: securityContext.auditId,
       error: error.message,
       timestamp: new Date().toISOString()
-    }, { status: 500 });
+    }));
+
+    throw error;
   }
-} 
+}, DEBUG_CONFIG); 

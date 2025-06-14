@@ -1,15 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { validateApiKey } from '@/middleware/apiKeyAuth';
 import { connectDB } from '@/lib/db';
 import { User } from '@/models/User';
+import { secureApiRoute, SecurityConfig } from '@/middleware/security';
 
-export async function GET(request: NextRequest) {
+// Debug endpoint configuration - requires API key
+const DEBUG_CONFIG: SecurityConfig = {
+  requireApiKey: true,
+  enableFraudDetection: true,
+  enableAdvancedAudit: true,
+  dataClassification: 'internal',
+  rateLimiting: { maxRequests: 10, windowMs: 60000 }
+};
+
+export const GET = secureApiRoute(async (request: NextRequest, { securityContext }) => {
   try {
-    // Validate API key
-    const authResult = await validateApiKey(request);
-    if (authResult instanceof NextResponse) {
-      return authResult;
-    }
+    console.log(JSON.stringify({
+      level: 'INFO',
+      message: 'Performance debug endpoint accessed',
+      auditId: securityContext.auditId,
+      timestamp: new Date().toISOString()
+    }));
 
     const startTime = Date.now();
     const tests = {
@@ -142,36 +152,54 @@ export async function GET(request: NextRequest) {
       (tests.overall as any).recommendations.push('Performance is within acceptable ranges');
     }
 
-    return NextResponse.json({
+    console.log(JSON.stringify({
+      level: 'INFO',
       message: 'Performance benchmark completed',
+      auditId: securityContext.auditId,
+      totalTime,
+      dbPerformance: (tests.database as any).performance,
+      memoryUsage: (tests.memory as any).percentage,
+      timestamp: new Date().toISOString()
+    }));
+
+    return NextResponse.json({
+      success: true,
+      message: 'Performance benchmark completed',
+      auditId: securityContext.auditId,
       ...tests
     });
 
   } catch (error) {
-    console.error('Performance benchmark error:', error);
-    return NextResponse.json({
+    console.error(JSON.stringify({
+      level: 'ERROR',
       message: 'Performance benchmark failed',
+      auditId: securityContext.auditId,
       error: error.message,
       timestamp: new Date().toISOString()
-    }, { status: 500 });
-  }
-}
+    }));
 
-export async function POST(request: NextRequest) {
+    throw error;
+  }
+}, DEBUG_CONFIG);
+
+export const POST = secureApiRoute(async (request: NextRequest, { securityContext }) => {
   try {
-    // Validate API key
-    const authResult = await validateApiKey(request);
-    if (authResult instanceof NextResponse) {
-      return authResult;
-    }
+    console.log(JSON.stringify({
+      level: 'INFO',
+      message: 'Performance stress test started',
+      auditId: securityContext.auditId,
+      timestamp: new Date().toISOString()
+    }));
 
     const { iterations = 1, includeDatabase = true, includeComputation = true } = await request.json();
 
     if (iterations < 1 || iterations > 10) {
-      return NextResponse.json(
-        { error: 'Iterations must be between 1 and 10' },
-        { status: 400 }
-      );
+      return NextResponse.json({
+        success: false,
+        error: 'Iterations must be between 1 and 10',
+        auditId: securityContext.auditId,
+        timestamp: new Date().toISOString()
+      }, { status: 400 });
     }
 
     const results = [];
@@ -245,8 +273,20 @@ export async function POST(request: NextRequest) {
       }
     };
 
-    return NextResponse.json({
+    console.log(JSON.stringify({
+      level: 'INFO',
       message: 'Performance stress test completed',
+      auditId: securityContext.auditId,
+      iterations,
+      totalTime,
+      avgResponseTime: statistics.response.avg,
+      timestamp: new Date().toISOString()
+    }));
+
+    return NextResponse.json({
+      success: true,
+      message: 'Performance stress test completed',
+      auditId: securityContext.auditId,
       iterations,
       results,
       statistics,
@@ -254,11 +294,14 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Performance stress test error:', error);
-    return NextResponse.json({
+    console.error(JSON.stringify({
+      level: 'ERROR',
       message: 'Performance stress test failed',
+      auditId: securityContext.auditId,
       error: error.message,
       timestamp: new Date().toISOString()
-    }, { status: 500 });
+    }));
+
+    throw error;
   }
-} 
+}, DEBUG_CONFIG); 

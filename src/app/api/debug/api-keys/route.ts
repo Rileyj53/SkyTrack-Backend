@@ -1,67 +1,80 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
 import { ApiKey } from '@/models/ApiKey';
-import { verifyToken } from '@/lib/jwt';
+import { secureApiRoute, SecurityConfig } from '@/middleware/security';
 
-// Connect to MongoDB
-connectDB();
+// Debug endpoint configuration - requires sys_admin role
+const DEBUG_CONFIG: SecurityConfig = {
+  requireAuth: true,
+  requireApiKey: true,
+  allowedRoles: ['sys_admin'],
+  enableFraudDetection: true,
+  enableAdvancedAudit: true,
+  dataClassification: 'confidential',
+  rateLimiting: { maxRequests: 50, windowMs: 60000 }
+};
 
-export async function GET(request: NextRequest) {
-  // Check for authorization header
-  const authHeader = request.headers.get('Authorization');
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return NextResponse.json(
-      { error: 'Unauthorized' },
-      { status: 401 }
-    );
-  }
-
-  // Verify the token and check for sys_admin role
-  const token = authHeader.split(' ')[1];
-  const decoded = verifyToken(token);
-  if (!decoded || !decoded.userId) {
-    return NextResponse.json(
-      { error: 'Invalid token' },
-      { status: 401 }
-    );
-  }
-
-  // Check if the user has the sys_admin role
-  if (decoded.role !== 'sys_admin') {
-    return NextResponse.json(
-      { error: 'Forbidden: Only system administrators can access this endpoint' },
-      { status: 403 }
-    );
-  }
-
+export const GET = secureApiRoute(async (request: NextRequest, { securityContext }) => {
   try {
+    // Establish database connection with retry logic
+    await connectDB();
+
+    console.log(JSON.stringify({
+      level: 'INFO',
+      message: 'Debug API keys endpoint accessed',
+      auditId: securityContext.auditId,
+      userId: securityContext.user?.userId,
+      userRole: securityContext.user?.role,
+      timestamp: new Date().toISOString()
+    }));
+
     // Get all API keys from database for debugging
     const apiKeys = await ApiKey.find({});
     
+    const sanitizedKeys = apiKeys.map(key => ({
+      _id: key._id,
+      user: key.user,
+      label: key.label,
+      key: key.key.substring(0, 10) + '...', // Only show first 10 chars for security
+      lastSix: key.lastSix,
+      isActive: key.isActive,
+      createdAt: key.createdAt,
+      expiresAt: key.expiresAt
+    }));
+
+    console.log(JSON.stringify({
+      level: 'INFO',
+      message: 'API keys retrieved successfully',
+      auditId: securityContext.auditId,
+      keysCount: apiKeys.length,
+      timestamp: new Date().toISOString()
+    }));
+
     return NextResponse.json({
-      status: 'success',
-      data: apiKeys.map(key => ({
-        _id: key._id,
-        user: key.user,
-        label: key.label,
-        key: key.key.substring(0, 10) + '...', // Only show first 10 chars for security
-        lastSix: key.lastSix,
-        isActive: key.isActive,
-        createdAt: key.createdAt,
-        expiresAt: key.expiresAt
-      })),
+      success: true,
+      message: 'API keys retrieved successfully',
+      data: sanitizedKeys,
+      auditId: securityContext.auditId,
       debugInfo: {
-        userId: decoded.userId,
-        userRole: decoded.role,
+        userId: securityContext.user?.userId,
+        userRole: securityContext.user?.role,
         endpoint: '/api/debug/api-keys',
-        method: 'GET'
-      }
+        method: 'GET',
+        totalKeys: apiKeys.length,
+        activeKeys: apiKeys.filter(key => key.isActive).length
+      },
+      timestamp: new Date().toISOString()
     });
+
   } catch (error) {
-    console.error('Error fetching API keys:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    console.error(JSON.stringify({
+      level: 'ERROR',
+      message: 'Error fetching API keys',
+      auditId: securityContext.auditId,
+      error: error.message,
+      timestamp: new Date().toISOString()
+    }));
+
+    throw error;
   }
-} 
+}, DEBUG_CONFIG); 

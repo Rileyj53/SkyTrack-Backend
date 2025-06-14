@@ -561,6 +561,8 @@ graph TD
 
 ## 🔧 Integration Examples
 
+> **Note**: The SkyTrack Postman collection uses colon notation for path variables (e.g., `:apiKeyId`) while cURL examples show curly brace notation (e.g., `{apiKeyId}`) for clarity.
+
 ### Generate API Key with Full Security (cURL)
 ```bash
 curl -X POST "https://api.skytrack.com/api/api-keys/generate" \
@@ -584,7 +586,7 @@ curl -X GET "https://api.skytrack.com/api/api-keys" \
 
 ### Revoke API Key with Security (cURL)
 ```bash
-curl -X DELETE "https://api.skytrack.com/api/api-keys/674a1b2c3d4e5f6789012345" \
+curl -X DELETE "https://api.skytrack.com/api/api-keys/{apiKeyId}" \
   -H "Authorization: Bearer YOUR_ADMIN_JWT_TOKEN" \
   -H "X-API-Key: YOUR_API_KEY" \
   -H "X-CSRF-Token: YOUR_CSRF_TOKEN"

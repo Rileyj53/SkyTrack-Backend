@@ -3,7 +3,6 @@ import { cors } from './middleware/cors';
 import { requestLogger } from './middleware/requestLogger';
 import { rateLimiter } from './middleware/rateLimiter';
 import { securityHeaders } from './middleware/securityHeaders';
-import { csrf } from './middleware/csrf';
 import { errorHandler } from './middleware/errorHandler';
 import { handleAPIError } from '@/lib/errors';
 import { validateEnv } from '@/lib/env';
@@ -68,17 +67,8 @@ export async function middleware(request: NextRequest) {
     }
     response = copyHeaders(corsResponse, response);
     
-    // Apply CSRF protection to all requests except login, register, and complete-registration
-    if (!pathname.startsWith('/api/auth/login') && 
-        !pathname.startsWith('/api/auth/register') && 
-        !pathname.startsWith('/api/auth/complete-registration') && 
-        !pathname.includes('/flight-logs/today')) {
-      const csrfResponse = csrf(request);
-      if (csrfResponse.status !== 200) {
-        return csrfResponse;
-      }
-      response = copyHeaders(csrfResponse, response);
-    }
+    // CSRF protection is now handled in the security middleware (security.ts)
+    // Each route using secureApiRoute will have CSRF protection applied automatically
     
     // Apply rate limiting to non-excluded paths
     if (!EXCLUDED_RATE_LIMIT_PATHS.some(path => pathname.startsWith(path))) {

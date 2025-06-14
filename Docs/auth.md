@@ -1,11 +1,29 @@
 # Authentication API Documentation
 
-## Overview
-The Authentication API provides comprehensive user authentication and authorization features including traditional login/logout, multi-factor authentication (MFA), magic links, password management, and account security features.
+## 🎯 Overview
+The Authentication API provides comprehensive user authentication and authorization features including traditional login/logout, multi-factor authentication (MFA), magic links, password management, and account security features with enterprise-grade security.
 
 **Base URL**: `/api/auth`
 
-## Authentication Requirements
+## 🔐 Enterprise Security Features
+
+All authentication endpoints implement enterprise-grade security with the following features:
+
+### Security Middleware
+- **Comprehensive Authentication**: JWT tokens, API keys, and CSRF protection
+- **Fraud Detection**: Real-time risk scoring and suspicious activity monitoring  
+- **Rate Limiting**: Sliding window rate limiting with configurable thresholds
+- **Geographic Restrictions**: IP-based geo-blocking capabilities
+- **Session Management**: Configurable session timeouts
+- **Audit Logging**: Comprehensive audit trails with unique audit IDs
+
+### Data Protection
+- **Data Classification**: Endpoints classified from 'public' to 'restricted' level
+- **Encryption**: AES-256 encryption for sensitive data
+- **Request Size Limits**: Protection against large payload attacks
+- **HTTPS Enforcement**: Mandatory HTTPS for all operations
+
+## 🔧 Authentication Requirements
 - **API Key**: Required for all endpoints via `X-API-Key` header
 - **JWT Token**: Required for authenticated endpoints via `Authorization: Bearer <token>` header
 - **CSRF Token**: Required for state-changing operations via `X-CSRF-Token` header
@@ -14,62 +32,179 @@ The Authentication API provides comprehensive user authentication and authorizat
 
 ## Core Authentication Endpoints
 
-### 1. User Registration
-**POST** `/api/auth/register`
+# POST /api/auth/register
 
-Register a new user account with role-based access control.
+## 🎯 Overview
+Register a new user account with role-based access control and enhanced security validation.
 
-#### Request Body
+## 🔐 Security
+- **Requires Auth**: ❌ (Public registration)
+- **Requires API Key**: ✅ (X-API-Key header)
+- **Requires CSRF Token**: ❌ (Not required for registration)
+- **Allowed Roles**: Public (creates new user)
+- **Fraud Detection**: ✅ Enabled (blocks high-risk registrations)
+- **Risk Scoring**: ✅ Enabled (>75 risk score blocked)
+- **Data Classification**: `confidential`
+- **Rate Limiting**: 5 requests per 5 minutes
+
+## 📥 Request
+
+**Method**: `POST`  
+**Path**: `/api/auth/register`
+
+### Headers
+- `X-API-Key: <key>` (required): Valid API key
+- `Content-Type: application/json` (required)
+
+### Body Schema
 ```json
 {
-  "email": "user@example.com",
-  "password": "SecurePassword123!",
-  "first_name": "John",
-  "last_name": "Doe",
-  "role": "student",
-  "school_id": "ObjectId (optional)",
-  "student_id": "ObjectId (optional)",
-  "instructor_id": "ObjectId (optional)"
+  "email": "string (required, valid email format, max 254 chars)",
+  "password": "string (required, 8-128 chars, complex requirements)",
+  "first_name": "string (required, 1-50 chars)",
+  "last_name": "string (required, 1-50 chars)",
+  "role": "string (optional, default: 'student')",
+  "school_id": "string (optional, ObjectId)",
+  "student_id": "string (optional, ObjectId)",
+  "instructor_id": "string (optional, ObjectId)"
 }
 ```
 
-#### Password Requirements
-- Minimum 8 characters
-- Contains uppercase letters
-- Contains lowercase letters
-- Contains numbers
-- Contains special characters
+### Password Requirements
+- Minimum 8 characters, maximum 128 characters
+- Contains uppercase and lowercase letters
+- Contains numbers and special characters
+- No sequential patterns (123, abc, qwe)
+- No more than 2 consecutive identical characters
 
-#### Valid Roles
+### Valid Roles
 - `sys_admin` - System Administrator
-- `school_admin` - School Administrator
+- `school_admin` - School Administrator  
 - `instructor` - Flight Instructor
 - `student` - Student (default)
 
-#### Success Response (201)
+## 📤 Response
+
+### Success Response (201)
 ```json
 {
+  "success": true,
   "message": "User registered successfully",
-  "user": {
-    "_id": "ObjectId",
-    "email": "user@example.com",
-    "first_name": "John",
-    "last_name": "Doe",
-    "role": "student",
-    "school_id": "ObjectId",
-    "student_id": "ObjectId",
-    "instructor_id": "ObjectId",
-    "isActive": true,
-    "emailVerified": true
+  "data": {
+    "user": {
+      "id": "674a1b2c3d4e5f6789012345",
+      "email": "user@example.com",
+      "first_name": "John",
+      "last_name": "Doe",
+      "role": "student",
+      "school_id": "674a1b2c3d4e5f6789012346",
+      "student_id": "674a1b2c3d4e5f6789012347",
+      "instructor_id": null,
+      "isActive": true,
+      "emailVerified": true,
+      "mfaEnabled": false
+    },
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "csrfToken": "csrf_token_here"
   },
-  "token": "jwt_token_here",
-  "csrfToken": "csrf_token_here"
+  "auditId": "audit_674a1b2c3d4e5f6789012349",
+  "timestamp": "2024-01-15T10:30:00.000Z",
+  "securityContext": {
+    "sessionId": "session_674a1b2c3d4e5f6789012350",
+    "riskScore": 25,
+    "encryptionLevel": "AES-256"
+  }
 }
 ```
 
-#### Error Responses
-- **400**: Email/password required, password validation failed, invalid role, user already exists
-- **500**: Internal server error
+### Error Responses
+
+#### 400 - Bad Request
+```json
+{
+  "error": {
+    "message": "Validation failed",
+    "code": "VALIDATION_ERROR",
+    "details": [
+      "Password must contain at least one uppercase letter",
+      "Email format is invalid"
+    ],
+    "requestId": "audit_674a1b2c3d4e5f6789012349",
+    "timestamp": "2024-01-15T10:30:00.000Z"
+  }
+}
+```
+
+#### 403 - Forbidden (High Risk)
+```json
+{
+  "error": {
+    "message": "Registration blocked due to security policy",
+    "code": "HIGH_RISK_REGISTRATION",
+    "requestId": "audit_674a1b2c3d4e5f6789012349",
+    "timestamp": "2024-01-15T10:30:00.000Z"
+  },
+  "securityContext": {
+    "riskScore": 85,
+    "fraudFlags": ["SUSPICIOUS_IP", "HIGH_VELOCITY"]
+  }
+}
+```
+
+#### 409 - Conflict
+```json
+{
+  "error": {
+    "message": "User already exists",
+    "code": "USER_EXISTS",
+    "requestId": "audit_674a1b2c3d4e5f6789012349",
+    "timestamp": "2024-01-15T10:30:00.000Z"
+  }
+}
+```
+
+#### 429 - Too Many Requests
+```json
+{
+  "error": {
+    "message": "Too many registration attempts",
+    "code": "RATE_LIMIT_EXCEEDED",
+    "requestId": "audit_674a1b2c3d4e5f6789012349",
+    "timestamp": "2024-01-15T10:30:00.000Z"
+  }
+}
+```
+
+## 🔍 Example Request
+
+> **Note**: The SkyTrack Postman collection uses colon notation for path variables (e.g., `:token`) while cURL examples show curly brace notation (e.g., `{token}`) for clarity.
+
+```bash
+curl -X POST "https://api.skytrack.com/api/auth/register" \
+  -H "X-API-Key: your-api-key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "john.doe@example.com",
+    "password": "SecurePassword123!",
+    "first_name": "John",
+    "last_name": "Doe",
+    "role": "student"
+  }'
+```
+
+## 🚨 Error Codes Reference
+- `VALIDATION_ERROR`: Request validation failed
+- `HIGH_RISK_REGISTRATION`: Registration blocked due to high risk score  
+- `USER_EXISTS`: Email already registered
+- `RATE_LIMIT_EXCEEDED`: Too many registration attempts
+- `DATABASE_ERROR`: Server error during registration
+
+---
+
+### 1. User Registration (Legacy Format)
+**POST** `/api/auth/register`
+
+Register a new user account with role-based access control.
 
 ---
 

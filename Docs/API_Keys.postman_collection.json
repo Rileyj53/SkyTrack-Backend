@@ -1,13 +1,13 @@
 {
     "info": {
-        "_postman_id": "api-keys-collection-2024",
-        "name": "SkyTrack API Keys Management Collection",
-        "description": "Comprehensive collection for managing API keys in the SkyTrack system with enterprise-grade security. Includes endpoints for generating, listing, and revoking API keys with proper admin authentication, fraud detection, and comprehensive audit logging.",
+        "_postman_id": "albatross-backend-collection-2024",
+        "name": "albatross Backend API Collection",
+        "description": "Unified collection for the albatross backend API with enterprise-grade security. Includes all endpoints with proper authentication, fraud detection, and comprehensive audit logging.",
         "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-        "_exporter_id": "skytrack-api-keys"
+        "_exporter_id": "albatross-backend"
     },
     "item": [{
-            "name": "Key Management",
+            "name": "API Keys",
             "item": [{
                     "name": "List All API Keys (Admin)",
                     "request": {
@@ -415,9 +415,9 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{base_url}}/api/api-keys/{{api_key_to_revoke}}",
+                            "raw": "{{base_url}}/api/api-keys/:apiKeyId",
                             "host": ["{{base_url}}"],
-                            "path": ["api", "api-keys", "{{api_key_to_revoke}}"]
+                            "path": ["api", "api-keys", ":apiKeyId"]
                         }
                     },
                     "response": [{
@@ -438,9 +438,9 @@
                                     }
                                 ],
                                 "url": {
-                                    "raw": "{{base_url}}/api/api-keys/674a1b2c3d4e5f6789012345",
+                                    "raw": "{{base_url}}/api/api-keys/:apiKeyId",
                                     "host": ["{{base_url}}"],
-                                    "path": ["api", "api-keys", "674a1b2c3d4e5f6789012345"]
+                                    "path": ["api", "api-keys", ":apiKeyId"]
                                 }
                             },
                             "status": "OK",
@@ -471,9 +471,9 @@
                                     }
                                 ],
                                 "url": {
-                                    "raw": "{{base_url}}/api/api-keys/invalid-id",
+                                    "raw": "{{base_url}}/api/api-keys/:apiKeyId",
                                     "host": ["{{base_url}}"],
-                                    "path": ["api", "api-keys", "invalid-id"]
+                                    "path": ["api", "api-keys", ":apiKeyId"]
                                 }
                             },
                             "status": "Bad Request",
@@ -504,9 +504,9 @@
                                     }
                                 ],
                                 "url": {
-                                    "raw": "{{base_url}}/api/api-keys/000000000000000000000000",
+                                    "raw": "{{base_url}}/api/api-keys/:apiKeyId",
                                     "host": ["{{base_url}}"],
-                                    "path": ["api", "api-keys", "000000000000000000000000"]
+                                    "path": ["api", "api-keys", ":apiKeyId"]
                                 }
                             },
                             "status": "Not Found",
@@ -752,7 +752,7 @@
     ],
     "variable": [{
             "key": "base_url",
-            "value": "https://api.skytrack.com",
+            "value": "https://api.albatross.com",
             "type": "string"
         },
         {
