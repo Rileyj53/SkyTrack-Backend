@@ -5,12 +5,10 @@ import { authenticateRequest } from '@/middleware/auth';
 import { verifyToken } from '@/lib/jwt';
 import StudentLedger from '@/models/StudentLedger';
 import Student from '@/models/Student';
+import FlightInvoice from '@/models/FlightInvoice';
 import mongoose from 'mongoose';
 
-// Import FlightCharge to ensure the model is registered
-import '@/models/FlightCharge';
-
-// POST /api/schools/[schoolId]/students/[studentId]/ledger/recalculate - Recalculate student ledger balance
+// POST /api/schools/[schoolId]/students/[studentId]/ledger/recalculate
 export async function POST(
   request: NextRequest,
   { params }: { params: { schoolId: string; studentId: string } }
@@ -18,14 +16,19 @@ export async function POST(
   try {
     // Validate API key
     const apiKeyResult = await validateApiKey(request);
-    if (apiKeyResult instanceof NextResponse) {
-      return apiKeyResult;
+    if ('error' in apiKeyResult) {
+      return NextResponse.json({ error: apiKeyResult.error }, { status: 401 });
     }
 
     // Authenticate user
     const authResult = await authenticateRequest(request);
-    if (authResult instanceof NextResponse) {
-      return authResult;
+    if ('error' in authResult) {
+      return NextResponse.json({ error: authResult.error }, { status: 401 });
+    }
+
+    // Check authorization - only school admins and system admins can recalculate balances
+    if (!['school_admin', 'system_admin'].includes(authResult.user.role)) {
+      return NextResponse.json({ error: 'Insufficient permissions. Only administrators can recalculate balances.' }, { status: 403 });
     }
 
     // Connect to database
@@ -40,7 +43,7 @@ export async function POST(
     }
 
     // Check if student exists and belongs to the school
-    const student = await (Student as any).findOne({
+    const student = await Student.findOne({
       _id: params.studentId,
       school_id: params.schoolId
     });
@@ -52,58 +55,54 @@ export async function POST(
       );
     }
 
-    // Find the student ledger
-    const ledger = await (StudentLedger as any).findOne({
-      student_id: params.studentId,
-      school_id: params.schoolId
+    // Find the student's ledger
+    const ledger = await StudentLedger.findOne({
+      school_id: params.schoolId,
+      student_id: params.studentId
     });
 
     if (!ledger) {
       return NextResponse.json(
-        { error: 'Student ledger not found' },
+        { error: 'Ledger not found for this student' },
         { status: 404 }
       );
     }
 
-    // Store old balance for comparison
-    const oldBalance = ledger.balance;
-
-    // Get all approved charges for this student
-    const allApprovedCharges = await mongoose.model('FlightCharge').find({
-      _id: { $in: ledger.charges },
+    // Get all approved flight invoices for this student
+    const allApprovedInvoices = await FlightInvoice.find({
+      school_id: params.schoolId,
+      student_id: params.studentId,
       status: 'approved'
-    }).select('amount');
+    });
 
-    // Calculate total charges
-    const totalCharges = allApprovedCharges.reduce((total: number, charge: any) => total + charge.amount, 0);
+    // Calculate new balance from scratch based on approved invoices
+    const chargeAmount = allApprovedInvoices.reduce((total, invoice) => {
+      return total + (invoice.total_amount || 0);
+    }, 0);
     
-    // Calculate total payments
-    const totalPayments = ledger.payments.reduce((total: number, payment: any) => total + payment.amount, 0);
-    
-    // Calculate the correct balance: Total Charges - Total Payments
-    const correctBalance = totalCharges - totalPayments;
-    
-    // Update the balance
-    ledger.balance = correctBalance;
+    // Calculate payment amount from existing payments in ledger
+    const paymentAmount = ledger.payments.reduce((total: number, payment: any) => {
+      return total + (payment.amount || 0);
+    }, 0);
+
+    const oldBalance = ledger.balance;
+    const newBalance = chargeAmount - paymentAmount;
+    const difference = newBalance - oldBalance;
+
+    // Update the ledger
+    ledger.balance = newBalance;
+    ledger.last_updated = new Date();
     await ledger.save();
-    
-    // Calculate the difference
-    const balanceDifference = correctBalance - oldBalance;
-    
-    console.log(`Manual recalculation for student ${params.studentId}: Old balance: ${oldBalance}, New balance: ${correctBalance}, Difference: ${balanceDifference}`);
-    console.log(`  - Total charges: ${totalCharges}, Total payments: ${totalPayments}`);
-    
+
     return NextResponse.json({
       message: 'Ledger balance recalculated successfully',
       recalculation: {
         old_balance: oldBalance,
-        new_balance: correctBalance,
-        difference: balanceDifference,
-        total_charges: totalCharges,
-        total_payments: totalPayments,
-        approved_charges_count: allApprovedCharges.length,
-        total_charges_in_ledger: ledger.charges.length,
-        payments_count: ledger.payments.length
+        new_balance: newBalance,
+        difference,
+        approved_invoices_count: allApprovedInvoices.length,
+        total_charges_in_ledger: (ledger.charges || []).length,
+        recalculated_at: new Date()
       }
     });
 

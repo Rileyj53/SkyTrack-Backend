@@ -12,7 +12,7 @@ export interface IStudentLedger extends Document {
   school_id: mongoose.Types.ObjectId;
   student_id: mongoose.Types.ObjectId;
   balance: number; // Can be negative
-  charges: mongoose.Types.ObjectId[]; // References to charge records
+  charges: mongoose.Types.ObjectId[]; // References to approved flight invoices
   payments: IPayment[];
   last_updated: Date;
   created_at: Date;
@@ -67,7 +67,7 @@ const StudentLedgerSchema = new Schema<IStudentLedger>({
   },
   charges: [{
     type: Schema.Types.ObjectId,
-    ref: 'Charge' // Assuming you have or will have a Charge model
+    ref: 'FlightInvoice' // References to approved flight invoices
   }],
   payments: [PaymentSchema],
   last_updated: {
