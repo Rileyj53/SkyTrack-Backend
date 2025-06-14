@@ -33,7 +33,7 @@ function sleep(ms: number): Promise<void> {
 
 export async function connectEdgeDB(): Promise<MongoClient> {
   // Return existing client if it's still connected
-  if (client && client.topology && !client.topology.isDestroyed()) {
+  if (client) {
     try {
       // Ping to verify connection is still alive
       await client.db('admin').command({ ping: 1 });
@@ -139,7 +139,7 @@ export async function disconnectEdgeDB(): Promise<void> {
 // Health check function for edge DB
 export async function checkEdgeDBHealth(): Promise<boolean> {
   try {
-    if (!client || !client.topology || client.topology.isDestroyed()) {
+    if (!client) {
       return false;
     }
     

@@ -243,13 +243,11 @@ export const POST = secureApiRoute(async (request, { params, securityContext }) 
       emailContent
     );
 
-    // Track unlock request in login history with enhanced audit data
-    user.loginHistory.push({
-      timestamp: new Date(),
+    // Track unlock request in password reset history (security audit trail)
+    user.passwordResetHistory.push({
+      changedAt: new Date(),
       ipAddress: securityContext.geoLocation?.country || 'unknown',
-      userAgent: request.headers.get('user-agent') || 'unknown',
-      success: false, // This is an unlock request, not a successful login
-      failureReason: 'unlock_requested'
+      userAgent: request.headers.get('user-agent') || 'unknown'
     });
     await user.save();
 

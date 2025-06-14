@@ -226,7 +226,7 @@ export const POST = secureApiRoute(async (request, { params, securityContext }) 
         label: label,
         lastSix: apiKey.slice(-6),
         expiresAt: expirationDate,
-        createdAt: newApiKey.created_at
+        createdAt: newApiKey.createdAt
       },
       auditId: securityContext.auditId,
       timestamp: new Date().toISOString(),
