@@ -8,8 +8,8 @@ import Student from '@/models/Student';
 import { School } from '@/models/School';
 import mongoose from 'mongoose';
 
-// Import FlightCharge to ensure the model is registered
-import '@/models/FlightCharge';
+// Import FlightInvoice to ensure the model is registered
+import '@/models/FlightInvoice';
 
 /**
  * Check if user has permission to access a student's ledger
@@ -144,8 +144,9 @@ export async function GET(
       })
       .populate({
         path: 'charges',
-        model: 'FlightCharge',
-        select: 'amount rate_type status flight_schedule_id created_at'
+        model: 'FlightInvoice',
+        select: 'total_amount status invoice_number flight_schedule_id created_at',
+        match: { status: 'approved' } // Only show approved invoices
       })
       .lean();
 
@@ -314,8 +315,8 @@ export async function POST(
       })
       .populate({
         path: 'charges',
-        model: 'FlightCharge',
-        select: 'amount rate_type status flight_schedule_id created_at'
+        model: 'FlightInvoice',
+        select: 'total_amount status invoice_number flight_schedule_id created_at'
       })
       .lean();
 
@@ -459,8 +460,8 @@ export async function PUT(
     })
     .populate({
       path: 'charges',
-      model: 'FlightCharge',
-      select: 'amount rate_type status flight_schedule_id created_at'
+      model: 'FlightInvoice',
+      select: 'total_amount status invoice_number flight_schedule_id created_at'
     })
     .lean();
 
