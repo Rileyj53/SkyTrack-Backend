@@ -1,33 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { sendEmail, testSMTPConnection } from '@/lib/email';
-import { validateApiKey } from '@/middleware/apiKeyAuth';
-import { authenticateRequest } from '@/lib/auth';
+import { secureApiRoute, SecurityConfig } from '@/middleware/security';
 
-export async function POST(request: NextRequest) {
+// Debug endpoint configuration - requires authentication for email sending
+const DEBUG_CONFIG: SecurityConfig = {
+  requireAuth: true,
+  requireApiKey: true,
+  enableFraudDetection: true,
+  enableAdvancedAudit: true,
+  dataClassification: 'internal',
+  rateLimiting: { maxRequests: 10, windowMs: 60000 }
+};
+
+// Configuration for GET endpoint (no auth required for config info)
+const CONFIG_DEBUG_CONFIG: SecurityConfig = {
+  requireApiKey: true,
+  enableFraudDetection: true,
+  dataClassification: 'public',
+  rateLimiting: { maxRequests: 50, windowMs: 60000 }
+};
+
+export const POST = secureApiRoute(async (request: NextRequest, { securityContext }) => {
   try {
-    // Validate API key
-    const authResult = await validateApiKey(request);
-    if (authResult instanceof NextResponse) {
-      return authResult;
-    }
-
-    // Authenticate user (required for email sending)
-    const auth = authenticateRequest(request);
-    if (!auth.success) {
-      return NextResponse.json(
-        { 
-          error: 'User authentication required',
-          message: 'Email sending requires both API key and valid JWT token for security',
-          authError: auth.message,
-          troubleshooting: {
-            checkAuthHeader: 'Ensure Authorization: Bearer <token> header is present',
-            checkCookies: 'Or ensure you are logged in and token cookie is set',
-            tokenSources: 'Accepts tokens from Authorization header or cookies'
-          }
-        },
-        { status: 401 }
-      );
-    }
+    console.log(JSON.stringify({
+      level: 'INFO',
+      message: 'Email debug endpoint accessed',
+      auditId: securityContext.auditId,
+      userId: securityContext.user?.userId,
+      timestamp: new Date().toISOString()
+    }));
 
     const { testEmail, to, subject, message } = await request.json();
 
@@ -36,23 +37,25 @@ export async function POST(request: NextRequest) {
 
     // Validate input
     if (!recipientEmail) {
-      return NextResponse.json(
-        { 
-          error: 'Recipient email is required',
-          acceptedFields: ['testEmail', 'to'],
-          example: { to: 'user@example.com', subject: 'Test', message: 'Hello' }
-        },
-        { status: 400 }
-      );
+      return NextResponse.json({
+        success: false,
+        error: 'Recipient email is required',
+        auditId: securityContext.auditId,
+        acceptedFields: ['testEmail', 'to'],
+        example: { to: 'user@example.com', subject: 'Test', message: 'Hello' },
+        timestamp: new Date().toISOString()
+      }, { status: 400 });
     }
 
     // Email regex validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(recipientEmail)) {
-      return NextResponse.json(
-        { error: 'Invalid email format' },
-        { status: 400 }
-      );
+      return NextResponse.json({
+        success: false,
+        error: 'Invalid email format',
+        auditId: securityContext.auditId,
+        timestamp: new Date().toISOString()
+      }, { status: 400 });
     }
 
     const testSubject = subject || 'SkyTrack API Email Test';
@@ -61,7 +64,8 @@ export async function POST(request: NextRequest) {
       <p>This is a test email from the SkyTrack API debug endpoint.</p>
       <p><strong>Timestamp:</strong> ${new Date().toISOString()}</p>
       <p><strong>Test ID:</strong> ${Math.random().toString(36).substring(7)}</p>
-      <p><strong>Sent by User:</strong> ${auth.userId}</p>
+      <p><strong>Sent by User:</strong> ${securityContext.user?.userId}</p>
+      <p><strong>Audit ID:</strong> ${securityContext.auditId}</p>
       <p>If you received this email, the email service is working correctly.</p>
       <hr>
       <p><small>This email was sent from the debug endpoint for testing purposes.</small></p>
@@ -74,23 +78,26 @@ export async function POST(request: NextRequest) {
       const responseTime = Date.now() - startTime;
 
       console.log(JSON.stringify({
-        type: 'email_test_success',
+        level: 'INFO',
+        message: 'Test email sent successfully',
+        auditId: securityContext.auditId,
         recipient: recipientEmail,
         subject: testSubject,
         responseTime,
         success: emailSuccess,
-        userId: auth.userId,
-        tokenSource: auth.tokenSource,
+        userId: securityContext.user?.userId,
         timestamp: new Date().toISOString()
       }));
 
       return NextResponse.json({
+        success: true,
         message: emailSuccess ? 'Test email sent successfully' : 'Email test completed (development mode)',
         recipient: recipientEmail,
         subject: testSubject,
         responseTime,
-        success: emailSuccess,
-        sentBy: auth.userId,
+        emailSent: emailSuccess,
+        sentBy: securityContext.user?.userId,
+        auditId: securityContext.auditId,
         timestamp: new Date().toISOString(),
         debugInfo: {
           emailLength: testMessage.length,
@@ -98,8 +105,7 @@ export async function POST(request: NextRequest) {
           fromAddress: process.env.SMTP_FROM || 'not_configured',
           testId: Math.random().toString(36).substring(7),
           developmentMode: !emailSuccess,
-          authMethod: 'API Key + JWT Token',
-          tokenSource: auth.tokenSource
+          authMethod: 'API Key + JWT Token'
         }
       });
 
@@ -107,19 +113,23 @@ export async function POST(request: NextRequest) {
       const responseTime = Date.now() - startTime;
       
       console.error(JSON.stringify({
-        type: 'email_test_error',
+        level: 'ERROR',
+        message: 'Email test failed',
+        auditId: securityContext.auditId,
         recipient: recipientEmail,
         error: emailError.message,
         responseTime,
-        userId: auth.userId,
+        userId: securityContext.user?.userId,
         timestamp: new Date().toISOString()
       }));
 
       return NextResponse.json({
+        success: false,
         message: 'Email test failed',
         error: emailError.message,
         recipient: recipientEmail,
         responseTime,
+        auditId: securityContext.auditId,
         timestamp: new Date().toISOString(),
         debugInfo: {
           emailProvider: process.env.EMAIL_PROVIDER || 'default',
@@ -131,29 +141,35 @@ export async function POST(request: NextRequest) {
     }
 
   } catch (error) {
-    console.error('Email test endpoint error:', error);
-    return NextResponse.json({
+    console.error(JSON.stringify({
+      level: 'ERROR',
       message: 'Email test endpoint error',
+      auditId: securityContext.auditId,
       error: error.message,
       timestamp: new Date().toISOString()
-    }, { status: 500 });
-  }
-}
+    }));
 
-export async function GET(request: NextRequest) {
+    throw error;
+  }
+}, DEBUG_CONFIG);
+
+export const GET = secureApiRoute(async (request: NextRequest, { securityContext }) => {
   try {
-    // Validate API key
-    const authResult = await validateApiKey(request);
-    if (authResult instanceof NextResponse) {
-      return authResult;
-    }
+    console.log(JSON.stringify({
+      level: 'INFO',
+      message: 'Email configuration debug accessed',
+      auditId: securityContext.auditId,
+      timestamp: new Date().toISOString()
+    }));
 
     // Test SMTP connection
     const connectionTest = await testSMTPConnection();
 
     // Return email configuration info (safe values only)
     return NextResponse.json({
+      success: true,
       message: 'Email service configuration',
+      auditId: securityContext.auditId,
       timestamp: new Date().toISOString(),
       configuration: connectionTest.config,
       connection: {
@@ -186,11 +202,14 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Email config endpoint error:', error);
-    return NextResponse.json({
-      message: 'Email configuration check failed',
+    console.error(JSON.stringify({
+      level: 'ERROR',
+      message: 'Email config endpoint error',
+      auditId: securityContext.auditId,
       error: error.message,
       timestamp: new Date().toISOString()
-    }, { status: 500 });
+    }));
+
+    throw error;
   }
-} 
+}, CONFIG_DEBUG_CONFIG); 

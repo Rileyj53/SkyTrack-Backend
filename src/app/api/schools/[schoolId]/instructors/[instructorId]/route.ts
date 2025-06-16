@@ -1,287 +1,440 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { secureApiRoute, SecurityConfig } from '@/middleware/security';
 import { connectDB } from '@/lib/db';
-import { validateApiKey } from '@/middleware/apiKeyAuth';
-import { authenticateRequest } from '@/middleware/auth';
-import { checkSchoolAccess } from '@/middleware/permissions';
-import { verifyToken } from '@/lib/jwt';
-import mongoose from 'mongoose';
 import Instructor from '@/models/Instructor';
+import mongoose from 'mongoose';
+
+// Security configuration for individual instructor endpoints
+const INSTRUCTOR_ITEM_SECURITY_CONFIG: SecurityConfig = {
+  requireAuth: true,
+  requireApiKey: true,
+  requireCSRF: true, // Required for PUT/DELETE operations
+  allowedRoles: ['sys_admin', 'school_admin', 'instructor'],
+  requireSchoolAccess: true,
+  enableFraudDetection: true,
+  enableAdvancedAudit: true,
+  dataClassification: 'confidential',
+  rateLimiting: {
+    maxRequests: 100,
+    windowMs: 60000,
+    slidingWindow: true
+  }
+};
 
 // GET handler to retrieve a specific instructor
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { schoolId: string; instructorId: string } }
-) {
-  try {
-    await connectDB();
+export const GET = secureApiRoute(async (request, { params, securityContext }) => {
+  const startTime = Date.now();
+  
+  // Establish database connection with retry logic
+  await connectDB();
 
-    // Validate API key
-    const apiKeyResult = await validateApiKey(request);
-    if (apiKeyResult instanceof NextResponse) {
-      return apiKeyResult;
-    }
+  console.log(JSON.stringify({
+    level: 'INFO',
+    message: 'Processing instructor detail request',
+    auditId: securityContext.auditId,
+    schoolId: params.schoolId,
+    instructorId: params.instructorId,
+    userId: securityContext.user?.id,
+    userRole: securityContext.user?.role,
+    timestamp: new Date().toISOString()
+  }));
 
-    // Authenticate request
-    const authResult = await authenticateRequest(request);
-    if (authResult instanceof NextResponse) {
-      return authResult;
-    }
-
-    // Extract token from Authorization header
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return NextResponse.json(
-        { error: 'No token provided' },
-        { status: 401 }
-      );
-    }
-
-    const token = authHeader.split(' ')[1];
-    const decoded = verifyToken(token);
-
-    if (!decoded) {
-      return NextResponse.json(
-        { error: 'Invalid token' },
-        { status: 401 }
-      );
-    }
-
-    // Check if user has access to this school
-    const hasAccess = await checkSchoolAccess(request, params.schoolId);
-    if (!hasAccess) {
-      return NextResponse.json(
-        { error: 'You do not have access to this school' },
-        { status: 403 }
-      );
-    }
-
-    // Validate IDs
-    if (!mongoose.Types.ObjectId.isValid(params.schoolId) || !mongoose.Types.ObjectId.isValid(params.instructorId)) {
-      return NextResponse.json(
-        { error: 'Invalid school ID or instructor ID' },
-        { status: 400 }
-      );
-    }
-
-    // Find the instructor
-    const instructor = await mongoose.model('Instructor').findOne({
-      _id: new mongoose.Types.ObjectId(params.instructorId),
-      school_id: new mongoose.Types.ObjectId(params.schoolId)
-    }).populate('user_id', 'first_name last_name email role').lean();
-
-    if (!instructor) {
-      return NextResponse.json(
-        { error: 'Instructor not found' },
-        { status: 404 }
-      );
-    }
-
-    return NextResponse.json(instructor);
-  } catch (error) {
-    console.error('Error fetching instructor:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch instructor' },
-      { status: 500 }
-    );
+  // Validate IDs
+  if (!mongoose.Types.ObjectId.isValid(params.schoolId) || !mongoose.Types.ObjectId.isValid(params.instructorId)) {
+    console.warn(JSON.stringify({
+      level: 'WARN',
+      message: 'Invalid school ID or instructor ID format provided',
+      auditId: securityContext.auditId,
+      schoolId: params.schoolId,
+      instructorId: params.instructorId,
+      timestamp: new Date().toISOString()
+    }));
+    
+    return NextResponse.json({
+      error: {
+        message: 'Invalid school ID or instructor ID format',
+        code: 'INVALID_ID_FORMAT',
+        requestId: securityContext.auditId,
+        timestamp: new Date().toISOString()
+      }
+    }, { status: 400 });
   }
-}
+
+  // Find the instructor
+  const instructor = await (mongoose.model('Instructor') as any).findOne({
+    _id: new mongoose.Types.ObjectId(params.instructorId),
+    school_id: new mongoose.Types.ObjectId(params.schoolId)
+  }).populate('user_id', 'first_name last_name email role').lean();
+
+  if (!instructor) {
+    console.warn(JSON.stringify({
+      level: 'WARN',
+      message: 'Instructor not found',
+      auditId: securityContext.auditId,
+      schoolId: params.schoolId,
+      instructorId: params.instructorId,
+      timestamp: new Date().toISOString()
+    }));
+    
+    return NextResponse.json({
+      error: {
+        message: 'Instructor not found',
+        code: 'INSTRUCTOR_NOT_FOUND',
+        requestId: securityContext.auditId,
+        timestamp: new Date().toISOString()
+      }
+    }, { status: 404 });
+  }
+
+  // Role-based access control
+  const userRole = securityContext.user?.role;
+  const userId = securityContext.user?.id;
+  
+  // Instructors can only view their own data
+  if (userRole === 'instructor') {
+    const instructorUserId = instructor.user_id?._id?.toString() || instructor.user_id?.toString();
+    if (instructorUserId !== userId) {
+      console.warn(JSON.stringify({
+        level: 'WARN',
+        message: 'Instructor attempted to access another instructor\'s data',
+        auditId: securityContext.auditId,
+        userId: userId,
+        instructorId: params.instructorId,
+        timestamp: new Date().toISOString()
+      }));
+      
+      return NextResponse.json({
+        error: {
+          message: 'Access denied: You can only view your own instructor data',
+          code: 'ACCESS_DENIED',
+          requestId: securityContext.auditId,
+          timestamp: new Date().toISOString()
+        }
+      }, { status: 403 });
+    }
+  }
+
+  console.log(JSON.stringify({
+    level: 'INFO',
+    message: 'Instructor detail request completed successfully',
+    auditId: securityContext.auditId,
+    instructorId: params.instructorId,
+    userRole: userRole,
+    processingTime: Date.now() - startTime,
+    timestamp: new Date().toISOString()
+  }));
+
+  return NextResponse.json({
+    success: true,
+    message: 'Instructor retrieved successfully',
+    data: {
+      instructor
+    },
+    auditId: securityContext.auditId,
+    timestamp: new Date().toISOString()
+  });
+}, INSTRUCTOR_ITEM_SECURITY_CONFIG);
 
 // PUT handler to update an instructor
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: { schoolId: string; instructorId: string } }
-) {
-  try {
-    await connectDB();
+export const PUT = secureApiRoute(async (request, { params, securityContext }) => {
+  const startTime = Date.now();
+  
+  // Establish database connection with retry logic
+  await connectDB();
 
-    // Validate API key
-    const apiKeyResult = await validateApiKey(request);
-    if (apiKeyResult instanceof NextResponse) {
-      return apiKeyResult;
-    }
+  console.log(JSON.stringify({
+    level: 'INFO',
+    message: 'Processing instructor update request',
+    auditId: securityContext.auditId,
+    schoolId: params.schoolId,
+    instructorId: params.instructorId,
+    userId: securityContext.user?.id,
+    userRole: securityContext.user?.role,
+    timestamp: new Date().toISOString()
+  }));
 
-    // Authenticate request
-    const authResult = await authenticateRequest(request);
-    if (authResult instanceof NextResponse) {
-      return authResult;
-    }
-
-    // Extract token from Authorization header
-    const authHeader = request.headers.get('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return NextResponse.json(
-        { error: 'Invalid authorization header' },
-        { status: 401 }
-      );
-    }
-
-    const token = authHeader.split(' ')[1];
-    const decoded = verifyToken(token);
-
-    // Check if user has sys_admin role or is a school admin
-    if (decoded.role !== 'sys_admin') {
-      // For non-sys_admin users, check school access
-      const hasAccess = await checkSchoolAccess(request, params.schoolId);
-      
-      if (!hasAccess) {
-        return NextResponse.json(
-          { error: 'Insufficient permissions to update instructors' },
-          { status: 403 }
-        );
-      }
-    }
-
-    // Validate IDs
-    if (!mongoose.Types.ObjectId.isValid(params.schoolId) || !mongoose.Types.ObjectId.isValid(params.instructorId)) {
-      return NextResponse.json(
-        { error: 'Invalid school ID or instructor ID format' },
-        { status: 400 }
-      );
-    }
-
-    // Parse request body
-    const body = await request.json();
-
-    // Find the instructor
-    const instructor = await mongoose.model('Instructor').findOne({
-      _id: new mongoose.Types.ObjectId(params.instructorId),
-      school_id: new mongoose.Types.ObjectId(params.schoolId)
-    });
-
-    if (!instructor) {
-      return NextResponse.json(
-        { error: 'Instructor not found' },
-        { status: 404 }
-      );
-    }
-
-    // If license number is being updated, check if it's already in use
-    if (body.license_number && body.license_number !== instructor.license_number) {
-      const existingLicense = await mongoose.model('Instructor').findOne({
-        license_number: body.license_number,
-        _id: { $ne: params.instructorId }
-      }).exec();
-
-      if (existingLicense) {
-        return NextResponse.json(
-          { error: 'License number is already in use' },
-          { status: 409 }
-        );
-      }
-    }
-
-    // Update instructor fields
-    if (body.contact_email) instructor.contact_email = body.contact_email;
-    if (body.phone) instructor.phone = body.phone;
-    if (body.certifications) instructor.certifications = body.certifications;
-    if (body.license_number) instructor.license_number = body.license_number;
-    if (body.emergency_contact) instructor.emergency_contact = body.emergency_contact;
-    if (body.specialties) instructor.specialties = body.specialties;
-    if (body.status) instructor.status = body.status;
-    if (body.hourlyRates) instructor.hourlyRates = body.hourlyRates;
-    if (body.flightHours) instructor.flightHours = body.flightHours;
-    if (body.teachingHours) instructor.teachingHours = body.teachingHours;
-    if (body.availability) instructor.availability = body.availability;
-    if (body.students) instructor.students = body.students;
-    if (body.utilization) instructor.utilization = body.utilization;
-    if (body.ratings) instructor.ratings = body.ratings;
-    if (body.availability_time) instructor.availability_time = body.availability_time;
-    if (body.notes) instructor.notes = body.notes;
-    if (body.documents) instructor.documents = body.documents;
-
-    // Save the updated instructor
-    await instructor.save();
-
-    // Return the updated instructor
+  // Validate IDs
+  if (!mongoose.Types.ObjectId.isValid(params.schoolId) || !mongoose.Types.ObjectId.isValid(params.instructorId)) {
+    console.warn(JSON.stringify({
+      level: 'WARN',
+      message: 'Invalid school ID or instructor ID format provided for update',
+      auditId: securityContext.auditId,
+      schoolId: params.schoolId,
+      instructorId: params.instructorId,
+      timestamp: new Date().toISOString()
+    }));
+    
     return NextResponse.json({
-      message: 'Instructor updated successfully',
-      instructor,
-      status: 'success'
-    });
-  } catch (error) {
-    console.error('Error updating instructor:', error);
-    return NextResponse.json(
-      { error: 'Failed to update instructor' },
-      { status: 500 }
-    );
-  }
-}
-
-// DELETE handler to delete an instructor
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { schoolId: string; instructorId: string } }
-) {
-  try {
-    await connectDB();
-
-    // Validate API key
-    const apiKeyResult = await validateApiKey(request);
-    if (apiKeyResult instanceof NextResponse) {
-      return apiKeyResult;
-    }
-
-    // Authenticate request
-    const authResult = await authenticateRequest(request);
-    if (authResult instanceof NextResponse) {
-      return authResult;
-    }
-
-    // Extract token from Authorization header
-    const authHeader = request.headers.get('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return NextResponse.json(
-        { error: 'Invalid authorization header' },
-        { status: 401 }
-      );
-    }
-
-    const token = authHeader.split(' ')[1];
-    const decoded = verifyToken(token);
-
-    // Check if user has sys_admin role or is a school admin
-    if (decoded.role !== 'sys_admin') {
-      // For non-sys_admin users, check school access
-      const hasAccess = await checkSchoolAccess(request, params.schoolId);
-      
-      if (!hasAccess) {
-        return NextResponse.json(
-          { error: 'Insufficient permissions to delete instructors' },
-          { status: 403 }
-        );
+      error: {
+        message: 'Invalid school ID or instructor ID format',
+        code: 'INVALID_ID_FORMAT',
+        requestId: securityContext.auditId,
+        timestamp: new Date().toISOString()
       }
-    }
+    }, { status: 400 });
+  }
 
-    // Validate IDs
-    if (!mongoose.Types.ObjectId.isValid(params.schoolId) || !mongoose.Types.ObjectId.isValid(params.instructorId)) {
-      return NextResponse.json(
-        { error: 'Invalid school ID or instructor ID format' },
-        { status: 400 }
-      );
-    }
+  // Role-based access control
+  const userRole = securityContext.user?.role;
+  const userId = securityContext.user?.id;
 
-    // Find and delete the instructor
-    const instructor = await mongoose.model('Instructor').findOneAndDelete({
-      _id: new mongoose.Types.ObjectId(params.instructorId),
-      school_id: new mongoose.Types.ObjectId(params.schoolId)
+  // Find the instructor first to check permissions
+  const instructor = await (mongoose.model('Instructor') as any).findOne({
+    _id: new mongoose.Types.ObjectId(params.instructorId),
+    school_id: new mongoose.Types.ObjectId(params.schoolId)
+  }).populate('user_id', '_id');
+
+  if (!instructor) {
+    console.warn(JSON.stringify({
+      level: 'WARN',
+      message: 'Instructor not found for update',
+      auditId: securityContext.auditId,
+      instructorId: params.instructorId,
+      schoolId: params.schoolId,
+      timestamp: new Date().toISOString()
+    }));
+    
+    return NextResponse.json({
+      error: {
+        message: 'Instructor not found',
+        code: 'INSTRUCTOR_NOT_FOUND',
+        requestId: securityContext.auditId,
+        timestamp: new Date().toISOString()
+      }
+    }, { status: 404 });
+  }
+
+  // If instructor role, they can only update their own data
+  if (userRole === 'instructor') {
+    const instructorUserId = instructor.user_id?._id?.toString() || instructor.user_id?.toString();
+    if (instructorUserId !== userId) {
+      console.warn(JSON.stringify({
+        level: 'WARN',
+        message: 'Instructor attempted to update another instructor\'s data',
+        auditId: securityContext.auditId,
+        userId: userId,
+        instructorId: params.instructorId,
+        timestamp: new Date().toISOString()
+      }));
+      
+      return NextResponse.json({
+        error: {
+          message: 'Instructors can only update their own data',
+          code: 'FORBIDDEN_ACCESS',
+          requestId: securityContext.auditId,
+          timestamp: new Date().toISOString()
+        }
+      }, { status: 403 });
+    }
+  }
+
+  // Parse request body
+  const body = await request.json();
+
+  // If license number is being updated, check if it's already in use
+  if (body.license_number && body.license_number !== instructor.license_number) {
+    const existingLicense = await (mongoose.model('Instructor') as any).findOne({
+      license_number: body.license_number,
+      _id: { $ne: params.instructorId }
     }).exec();
 
-    if (!instructor) {
-      return NextResponse.json(
-        { error: 'Instructor not found' },
-        { status: 404 }
-      );
+    if (existingLicense) {
+      console.warn(JSON.stringify({
+        level: 'WARN',
+        message: 'License number already in use during update',
+        auditId: securityContext.auditId,
+        licenseNumber: body.license_number,
+        instructorId: params.instructorId,
+        existingInstructorId: existingLicense._id,
+        timestamp: new Date().toISOString()
+      }));
+      
+      return NextResponse.json({
+        error: {
+          message: 'License number is already in use',
+          code: 'LICENSE_EXISTS',
+          requestId: securityContext.auditId,
+          timestamp: new Date().toISOString()
+        }
+      }, { status: 409 });
     }
-
-    return NextResponse.json({
-      message: 'Instructor deleted successfully',
-      status: 'success'
-    });
-  } catch (error) {
-    console.error('Error deleting instructor:', error);
-    return NextResponse.json(
-      { error: 'Failed to delete instructor' },
-      { status: 500 }
-    );
   }
-} 
+
+  // Update instructor fields
+  const updateFields: any = {};
+  
+  if (body.contact_email !== undefined) updateFields.contact_email = body.contact_email;
+  if (body.phone !== undefined) updateFields.phone = body.phone;
+  if (body.certifications !== undefined) updateFields.certifications = body.certifications;
+  if (body.license_number !== undefined) updateFields.license_number = body.license_number;
+  if (body.emergency_contact !== undefined) updateFields.emergency_contact = body.emergency_contact;
+  if (body.specialties !== undefined) updateFields.specialties = body.specialties;
+  if (body.status !== undefined) updateFields.status = body.status;
+  if (body.hourlyRates !== undefined) updateFields.hourlyRates = body.hourlyRates;
+  if (body.flightHours !== undefined) updateFields.flightHours = body.flightHours;
+  if (body.teachingHours !== undefined) updateFields.teachingHours = body.teachingHours;
+  if (body.availability !== undefined) updateFields.availability = body.availability;
+  if (body.students !== undefined) updateFields.students = body.students;
+  if (body.utilization !== undefined) updateFields.utilization = body.utilization;
+  if (body.ratings !== undefined) updateFields.ratings = body.ratings;
+  if (body.availability_time !== undefined) updateFields.availability_time = body.availability_time;
+  if (body.notes !== undefined) updateFields.notes = body.notes;
+  if (body.documents !== undefined) updateFields.documents = body.documents;
+
+  // Update the instructor
+  const updatedInstructor = await (mongoose.model('Instructor') as any).findByIdAndUpdate(
+    params.instructorId,
+    { $set: updateFields },
+    { new: true, runValidators: true }
+  ).populate('user_id', 'first_name last_name email role').lean();
+
+  if (!updatedInstructor) {
+    console.error(JSON.stringify({
+      level: 'ERROR',
+      message: 'Failed to update instructor',
+      auditId: securityContext.auditId,
+      instructorId: params.instructorId,
+      timestamp: new Date().toISOString()
+    }));
+    
+    return NextResponse.json({
+      error: {
+        message: 'Failed to update instructor',
+        code: 'UPDATE_FAILED',
+        requestId: securityContext.auditId,
+        timestamp: new Date().toISOString()
+      }
+    }, { status: 500 });
+  }
+
+  console.log(JSON.stringify({
+    level: 'INFO',
+    message: 'Instructor updated successfully',
+    auditId: securityContext.auditId,
+    instructorId: params.instructorId,
+    updatedBy: securityContext.user?.id,
+    processingTime: Date.now() - startTime,
+    timestamp: new Date().toISOString()
+  }));
+
+  // Return the updated instructor
+  return NextResponse.json({
+    success: true,
+    message: 'Instructor updated successfully',
+    data: {
+      instructor: updatedInstructor
+    },
+    auditId: securityContext.auditId,
+    timestamp: new Date().toISOString()
+  });
+}, INSTRUCTOR_ITEM_SECURITY_CONFIG);
+
+// DELETE handler to delete an instructor
+export const DELETE = secureApiRoute(async (request, { params, securityContext }) => {
+  const startTime = Date.now();
+  
+  // Establish database connection with retry logic
+  await connectDB();
+
+  console.log(JSON.stringify({
+    level: 'INFO',
+    message: 'Processing instructor deletion request',
+    auditId: securityContext.auditId,
+    schoolId: params.schoolId,
+    instructorId: params.instructorId,
+    userId: securityContext.user?.id,
+    userRole: securityContext.user?.role,
+    timestamp: new Date().toISOString()
+  }));
+
+  // Role-based access control - only admins can delete instructors
+  const userRole = securityContext.user?.role;
+  if (!['sys_admin', 'school_admin'].includes(userRole)) {
+    console.warn(JSON.stringify({
+      level: 'WARN',
+      message: 'Unauthorized attempt to delete instructor',
+      auditId: securityContext.auditId,
+      userId: securityContext.user?.id,
+      userRole: userRole,
+      instructorId: params.instructorId,
+      timestamp: new Date().toISOString()
+    }));
+    
+    return NextResponse.json({
+      error: {
+        message: 'Insufficient permissions to delete instructors',
+        code: 'INSUFFICIENT_PERMISSIONS',
+        requestId: securityContext.auditId,
+        timestamp: new Date().toISOString()
+      }
+    }, { status: 403 });
+  }
+
+  // Validate IDs
+  if (!mongoose.Types.ObjectId.isValid(params.schoolId) || !mongoose.Types.ObjectId.isValid(params.instructorId)) {
+    console.warn(JSON.stringify({
+      level: 'WARN',
+      message: 'Invalid school ID or instructor ID format provided for deletion',
+      auditId: securityContext.auditId,
+      schoolId: params.schoolId,
+      instructorId: params.instructorId,
+      timestamp: new Date().toISOString()
+    }));
+    
+    return NextResponse.json({
+      error: {
+        message: 'Invalid school ID or instructor ID format',
+        code: 'INVALID_ID_FORMAT',
+        requestId: securityContext.auditId,
+        timestamp: new Date().toISOString()
+      }
+    }, { status: 400 });
+  }
+
+  // Find and delete the instructor
+  const instructor = await (mongoose.model('Instructor') as any).findOneAndDelete({
+    _id: new mongoose.Types.ObjectId(params.instructorId),
+    school_id: new mongoose.Types.ObjectId(params.schoolId)
+  }).exec();
+
+  if (!instructor) {
+    console.warn(JSON.stringify({
+      level: 'WARN',
+      message: 'Instructor not found for deletion',
+      auditId: securityContext.auditId,
+      instructorId: params.instructorId,
+      schoolId: params.schoolId,
+      timestamp: new Date().toISOString()
+    }));
+    
+    return NextResponse.json({
+      error: {
+        message: 'Instructor not found',
+        code: 'INSTRUCTOR_NOT_FOUND',
+        requestId: securityContext.auditId,
+        timestamp: new Date().toISOString()
+      }
+    }, { status: 404 });
+  }
+
+  console.log(JSON.stringify({
+    level: 'INFO',
+    message: 'Instructor deleted successfully',
+    auditId: securityContext.auditId,
+    instructorId: params.instructorId,
+    schoolId: params.schoolId,
+    deletedBy: securityContext.user?.id,
+    processingTime: Date.now() - startTime,
+    timestamp: new Date().toISOString()
+  }));
+
+  return NextResponse.json({
+    success: true,
+    message: 'Instructor deleted successfully',
+    data: {
+      instructor_id: params.instructorId
+    },
+    auditId: securityContext.auditId,
+    timestamp: new Date().toISOString()
+  });
+}, INSTRUCTOR_ITEM_SECURITY_CONFIG); 

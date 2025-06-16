@@ -1,178 +1,179 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { secureApiRoute, SecurityConfig } from '@/middleware/security';
 import { connectDB } from '@/lib/db';
-import { validateApiKey } from '@/middleware/apiKeyAuth';
-import { authenticateRequest } from '@/middleware/auth';
-import { verifyToken } from '@/lib/jwt';
 import FlightInvoice from '@/models/FlightInvoice';
-import StudentLedger from '@/models/StudentLedger';
 import mongoose from 'mongoose';
 
-// POST /api/schools/[schoolId]/students/[studentId]/flight-invoices/[invoiceId]/approve
-// Approve a pending invoice and add it to the student ledger
-export async function POST(
-  request: NextRequest,
-  { params }: { params: { schoolId: string; studentId: string; invoiceId: string } }
-) {
-  try {
-    // Validate API key
-    const apiKeyResult = await validateApiKey(request);
-    if ('error' in apiKeyResult) {
-      return NextResponse.json({ error: apiKeyResult.error }, { status: 401 });
-    }
+// Security configuration for flight invoice approval
+const FLIGHT_INVOICE_APPROVE_SECURITY_CONFIG: SecurityConfig = {
+  requireAuth: true,
+  requireApiKey: true,
+  requireCSRF: true, // POST operations need CSRF
+  allowedRoles: ['sys_admin', 'school_admin'],
+  requireSchoolAccess: true,
+  enableFraudDetection: true,
+  enableAdvancedAudit: true,
+  dataClassification: 'confidential',
+  rateLimiting: {
+    maxRequests: 30,
+    windowMs: 60000,
+    slidingWindow: true
+  }
+};
 
-    // Authenticate user
-    const authResult = await authenticateRequest(request);
-    if ('error' in authResult) {
-      return NextResponse.json({ error: authResult.error }, { status: 401 });
-    }
+// POST /api/schools/[schoolId]/students/[studentId]/flight-invoices/[invoiceId]/approve - Approve a flight invoice
+export const POST = secureApiRoute(async (request, { params, securityContext }) => {
+  const startTime = Date.now();
+  
+  // Establish database connection with retry logic
+  await connectDB();
 
-    // Connect to database
-    await connectDB();
+  console.log(JSON.stringify({
+    level: 'INFO',
+    message: 'Processing flight invoice approval request',
+    auditId: securityContext.auditId,
+    schoolId: params.schoolId,
+    studentId: params.studentId,
+    invoiceId: params.invoiceId,
+    userId: securityContext.user.id,
+    timestamp: new Date().toISOString()
+  }));
 
-    // Validate IDs
-    if (!mongoose.Types.ObjectId.isValid(params.schoolId) || 
-        !mongoose.Types.ObjectId.isValid(params.studentId) ||
-        !mongoose.Types.ObjectId.isValid(params.invoiceId)) {
-      return NextResponse.json(
-        { error: 'Invalid ID format' },
-        { status: 400 }
-      );
-    }
-
-    // Get current user from token
-    const token = request.headers.get('Authorization')?.split(' ')[1];
-    const decoded = verifyToken(token || '');
-    if (!decoded?.userId) {
-      return NextResponse.json(
-        { error: 'Invalid authentication token' },
-        { status: 401 }
-      );
-    }
-
-    // Check permissions - only school admins and system admins can approve invoices
-    if (decoded.role !== 'school_admin' && decoded.role !== 'sys_admin') {
-      return NextResponse.json(
-        { error: 'Insufficient permissions. Only school or system administrators can approve invoices.' },
-        { status: 403 }
-      );
-    }
-
-    // Find the invoice
-    const invoice = await (FlightInvoice as any).findOne({
-      _id: params.invoiceId,
-      school_id: params.schoolId,
-      student_id: params.studentId
-    }).populate('flight_schedule_id');
-
-    if (!invoice) {
-      return NextResponse.json(
-        { error: 'Flight invoice not found' },
-        { status: 404 }
-      );
-    }
-
-    // Check if invoice can be approved
-    if (invoice.status !== 'pending') {
-      return NextResponse.json(
-        { error: 'Only pending invoices can be approved' },
-        { status: 400 }
-      );
-    }
-
-    // Update invoice status to approved
-    invoice.status = 'approved';
-    invoice.approved_by = decoded.userId;
-    invoice.approved_at = new Date();
-    await invoice.save();
-
-    // Add invoice amount to student ledger
-    try {
-      await addInvoiceToStudentLedger(
-        params.schoolId,
-        params.studentId,
-        invoice._id,
-        invoice.total_amount
-      );
-    } catch (ledgerError) {
-      console.error('Error adding invoice to student ledger:', ledgerError);
-      // If ledger update fails, we should still return success but log the issue
-      console.warn(`Invoice ${invoice._id} approved but failed to update student ledger for student ${params.studentId}`);
-    }
-
-    // Populate the updated invoice for response
-    const populatedInvoice = await (FlightInvoice as any)
-      .findById(invoice._id)
-      .populate({
-        path: 'flight_schedule_id',
-        select: 'scheduled_start_time scheduled_end_time flight_type status'
-      })
-      .populate({
-        path: 'approved_by',
-        select: 'first_name last_name email role'
-      })
-      .populate({
-        path: 'created_by',
-        select: 'first_name last_name email role'
-      })
-      .lean();
-
+  // Validate IDs
+  if (!mongoose.Types.ObjectId.isValid(params.schoolId) || 
+      !mongoose.Types.ObjectId.isValid(params.studentId) ||
+      !mongoose.Types.ObjectId.isValid(params.invoiceId)) {
     return NextResponse.json({
-      message: 'Invoice approved successfully and added to student ledger',
-      invoice: populatedInvoice
-    });
-
-  } catch (error) {
-    console.error('Error in POST approve invoice:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+      error: {
+        message: 'Invalid ID format',
+        code: 'INVALID_ID_FORMAT',
+        requestId: securityContext.auditId,
+        timestamp: new Date().toISOString()
+      }
+    }, { status: 400 });
   }
-}
 
-/**
- * Add an approved invoice to the student's ledger, creating the ledger if it doesn't exist
- */
-async function addInvoiceToStudentLedger(
-  schoolId: string, 
-  studentId: string, 
-  invoiceId: mongoose.Types.ObjectId, 
-  invoiceAmount: number
-): Promise<void> {
-  try {
-    // Try to find existing ledger
-    let ledger = await (StudentLedger as any).findOne({
-      school_id: schoolId,
-      student_id: studentId
-    });
+  // Find the flight invoice
+  const invoice = await (FlightInvoice as any).findOne({
+    _id: params.invoiceId,
+    school_id: params.schoolId,
+    student_id: params.studentId
+  });
 
-    if (!ledger) {
-      // Create new ledger if it doesn't exist
-      console.log(`Creating new ledger for student ${studentId} in school ${schoolId}`);
-      ledger = new StudentLedger({
-        school_id: schoolId,
-        student_id: studentId,
-        balance: 0.00,
-        charges: [],
-        payments: []
-      });
-    }
-
-    // Add the invoice to the charges array (we'll use charges array for approved invoices)
-    if (!ledger.charges.includes(invoiceId)) {
-      ledger.charges.push(invoiceId);
-    }
-
-    // Update the balance with the approved invoice amount
-    ledger.balance += invoiceAmount;
-
-    // Save the ledger
-    await ledger.save();
-
-    console.log(`Successfully added approved invoice ${invoiceId} (amount: ${invoiceAmount}) to student ${studentId} ledger. New balance: ${ledger.balance}`);
-
-  } catch (error) {
-    console.error('Error in addInvoiceToStudentLedger:', error);
-    throw error; // Re-throw to be handled by calling function
+  if (!invoice) {
+    return NextResponse.json({
+      error: {
+        message: 'Flight invoice not found',
+        code: 'INVOICE_NOT_FOUND',
+        requestId: securityContext.auditId,
+        timestamp: new Date().toISOString()
+      }
+    }, { status: 404 });
   }
-} 
+
+  // Check if invoice is in a state that can be approved
+  if (!['draft', 'pending'].includes(invoice.status)) {
+    return NextResponse.json({
+      error: {
+        message: `Cannot approve invoice with status: ${invoice.status}`,
+        code: 'INVALID_INVOICE_STATUS',
+        requestId: securityContext.auditId,
+        timestamp: new Date().toISOString()
+      }
+    }, { status: 400 });
+  }
+
+  // Get request body for approval notes
+  const body = await request.json().catch(() => ({}));
+  const approvalNotes = body.notes || '';
+
+  // Update invoice status to approved/sent
+  const updateData = {
+    status: 'sent',
+    approved_at: new Date(),
+    approved_by: securityContext.user.id,
+    approval_notes: approvalNotes,
+    sent_at: new Date() // Mark as sent when approved
+  };
+
+  const updatedInvoice = await (FlightInvoice as any).findByIdAndUpdate(
+    params.invoiceId,
+    { $set: updateData },
+    { new: true, runValidators: true }
+  )
+  .populate({
+    path: 'flight_schedule_id',
+    select: 'scheduled_start_time scheduled_end_time actual_duration scheduled_duration flight_type status'
+  })
+  .populate({
+    path: 'school_id',
+    select: 'name address airport phone email'
+  })
+  .populate({
+    path: 'student_id',
+    populate: {
+      path: 'user_id',
+      select: 'first_name last_name email'
+    }
+  })
+  .populate({
+    path: 'plane_id',
+    select: 'registration type aircraftModel hourlyRates'
+  })
+  .populate({
+    path: 'instructor_id',
+    populate: {
+      path: 'user_id',
+      select: 'first_name last_name email'
+    }
+  })
+  .populate({
+    path: 'approved_by',
+    select: 'first_name last_name email role'
+  })
+  .populate({
+    path: 'created_by',
+    select: 'first_name last_name email role'
+  })
+  .lean();
+
+  if (!updatedInvoice) {
+    return NextResponse.json({
+      error: {
+        message: 'Failed to approve flight invoice',
+        code: 'APPROVAL_FAILED',
+        requestId: securityContext.auditId,
+        timestamp: new Date().toISOString()
+      }
+    }, { status: 500 });
+  }
+
+  const processingTime = Date.now() - startTime;
+
+  console.log(JSON.stringify({
+    level: 'INFO',
+    message: 'Flight invoice approved successfully',
+    auditId: securityContext.auditId,
+    schoolId: params.schoolId,
+    studentId: params.studentId,
+    invoiceId: params.invoiceId,
+    approvedBy: securityContext.user.id,
+    processingTime,
+    timestamp: new Date().toISOString()
+  }));
+
+  return NextResponse.json({
+    success: true,
+    message: 'Flight invoice approved successfully',
+    data: { 
+      invoice: updatedInvoice,
+      approval: {
+        approved_at: updateData.approved_at,
+        approved_by: securityContext.user.id,
+        approval_notes: approvalNotes
+      }
+    },
+    auditId: securityContext.auditId,
+    timestamp: new Date().toISOString()
+  });
+}, FLIGHT_INVOICE_APPROVE_SECURITY_CONFIG); 

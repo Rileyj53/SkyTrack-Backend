@@ -1,0 +1,303 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# 📘 SkyTrack Backend Documentation Standards
+
+## 📝 API Documentation (REQUIRED FOR EVERY ENDPOINT)
+
+Each file in `src/app/api/**` **must** have a corresponding documentation file in `Docs/` following the same folder structure and name.
+
+### Required Structure in `Docs/`:
+
+Each `.md` file must contain:
+
+- **Title**: Endpoint and method (e.g., `POST /api/schools/{id}/students`)
+- **Overview**: Brief description of the endpoint's purpose
+- **Security Section**:
+  - Required: Auth, API key, CSRF
+  - Allowed roles
+  - Risk scoring or fraud detection enabled?
+  - Geographic restrictions (if applicable)
+  - MFA requirements (if applicable)
+  - PCI compliance (if applicable)
+  - Data classification level
+- **Request Section**:
+  - Method
+  - Path parameters
+  - Query parameters
+  - Required headers (list, but not hardcoded values)
+  - JSON body schema with validation rules
+- **Response Section**:
+  - Success response schema (200, 201)
+  - Error response schemas with HTTP status codes
+  - Security context fields (if returned: `auditId`, `riskScore`, etc.)
+- **Rate limits** (if applicable)
+- **Examples**: Complete request/response examples
+- **Error Codes**: All possible error codes and their meanings
+
+### 📄 Enhanced Doc Layout Template:
+
+```markdown
+# POST /api/schools/{schoolId}/students
+
+## 🎯 Overview
+Creates a new student record for the specified school.
+
+## 🔐 Security
+- **Requires Auth**: ✅ (JWT Bearer token)
+- **Requires API Key**: ✅ (X-API-Key header)
+- **Requires CSRF Token**: ✅ (X-CSRF-Token header)
+- **Allowed Roles**: `['school_admin', 'instructor']`
+- **School Access Required**: ✅ (must have access to specified school)
+- **Fraud Detection**: ✅ Enabled
+- **Risk Scoring**: ✅ Enabled
+- **Data Classification**: `confidential`
+- **Rate Limiting**: 100 requests per minute
+
+## 📥 Request
+
+**Method**: `POST`  
+**Path**: `/api/schools/{schoolId}/students`
+
+### Path Parameters
+- `schoolId` (string, required): The unique identifier of the school
+
+### Headers
+- `Authorization: Bearer <token>` (required): JWT authentication token
+- `X-API-Key: <key>` (required): Valid API key
+- `X-CSRF-Token: <token>` (required): CSRF protection token
+- `Content-Type: application/json` (required)
+
+### Body Schema
+```json
+{
+  "firstName": "string (required, 1-50 chars)",
+  "lastName": "string (required, 1-50 chars)", 
+  "email": "string (required, valid email format)",
+  "dateOfBirth": "string (optional, ISO date format)",
+  "phoneNumber": "string (optional, valid phone format)"
+}
+```
+
+## 📤 Response
+
+### Success Response (200)
+```json
+{
+  "success": true,
+  "message": "Student created successfully",
+  "data": {
+    "id": "string",
+    "firstName": "string",
+    "lastName": "string",
+    "email": "string",
+    "schoolId": "string",
+    "createdAt": "string (ISO date)",
+    "updatedAt": "string (ISO date)"
+  },
+  "auditId": "string",
+  "timestamp": "string (ISO date)"
+}
+```
+
+### Error Responses
+
+#### 400 - Bad Request
+```json
+{
+  "error": {
+    "message": "Validation failed",
+    "code": "VALIDATION_ERROR",
+    "requestId": "string",
+    "timestamp": "string (ISO date)",
+    "details": {
+      "field": "email",
+      "message": "Invalid email format"
+    }
+  }
+}
+```
+
+#### 401 - Unauthorized
+```json
+{
+  "error": {
+    "message": "Invalid or expired authentication token",
+    "code": "AUTHENTICATION_FAILED",
+    "requestId": "string", 
+    "timestamp": "string (ISO date)"
+  }
+}
+```
+
+#### 403 - Forbidden
+```json
+{
+  "error": {
+    "message": "Insufficient permissions or high risk score",
+    "code": "ACCESS_DENIED",
+    "requestId": "string",
+    "timestamp": "string (ISO date)"
+  },
+  "securityContext": {
+    "riskScore": 85,
+    "fraudFlags": ["suspicious_location", "velocity_check"]
+  }
+}
+```
+
+#### 409 - Conflict
+```json
+{
+  "error": {
+    "message": "Student with this email already exists",
+    "code": "DUPLICATE_EMAIL",
+    "requestId": "string",
+    "timestamp": "string (ISO date)"
+  }
+}
+```
+
+#### 429 - Too Many Requests
+```json
+{
+  "error": {
+    "message": "Rate limit exceeded",
+    "code": "RATE_LIMIT_EXCEEDED", 
+    "requestId": "string",
+    "timestamp": "string (ISO date)",
+    "retryAfter": 60
+  }
+}
+```
+
+## 🔍 Example Request
+```bash
+curl -X POST "https://api.skytrack.com/api/schools/64abc123def456/students" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
+  -H "X-API-Key: your-api-key" \
+  -H "X-CSRF-Token: csrf-token" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "firstName": "John",
+    "lastName": "Doe", 
+    "email": "john.doe@example.com"
+  }'
+```
+
+## 🚨 Error Codes Reference
+- `VALIDATION_ERROR`: Request validation failed
+- `AUTHENTICATION_FAILED`: Invalid or expired token
+- `ACCESS_DENIED`: Insufficient permissions or blocked by security policy
+- `DUPLICATE_EMAIL`: Email already exists in system
+- `SCHOOL_NOT_FOUND`: Specified school does not exist
+- `RATE_LIMIT_EXCEEDED`: Too many requests
+- `HIGH_RISK_BLOCKED`: Request blocked due to high risk score
+```
+
+## 🧩 Postman Collection Coverage
+
+- Maintain a **single unified Postman collection** for the SkyTrack backend in `Docs/SkyTrack.postman_collection.json`
+- Every documented route in `Docs/` **must be present** in the Postman collection
+- Folder structure in Postman must mirror API route groups (e.g., `api/schools` → "Schools" folder)
+- Each request in Postman should:
+  - Match the documented method and path
+  - Include example body where applicable
+  - Include all required headers with placeholder values
+  - Include example environment variables
+  - Include tests for status codes and response validation
+
+### Postman URL Variable Format (REQUIRED):
+- **Use colon notation** for path variables: `/schools/:schoolId/students/:studentId/flight-invoices`
+- **DO NOT use** double curly braces: `/schools/{{schoolId}}/students/{{studentId}}/flight-invoices`
+- **Consistent variable naming**: Match the parameter names used in API route files exactly
+- **Example correct formats**:
+  - `/api/schools/:schoolId/students`
+  - `/api/programs/:programId/aircraft/:aircraftId`
+  - `/api/users/:userId/flight-invoices/:invoiceId`
+
+### Postman Collection Requirements:
+- **Environment Variables**: Define variables for base URL, API keys, tokens
+- **Pre-request Scripts**: Include scripts for token refresh, CSRF token generation
+- **Tests**: Validate response status, structure, and required fields
+- **Documentation**: Each request should have description matching the markdown docs
+
+## 📋 Documentation File Naming Standards
+
+### File Structure Mapping:
+- API Route: `src/app/api/schools/[schoolId]/students/route.ts`
+- Doc File: `Docs/schools/students.md`
+- Collection: Entry in `Docs/SkyTrack.postman_collection.json` under "Schools" folder
+
+### Naming Conventions:
+- Use lowercase with underscores for multi-word endpoints
+- Group related endpoints in subdirectories
+- Match the API route structure exactly
+
+## ✅ Enhanced Documentation Checklist (for every endpoint)
+
+### Required Documentation Elements:
+- [ ] **File Structure**:
+  - [ ] Doc file created under `Docs/` with correct naming
+  - [ ] Matches route structure exactly
+  - [ ] Organized in appropriate subdirectory
+
+- [ ] **Content Requirements**:
+  - [ ] Clear title with HTTP method and path
+  - [ ] Comprehensive overview/description
+  - [ ] Complete security configuration details
+  - [ ] All request parameters documented with types and validation
+  - [ ] All response schemas documented (success and error cases)
+  - [ ] All possible HTTP status codes listed
+  - [ ] Complete error code reference
+  - [ ] Practical curl example
+  - [ ] Security context fields documented (`auditId`, `riskScore`, etc.)
+
+- [ ] **Security Documentation**:
+  - [ ] Authentication requirements specified
+  - [ ] Authorization roles and permissions listed
+  - [ ] Rate limiting details included
+  - [ ] Risk scoring behavior documented
+  - [ ] Data classification level specified
+  - [ ] Geographic restrictions noted (if applicable)
+  - [ ] MFA requirements documented (if applicable)
+  - [ ] PCI compliance notes (if applicable)
+
+- [ ] **Postman Integration**:
+  - [ ] Entry added to unified Postman collection
+  - [ ] Request properly organized in appropriate folder
+  - [ ] All headers and parameters included
+  - [ ] Example request body provided
+  - [ ] Response validation tests included
+
+- [ ] **Quality Assurance**:
+  - [ ] All JSON schemas validated
+  - [ ] Example requests tested and working
+  - [ ] Error scenarios documented and tested
+  - [ ] Security requirements verified
+  - [ ] Documentation reviewed for completeness
+
+## 🔄 Maintenance and Updates
+
+### Regular Review Process:
+1. **Weekly**: Review new API endpoints for documentation gaps
+2. **Monthly**: Audit existing documentation for accuracy
+3. **Quarterly**: Update Postman collection and test all requests
+4. **Per Release**: Ensure all new features are documented
+
+### Documentation Quality Standards:
+- All examples must be tested and working
+- Error codes must match actual implementation
+- Security requirements must reflect current middleware configuration
+- Response schemas must match actual API responses
+- Postman requests must be functional with valid examples
+
+### Automation Opportunities:
+- Generate documentation stubs from API route files
+- Validate Postman collection against documented endpoints
+- Automated testing of documentation examples
+- Integration with CI/CD pipeline for documentation validation
+
+> 💡 **Pro Tip**: Use the `secureApiRoute` configuration as the single source of truth for security requirements in documentation. This ensures consistency between implementation and documentation.

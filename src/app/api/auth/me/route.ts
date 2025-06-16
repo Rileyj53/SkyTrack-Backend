@@ -1,128 +1,201 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { authenticateRequest, authenticateCSRF } from '@/lib/auth';
+import { secureApiRoute, SecurityConfig } from '@/middleware/security';
 import { connectDB } from '@/lib/db';
 import { User, School, Student, Instructor } from '@/models';
-import { verifyToken } from '@/lib/jwt';
-import { validateCSRFToken } from '@/lib/csrf';
 
-export async function GET(request: NextRequest) {
+// Security configuration for user profile endpoint
+const SECURITY_CONFIG: SecurityConfig = {
+  requireAuth: true, // Authentication required
+  requireApiKey: true, // API key required
+  requireCSRF: true, // CSRF protection required
+  allowedRoles: ['sys_admin', 'school_admin', 'instructor', 'student'], // All authenticated users
+  requireSchoolAccess: false, // User can access their own profile regardless of school
+  enableFraudDetection: true, // Monitor profile access patterns
+  enableAdvancedAudit: true, // Track profile access
+  dataClassification: 'confidential', // Contains personal information
+  rateLimiting: {
+    maxRequests: 100, // Reasonable rate limit for profile access
+    windowMs: 60000, // 1 minute window
+    slidingWindow: true
+  },
+  maxRequestSize: 1024 // 1KB max for profile requests
+};
+
+export const GET = secureApiRoute(async (request, { params, securityContext }) => {
+  const startTime = Date.now();
+  
+  // Structured logging for Vercel
+  console.log(JSON.stringify({
+    level: 'INFO',
+    message: 'User profile request initiated',
+    auditId: securityContext.auditId,
+    userId: securityContext.user?.id,
+    riskScore: securityContext.riskScore,
+    timestamp: new Date().toISOString(),
+    endpoint: 'GET /api/auth/me'
+  }));
+
+  // Check risk score - monitor for suspicious profile access
+  if (securityContext.riskScore > 85) {
+    console.warn(JSON.stringify({
+      level: 'WARN',
+      message: 'High risk profile access detected',
+      auditId: securityContext.auditId,
+      userId: securityContext.user?.id,
+      riskScore: securityContext.riskScore,
+      fraudFlags: securityContext.fraudFlags,
+      timestamp: new Date().toISOString()
+    }));
+  }
+
+  // Establish database connection with retry logic
+  await connectDB();
+
   try {
-    // Authenticate the request
-    const authResult = authenticateRequest(request);
-    
-    if (!authResult.success) {
-      return NextResponse.json(
-        { error: authResult.message || 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-    
-    // Log CSRF token information for debugging
-    const csrfToken = request.headers.get('X-CSRF-Token');
-    const csrfCookie = request.cookies.get('csrf-token')?.value;
-    
-    console.log('CSRF Token from header:', csrfToken);
-    console.log('CSRF Token from cookie:', csrfCookie);
-    console.log('All cookies:', request.cookies.getAll());
-    
-    // Manually validate CSRF token since the cookie name is different
-    if (!csrfToken || !csrfCookie) {
-      return NextResponse.json(
-        { error: 'CSRF token missing' },
-        { status: 403 }
-      );
-    }
-    
-    const isValid = validateCSRFToken(csrfToken, csrfCookie);
-    if (!isValid) {
-      return NextResponse.json(
-        { error: 'Invalid CSRF token' },
-        { status: 403 }
-      );
-    }
+    // Extract user information from security context
+    const userId = securityContext.user?.id;
+    const schoolId = securityContext.user?.school_id;
+    const studentId = securityContext.user?.student_id;
+    const instructorId = securityContext.user?.instructor_id;
 
-    // Connect to the database
-    await connectDB();
-    
-    // Get the token from the Authorization header
-    const authHeader = request.headers.get('Authorization');
-    const token = authHeader?.split(' ')[1];
-    
-    if (!token) {
-      return NextResponse.json(
-        { error: 'Token not found' },
-        { status: 401 }
-      );
-    }
-    
-    // Decode the token to get all IDs
-    const decoded = verifyToken(token);
-    
-    if (!decoded) {
-      return NextResponse.json(
-        { error: 'Invalid token' },
-        { status: 401 }
-      );
-    }
-    
-    // Log the decoded token to see what fields are available
-    console.log('Decoded token:', JSON.stringify(decoded, null, 2));
-    
-    // Extract IDs from the token
-    const userId = decoded.userId;
-    const schoolId = decoded.school_id;
-    const studentId = decoded.student_id;
-    const instructorId = decoded.instructor_id;
-    
-    console.log('Extracted IDs:', { userId, schoolId, studentId, instructorId });
-    
+    console.log(JSON.stringify({
+      level: 'INFO',
+      message: 'Fetching user profile data',
+      auditId: securityContext.auditId,
+      userId: userId,
+      hasSchoolId: !!schoolId,
+      hasStudentId: !!studentId,
+      hasInstructorId: !!instructorId,
+      timestamp: new Date().toISOString()
+    }));
+
     // Find the user
     const user = await User.findById(userId).lean();
     
     if (!user) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      );
+      console.warn(JSON.stringify({
+        level: 'WARN',
+        message: 'User profile not found',
+        auditId: securityContext.auditId,
+        userId: userId,
+        timestamp: new Date().toISOString()
+      }));
+      
+      return NextResponse.json({
+        error: {
+          message: 'User not found',
+          code: 'USER_NOT_FOUND',
+          requestId: securityContext.auditId,
+          timestamp: new Date().toISOString()
+        }
+      }, { status: 404 });
     }
+
+    // Fetch related data in parallel for better performance
+    const dataFetches = [];
     
-    // Get the school information if we have a school ID
-    let school = null;
+    // Get school information if available
     if (schoolId) {
-      school = await School.findById(schoolId).lean();
+      dataFetches.push(
+        School.findById(schoolId).lean().then(school => ({ school })).catch(() => ({ school: null }))
+      );
+    } else {
+      dataFetches.push(Promise.resolve({ school: null }));
     }
     
-    // Get the student or instructor information if we have their ID
-    let student = null;
-    let instructor = null;
+    // Get student information if available
     if (studentId) {
-      student = await (Student as any).findById(studentId).lean();
-    }
-    if (instructorId) {
-      instructor = await (Instructor as any).findById(instructorId).lean();
+      dataFetches.push(
+        (Student as any).findById(studentId).lean().then(student => ({ student })).catch(() => ({ student: null }))
+      );
+    } else {
+      dataFetches.push(Promise.resolve({ student: null }));
     }
     
-    // Remove null values and mfaBackupCodes from user object
+    // Get instructor information if available
+    if (instructorId) {
+      dataFetches.push(
+        (Instructor as any).findById(instructorId).lean().then(instructor => ({ instructor })).catch(() => ({ instructor: null }))
+      );
+    } else {
+      dataFetches.push(Promise.resolve({ instructor: null }));
+    }
+
+    // Wait for all data fetches to complete
+    const [schoolData, studentData, instructorData] = await Promise.all(dataFetches);
+
+    console.log(JSON.stringify({
+      level: 'INFO',
+      message: 'Related data fetched successfully',
+      auditId: securityContext.auditId,
+      userId: userId,
+      hasSchool: !!schoolData.school,
+      hasStudent: !!studentData.student,
+      hasInstructor: !!instructorData.instructor,
+      timestamp: new Date().toISOString()
+    }));
+
+    // Clean user object - remove sensitive fields and null values
     const cleanUser = Object.fromEntries(
       Object.entries(user)
-        .filter(([key, value]) => value !== null && key !== 'mfaBackupCodes')
+        .filter(([key, value]) => {
+          // Remove sensitive and null fields
+          const sensitiveFields = ['password', 'mfaSecret', 'mfaBackupCodes', 'resetToken', 'resetTokenExpiration', 'magicToken', 'magicTokenExpiration', 'magicCode'];
+          return value !== null && !sensitiveFields.includes(key);
+        })
     );
-    
-    // Return the user data with school and role-specific information
+
+    const processingTime = Date.now() - startTime;
+
+    console.log(JSON.stringify({
+      level: 'INFO',
+      message: 'User profile retrieved successfully',
+      auditId: securityContext.auditId,
+      userId: userId,
+      role: user.role,
+      emailVerified: user.emailVerified,
+      mfaEnabled: user.mfaEnabled,
+      processingTime,
+      timestamp: new Date().toISOString()
+    }));
+
+    // Return the user data with related information
     return NextResponse.json({
-      user: {
-        ...cleanUser,
-        school: school || null,
-        student: student || null,
-        instructor: instructor || null
+      success: true,
+      data: {
+        user: {
+          ...cleanUser,
+          school: schoolData.school || null,
+          student: studentData.student || null,
+          instructor: instructorData.instructor || null
+        }
+      },
+      auditId: securityContext.auditId,
+      timestamp: new Date().toISOString(),
+      securityContext: {
+        sessionId: securityContext.auditId,
+        riskScore: securityContext.riskScore,
+        encryptionLevel: 'AES-256'
       }
     });
-    
-  } catch (error) {
-    console.error('Error fetching user data:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+
+  } catch (dbError) {
+    console.error(JSON.stringify({
+      level: 'ERROR',
+      message: 'Database error while fetching user profile',
+      auditId: securityContext.auditId,
+      userId: securityContext.user?.id,
+      error: dbError.message,
+      timestamp: new Date().toISOString()
+    }));
+
+    return NextResponse.json({
+      error: {
+        message: 'Failed to retrieve user profile',
+        code: 'DATABASE_ERROR',
+        requestId: securityContext.auditId,
+        timestamp: new Date().toISOString()
+      }
+    }, { status: 500 });
   }
-} 
+}, SECURITY_CONFIG); 

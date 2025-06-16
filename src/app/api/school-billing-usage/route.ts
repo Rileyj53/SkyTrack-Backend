@@ -2,21 +2,34 @@ import { NextRequest, NextResponse } from 'next/server';
 import mongoose from 'mongoose';
 import { SchoolBillingUsage } from '../../../models/SchoolBillingUsage';
 import { connectDB } from '../../../lib/db';
-import { authenticateRequest } from '../../../lib/auth';
+import { secureApiRoute, SecurityConfig } from '@/middleware/security';
+
+// Security configuration for billing usage endpoints - requires authentication and school admin role
+const BILLING_CONFIG: SecurityConfig = {
+  requireAuth: true,
+  requireApiKey: true,
+  requireCSRF: true,
+  allowedRoles: ['school_admin', 'sys_admin'],
+  enableFraudDetection: true,
+  enableAdvancedAudit: true,
+  dataClassification: 'confidential',
+  rateLimiting: { maxRequests: 100, windowMs: 60000 }
+};
 
 // GET /api/school-billing-usage - Get all billing usage records (with optional filters)
-export async function GET(request: NextRequest) {
+export const GET = secureApiRoute(async (request: NextRequest, { securityContext }) => {
   try {
-    // Authenticate request
-    const authResult = authenticateRequest(request);
-    if (!authResult.success) {
-      return NextResponse.json(
-        { error: authResult.message || 'Authentication required' },
-        { status: 401 }
-      );
-    }
-
+    // Establish database connection with retry logic
     await connectDB();
+
+    console.log(JSON.stringify({
+      level: 'INFO',
+      message: 'School billing usage records requested',
+      auditId: securityContext.auditId,
+      userId: securityContext.user?.userId,
+      userRole: securityContext.user?.role,
+      timestamp: new Date().toISOString()
+    }));
     
     const { searchParams } = new URL(request.url);
     const school_id = searchParams.get('school_id');
@@ -31,6 +44,11 @@ export async function GET(request: NextRequest) {
     if (month) filter.month = month;
     if (billed !== null) filter.billed = billed === 'true';
 
+    // Role-based access control - school_admin can only see their own school's data
+    if (securityContext.user?.role === 'school_admin' && securityContext.user?.school_id) {
+      filter.school_id = securityContext.user.school_id;
+    }
+
     const records = await SchoolBillingUsage
       .find(filter)
       .populate('school_id', 'name')
@@ -38,29 +56,57 @@ export async function GET(request: NextRequest) {
       .limit(limit)
       .skip(skip);
 
-    return NextResponse.json(records);
+    console.log(JSON.stringify({
+      level: 'INFO',
+      message: 'School billing usage records retrieved',
+      auditId: securityContext.auditId,
+      userId: securityContext.user?.userId,
+      recordsCount: records.length,
+      filters: filter,
+      timestamp: new Date().toISOString()
+    }));
+
+    return NextResponse.json({
+      success: true,
+      message: 'Billing usage records retrieved successfully',
+      data: records,
+      auditId: securityContext.auditId,
+      timestamp: new Date().toISOString(),
+      pagination: {
+        limit,
+        skip,
+        count: records.length
+      }
+    });
+
   } catch (error) {
-    console.error('Error fetching billing usage records:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch billing usage records' },
-      { status: 500 }
-    );
+    console.error(JSON.stringify({
+      level: 'ERROR',
+      message: 'Error fetching billing usage records',
+      auditId: securityContext.auditId,
+      userId: securityContext.user?.userId,
+      error: error.message,
+      timestamp: new Date().toISOString()
+    }));
+
+    throw error;
   }
-}
+}, BILLING_CONFIG);
 
 // POST /api/school-billing-usage - Create or update billing usage record
-export async function POST(request: NextRequest) {
+export const POST = secureApiRoute(async (request: NextRequest, { securityContext }) => {
   try {
-    // Authenticate request
-    const authResult = authenticateRequest(request);
-    if (!authResult.success) {
-      return NextResponse.json(
-        { error: authResult.message || 'Authentication required' },
-        { status: 401 }
-      );
-    }
-
+    // Establish database connection with retry logic
     await connectDB();
+
+    console.log(JSON.stringify({
+      level: 'INFO',
+      message: 'School billing usage record creation/update requested',
+      auditId: securityContext.auditId,
+      userId: securityContext.user?.userId,
+      userRole: securityContext.user?.role,
+      timestamp: new Date().toISOString()
+    }));
     
     const body = await request.json();
     const {
@@ -74,26 +120,54 @@ export async function POST(request: NextRequest) {
 
     // Validate required fields
     if (!school_id || !month || total_transactions === undefined || stripe_transactions === undefined) {
-      return NextResponse.json(
-        { error: 'Missing required fields: school_id, month, total_transactions, stripe_transactions' },
-        { status: 400 }
-      );
+      return NextResponse.json({
+        success: false,
+        error: 'Missing required fields: school_id, month, total_transactions, stripe_transactions',
+        auditId: securityContext.auditId,
+        timestamp: new Date().toISOString()
+      }, { status: 400 });
     }
 
     // Validate month format
     if (!/^\d{4}-\d{2}$/.test(month)) {
-      return NextResponse.json(
-        { error: 'Month must be in YYYY-MM format' },
-        { status: 400 }
-      );
+      return NextResponse.json({
+        success: false,
+        error: 'Month must be in YYYY-MM format',
+        auditId: securityContext.auditId,
+        timestamp: new Date().toISOString()
+      }, { status: 400 });
     }
 
     // Validate ObjectId
     if (!mongoose.Types.ObjectId.isValid(school_id)) {
-      return NextResponse.json(
-        { error: 'Invalid school ID' },
-        { status: 400 }
-      );
+      return NextResponse.json({
+        success: false,
+        error: 'Invalid school ID',
+        auditId: securityContext.auditId,
+        timestamp: new Date().toISOString()
+      }, { status: 400 });
+    }
+
+    // Role-based access control - school_admin can only create/update their own school's data
+    if (securityContext.user?.role === 'school_admin') {
+      if (securityContext.user?.school_id !== school_id) {
+        console.warn(JSON.stringify({
+          level: 'WARN',
+          message: 'School admin attempted to access different school billing data',
+          auditId: securityContext.auditId,
+          userId: securityContext.user?.userId,
+          userSchoolId: securityContext.user?.school_id,
+          requestedSchoolId: school_id,
+          timestamp: new Date().toISOString()
+        }));
+
+        return NextResponse.json({
+          success: false,
+          error: 'Access denied: You can only manage billing data for your own school',
+          auditId: securityContext.auditId,
+          timestamp: new Date().toISOString()
+        }, { status: 403 });
+      }
     }
 
     // Try to update existing record or create new one (upsert)
@@ -114,24 +188,52 @@ export async function POST(request: NextRequest) {
       }
     ).populate('school_id', 'name');
 
-    return NextResponse.json(record, { status: 201 });
+    console.log(JSON.stringify({
+      level: 'INFO',
+      message: 'School billing usage record created/updated',
+      auditId: securityContext.auditId,
+      userId: securityContext.user?.userId,
+      recordId: record._id,
+      schoolId: school_id,
+      month,
+      totalTransactions: total_transactions,
+      timestamp: new Date().toISOString()
+    }));
+
+    return NextResponse.json({
+      success: true,
+      message: 'Billing usage record created/updated successfully',
+      data: record,
+      auditId: securityContext.auditId,
+      timestamp: new Date().toISOString()
+    }, { status: 201 });
+
   } catch (error) {
-    console.error('Error creating/updating billing usage record:', error);
+    console.error(JSON.stringify({
+      level: 'ERROR',
+      message: 'Error creating/updating billing usage record',
+      auditId: securityContext.auditId,
+      userId: securityContext.user?.userId,
+      error: error.message,
+      timestamp: new Date().toISOString()
+    }));
+
     if (error instanceof mongoose.Error.ValidationError) {
-      return NextResponse.json(
-        { error: error.message },
-        { status: 400 }
-      );
+      return NextResponse.json({
+        success: false,
+        error: error.message,
+        auditId: securityContext.auditId,
+        timestamp: new Date().toISOString()
+      }, { status: 400 });
     } else if (error.code === 11000) {
-      return NextResponse.json(
-        { error: 'Billing usage record already exists for this school and month' },
-        { status: 409 }
-      );
+      return NextResponse.json({
+        success: false,
+        error: 'Billing usage record already exists for this school and month',
+        auditId: securityContext.auditId,
+        timestamp: new Date().toISOString()
+      }, { status: 409 });
     } else {
-      return NextResponse.json(
-        { error: 'Failed to create/update billing usage record' },
-        { status: 500 }
-      );
+      throw error;
     }
   }
-} 
+}, BILLING_CONFIG); 

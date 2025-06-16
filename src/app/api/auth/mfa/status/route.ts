@@ -1,49 +1,126 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { connectDB } from '../../../../../lib/db';
-import { User } from '../../../../../models/User';
-import { authenticateRequest } from '../../../../../lib/auth';
-import { validateApiKey } from '@/middleware/apiKeyAuth';
+import { secureApiRoute, SecurityConfig } from '@/middleware/security';
+import { connectDB } from '@/lib/db';
+import { User } from '@/models/User';
 
-// Connect to MongoDB
-connectDB();
+// Security configuration for MFA status endpoint
+const SECURITY_CONFIG: SecurityConfig = {
+  requireAuth: true, // Authentication required
+  requireApiKey: true, // API key required
+  requireCSRF: false, // GET request, CSRF not required
+  allowedRoles: ['sys_admin', 'school_admin', 'instructor', 'student'], // All authenticated users
+  requireSchoolAccess: false, // User can check their own MFA status
+  enableFraudDetection: true, // Monitor MFA status checks
+  enableAdvancedAudit: false, // Less critical operation, basic audit is fine
+  dataClassification: 'confidential', // MFA status is sensitive information
+  rateLimiting: {
+    maxRequests: 50, // Moderate rate limiting for status checks
+    windowMs: 60000, // 1 minute window
+    slidingWindow: true
+  },
+  maxRequestSize: 1024 // 1KB max for status requests
+};
 
-export async function GET(request: NextRequest) {
+export const GET = secureApiRoute(async (request, { params, securityContext }) => {
+  const startTime = Date.now();
+  
+  // Structured logging for Vercel
+  console.log(JSON.stringify({
+    level: 'INFO',
+    message: 'MFA status request initiated',
+    auditId: securityContext.auditId,
+    userId: securityContext.user?.id,
+    riskScore: securityContext.riskScore,
+    timestamp: new Date().toISOString(),
+    endpoint: 'GET /api/auth/mfa/status'
+  }));
+
+  // Check risk score - moderate threshold for status checks
+  if (securityContext.riskScore > 85) {
+    console.warn(JSON.stringify({
+      level: 'WARN',
+      message: 'High risk MFA status check detected',
+      auditId: securityContext.auditId,
+      userId: securityContext.user?.id,
+      riskScore: securityContext.riskScore,
+      fraudFlags: securityContext.fraudFlags,
+      timestamp: new Date().toISOString()
+    }));
+  }
+
+  // Establish database connection with retry logic
+  await connectDB();
+
   try {
-    // Validate API key first
-    const authResult = await validateApiKey(request);
-    if (authResult instanceof NextResponse) {
-      return authResult;
-    }
-
-    // Get user from token
-    const auth = authenticateRequest(request);
-    if (!auth.success) {
-      return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
-      );
-    }
-
-    // Find user by ID from token
-    const userId = auth.userId;
+    // Find user by ID from security context
+    const userId = securityContext.user?.id;
     const user = await User.findById(userId);
     
     if (!user) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      );
+      console.error(JSON.stringify({
+        level: 'ERROR',
+        message: 'User not found during MFA status check',
+        auditId: securityContext.auditId,
+        userId: userId,
+        timestamp: new Date().toISOString()
+      }));
+      
+      return NextResponse.json({
+        error: {
+          message: 'User not found',
+          code: 'USER_NOT_FOUND',
+          requestId: securityContext.auditId,
+          timestamp: new Date().toISOString()
+        }
+      }, { status: 404 });
     }
 
-    return NextResponse.json({
+    const processingTime = Date.now() - startTime;
+
+    console.log(JSON.stringify({
+      level: 'INFO',
+      message: 'MFA status retrieved successfully',
+      auditId: securityContext.auditId,
+      userId: user._id.toString(),
+      email: user.email,
       mfaEnabled: user.mfaEnabled,
-      mfaVerified: user.mfaVerified
+      mfaVerified: user.mfaVerified,
+      processingTime,
+      timestamp: new Date().toISOString()
+    }));
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        mfaEnabled: user.mfaEnabled,
+        mfaVerified: user.mfaVerified
+      },
+      auditId: securityContext.auditId,
+      timestamp: new Date().toISOString(),
+      securityContext: {
+        sessionId: securityContext.auditId,
+        riskScore: securityContext.riskScore,
+        encryptionLevel: 'AES-256'
+      }
     });
-  } catch (error) {
-    console.error('MFA status error:', error);
-    return NextResponse.json(
-      { error: 'Error getting MFA status' },
-      { status: 500 }
-    );
+
+  } catch (dbError) {
+    console.error(JSON.stringify({
+      level: 'ERROR',
+      message: 'Database error during MFA status check',
+      auditId: securityContext.auditId,
+      userId: securityContext.user?.id,
+      error: dbError.message,
+      timestamp: new Date().toISOString()
+    }));
+
+    return NextResponse.json({
+      error: {
+        message: 'Error getting MFA status',
+        code: 'DATABASE_ERROR',
+        requestId: securityContext.auditId,
+        timestamp: new Date().toISOString()
+      }
+    }, { status: 500 });
   }
-} 
+}, SECURITY_CONFIG); 

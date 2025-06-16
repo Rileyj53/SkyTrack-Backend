@@ -1,49 +1,92 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
 import { User } from '@/models/User';
-import { validateApiKey } from '@/middleware/apiKeyAuth';
+import { secureApiRoute, SecurityConfig } from '@/middleware/security';
 
-// Connect to MongoDB
-connectDB();
+// Debug endpoint configuration - requires API key
+const DEBUG_CONFIG: SecurityConfig = {
+  requireApiKey: true,
+  enableFraudDetection: true,
+  enableAdvancedAudit: true,
+  dataClassification: 'internal',
+  rateLimiting: { maxRequests: 50, windowMs: 60000 }
+};
 
-export async function GET(request: NextRequest) {
+export const GET = secureApiRoute(async (request: NextRequest, { securityContext }) => {
   try {
-    // Validate API key first
-    const authResult = await validateApiKey(request);
-    if (authResult instanceof NextResponse) {
-      return authResult;
+    // Establish database connection with retry logic
+    await connectDB();
+
+    console.log(JSON.stringify({
+      level: 'INFO',
+      message: 'API key test endpoint accessed',
+      auditId: securityContext.auditId,
+      timestamp: new Date().toISOString()
+    }));
+
+    // Get user from the security context (API key validation already done)
+    const userId = securityContext.apiKey?.userId;
+    if (!userId) {
+      return NextResponse.json({
+        success: false,
+        error: 'User ID not found in API key context',
+        auditId: securityContext.auditId,
+        timestamp: new Date().toISOString()
+      }, { status: 400 });
     }
 
-    // Get user from the validated API key result
-    const userId = authResult.userId;
     const user = await User.findById(userId);
     
     if (!user) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({
+        success: false,
+        error: 'User not found',
+        auditId: securityContext.auditId,
+        timestamp: new Date().toISOString()
+      }, { status: 404 });
     }
+
+    console.log(JSON.stringify({
+      level: 'INFO',
+      message: 'API key validation successful',
+      auditId: securityContext.auditId,
+      userId: user._id,
+      userRole: user.role,
+      timestamp: new Date().toISOString()
+    }));
 
     // Return success response with debug info
     return NextResponse.json({
+      success: true,
       message: 'API key is valid',
-      userId: user._id,
-      email: user.email,
-      userRole: user.role,
-      isActive: user.isActive,
+      auditId: securityContext.auditId,
+      data: {
+        userId: user._id,
+        email: user.email,
+        userRole: user.role,
+        isActive: user.isActive
+      },
       timestamp: new Date().toISOString(),
       debugInfo: {
         apiKeyValidation: 'successful',
         userLookup: 'successful',
-        endpoint: '/api/debug/test-api-key'
+        endpoint: '/api/debug/test-api-key',
+        securityContext: {
+          riskScore: securityContext.riskScore,
+          sessionId: securityContext.sessionId
+        }
       }
     });
+
   } catch (error) {
-    console.error('Test API key error:', error);
-    return NextResponse.json(
-      { error: 'Error testing API key' },
-      { status: 500 }
-    );
+    console.error(JSON.stringify({
+      level: 'ERROR',
+      message: 'Test API key error',
+      auditId: securityContext.auditId,
+      error: error.message,
+      timestamp: new Date().toISOString()
+    }));
+
+    throw error;
   }
-} 
+}, DEBUG_CONFIG); 

@@ -1,6 +1,7 @@
 import { connectEdgeDB } from '@/lib/edgeDb';
 import { IApiKey, API_KEYS_COLLECTION } from '@/models/ApiKey';
 import { ObjectId } from 'mongodb';
+import { encryptSecure, decryptSecure } from '@/lib/encryption';
 
 /**
  * Generates a new API key with the format: pk_xxxxxxxx-xxxxxxxx-xxxxxxxx-xxxxxxxx
@@ -92,13 +93,16 @@ export const revokeApiKey = async (userId: string, apiKeyId: string): Promise<bo
 };
 
 export async function hashAPIKey(apiKey: string): Promise<string> {
-  // Simple hashing function for Edge compatibility
-  // In production, you should use a more secure hashing algorithm
-  let hash = 0;
-  for (let i = 0; i < apiKey.length; i++) {
-    const char = apiKey.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash; // Convert to 32bit integer
+  // Use secure encryption instead of simple hashing
+  return encryptSecure(apiKey);
+}
+
+export async function verifyAPIKey(apiKey: string, hashedKey: string): Promise<boolean> {
+  try {
+    const decryptedKey = decryptSecure(hashedKey);
+    return decryptedKey === apiKey;
+  } catch (error) {
+    console.error('Error verifying API key:', error);
+    return false;
   }
-  return hash.toString(16);
 } 

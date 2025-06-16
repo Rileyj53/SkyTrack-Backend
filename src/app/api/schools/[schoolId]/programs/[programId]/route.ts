@@ -1,277 +1,525 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { secureApiRoute, SecurityConfig } from '@/middleware/security';
 import { connectDB } from '@/lib/db';
-import { validateApiKey } from '@/middleware/apiKeyAuth';
-import { authenticateRequest } from '@/lib/auth';
 import mongoose from 'mongoose';
 import { School } from '@/models/School';
 import Program from '@/models/Program';
 
-// GET /api/schools/[schoolId]/programs/[programId] - Get a specific program
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { schoolId: string; programId: string } }
-) {
-  try {
-    // Validate API key
-    const apiKeyResult = await validateApiKey(request);
-    if ('error' in apiKeyResult) {
-      return NextResponse.json({ error: apiKeyResult.error }, { status: 401 });
-    }
-
-    // Authenticate user
-    const authResult = await authenticateRequest(request);
-    if ('error' in authResult) {
-      return NextResponse.json({ error: authResult.error }, { status: 401 });
-    }
-
-    // Validate IDs
-    if (!mongoose.Types.ObjectId.isValid(params.schoolId) || 
-        !mongoose.Types.ObjectId.isValid(params.programId)) {
-      return NextResponse.json(
-        { error: 'Invalid ID format' },
-        { status: 400 }
-      );
-    }
-
-    // Find school by ID
-    const school = await (School as any).findById(params.schoolId);
-    if (!school) {
-      return NextResponse.json(
-        { error: 'School not found' },
-        { status: 404 }
-      );
-    }
-
-    // Find program by ID
-    const program = await (Program as any).findOne({
-      _id: params.programId,
-      school_id: params.schoolId
-    }).lean();
-
-    if (!program) {
-      return NextResponse.json(
-        { error: 'Program not found' },
-        { status: 404 }
-      );
-    }
-
-    return NextResponse.json({ program });
-  } catch (error) {
-    console.error('Error in GET /api/schools/[schoolId]/programs/[programId]:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+// Security configuration for individual program endpoints
+const PROGRAM_DETAIL_SECURITY_CONFIG: SecurityConfig = {
+  requireAuth: true,
+  requireApiKey: true,
+  requireCSRF: true, // Required for PUT/DELETE operations
+  allowedRoles: ['sys_admin', 'school_admin', 'instructor'],
+  requireSchoolAccess: true,
+  enableFraudDetection: true,
+  enableAdvancedAudit: true,
+  dataClassification: 'confidential',
+  rateLimiting: {
+    maxRequests: 100,
+    windowMs: 60000,
+    slidingWindow: true
   }
-}
+};
+
+// GET /api/schools/[schoolId]/programs/[programId] - Get a specific program
+export const GET = secureApiRoute(async (request, { params, securityContext }) => {
+  const startTime = Date.now();
+  
+  // Establish database connection with retry logic
+  await connectDB();
+
+  console.log(JSON.stringify({
+    level: 'INFO',
+    message: 'Processing program details request',
+    auditId: securityContext.auditId,
+    schoolId: params.schoolId,
+    programId: params.programId,
+    userId: securityContext.user?.id,
+    userRole: securityContext.user?.role,
+    timestamp: new Date().toISOString()
+  }));
+
+  // Validate IDs
+  if (!mongoose.Types.ObjectId.isValid(params.schoolId) || 
+      !mongoose.Types.ObjectId.isValid(params.programId)) {
+    console.warn(JSON.stringify({
+      level: 'WARN',
+      message: 'Invalid ID format provided',
+      auditId: securityContext.auditId,
+      schoolId: params.schoolId,
+      programId: params.programId,
+      timestamp: new Date().toISOString()
+    }));
+    
+    return NextResponse.json({
+      error: {
+        message: 'Invalid ID format',
+        code: 'INVALID_ID_FORMAT',
+        requestId: securityContext.auditId,
+        timestamp: new Date().toISOString()
+      }
+    }, { status: 400 });
+  }
+
+  // Find school by ID
+  const school = await (School as any).findById(params.schoolId);
+  if (!school) {
+    console.warn(JSON.stringify({
+      level: 'WARN',
+      message: 'School not found',
+      auditId: securityContext.auditId,
+      schoolId: params.schoolId,
+      timestamp: new Date().toISOString()
+    }));
+    
+    return NextResponse.json({
+      error: {
+        message: 'School not found',
+        code: 'SCHOOL_NOT_FOUND',
+        requestId: securityContext.auditId,
+        timestamp: new Date().toISOString()
+      }
+    }, { status: 404 });
+  }
+
+  // Find program by ID
+  const program = await (Program as any).findOne({
+    _id: params.programId,
+    school_id: params.schoolId
+  }).lean();
+
+  if (!program) {
+    console.warn(JSON.stringify({
+      level: 'WARN',
+      message: 'Program not found',
+      auditId: securityContext.auditId,
+      programId: params.programId,
+      schoolId: params.schoolId,
+      timestamp: new Date().toISOString()
+    }));
+    
+    return NextResponse.json({
+      error: {
+        message: 'Program not found',
+        code: 'PROGRAM_NOT_FOUND',
+        requestId: securityContext.auditId,
+        timestamp: new Date().toISOString()
+      }
+    }, { status: 404 });
+  }
+
+  console.log(JSON.stringify({
+    level: 'INFO',
+    message: 'Program details request completed successfully',
+    auditId: securityContext.auditId,
+    programId: params.programId,
+    programName: program.program_name,
+    processingTime: Date.now() - startTime,
+    timestamp: new Date().toISOString()
+  }));
+
+  return NextResponse.json({
+    success: true,
+    message: 'Program retrieved successfully',
+    data: {
+      program
+    },
+    auditId: securityContext.auditId,
+    timestamp: new Date().toISOString()
+  });
+}, PROGRAM_DETAIL_SECURITY_CONFIG);
 
 // PUT /api/schools/[schoolId]/programs/[programId] - Update a program
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: { schoolId: string; programId: string } }
-) {
-  try {
-    // Validate API key
-    const apiKeyResult = await validateApiKey(request);
-    if ('error' in apiKeyResult) {
-      return NextResponse.json({ error: apiKeyResult.error }, { status: 401 });
-    }
+export const PUT = secureApiRoute(async (request, { params, securityContext }) => {
+  const startTime = Date.now();
+  
+  // Establish database connection with retry logic
+  await connectDB();
 
-    // Authenticate user
-    const authResult = await authenticateRequest(request);
-    if ('error' in authResult) {
-      return NextResponse.json({ error: authResult.error }, { status: 401 });
-    }
+  console.log(JSON.stringify({
+    level: 'INFO',
+    message: 'Processing program update request',
+    auditId: securityContext.auditId,
+    schoolId: params.schoolId,
+    programId: params.programId,
+    userId: securityContext.user?.id,
+    userRole: securityContext.user?.role,
+    timestamp: new Date().toISOString()
+  }));
 
-    // Validate IDs
-    if (!mongoose.Types.ObjectId.isValid(params.schoolId) || 
-        !mongoose.Types.ObjectId.isValid(params.programId)) {
-      return NextResponse.json(
-        { error: 'Invalid ID format' },
-        { status: 400 }
-      );
-    }
+  // Role-based access control - only admins can update programs
+  const userRole = securityContext.user?.role;
+  if (!['sys_admin', 'school_admin'].includes(userRole)) {
+    console.warn(JSON.stringify({
+      level: 'WARN',
+      message: 'Unauthorized attempt to update program',
+      auditId: securityContext.auditId,
+      userId: securityContext.user?.id,
+      userRole: userRole,
+      programId: params.programId,
+      timestamp: new Date().toISOString()
+    }));
+    
+    return NextResponse.json({
+      error: {
+        message: 'Insufficient permissions to update programs',
+        code: 'INSUFFICIENT_PERMISSIONS',
+        requestId: securityContext.auditId,
+        timestamp: new Date().toISOString()
+      }
+    }, { status: 403 });
+  }
 
-    // Find school by ID
-    const school = await (School as any).findById(params.schoolId);
-    if (!school) {
-      return NextResponse.json(
-        { error: 'School not found' },
-        { status: 404 }
-      );
-    }
+  // Validate IDs
+  if (!mongoose.Types.ObjectId.isValid(params.schoolId) || 
+      !mongoose.Types.ObjectId.isValid(params.programId)) {
+    console.warn(JSON.stringify({
+      level: 'WARN',
+      message: 'Invalid ID format provided for program update',
+      auditId: securityContext.auditId,
+      schoolId: params.schoolId,
+      programId: params.programId,
+      timestamp: new Date().toISOString()
+    }));
+    
+    return NextResponse.json({
+      error: {
+        message: 'Invalid ID format',
+        code: 'INVALID_ID_FORMAT',
+        requestId: securityContext.auditId,
+        timestamp: new Date().toISOString()
+      }
+    }, { status: 400 });
+  }
 
-    // Find program by ID
-    const program = await (Program as any).findOne({
-      _id: params.programId,
-      school_id: params.schoolId
-    });
+  // Find school by ID
+  const school = await (School as any).findById(params.schoolId);
+  if (!school) {
+    console.warn(JSON.stringify({
+      level: 'WARN',
+      message: 'School not found for program update',
+      auditId: securityContext.auditId,
+      schoolId: params.schoolId,
+      timestamp: new Date().toISOString()
+    }));
+    
+    return NextResponse.json({
+      error: {
+        message: 'School not found',
+        code: 'SCHOOL_NOT_FOUND',
+        requestId: securityContext.auditId,
+        timestamp: new Date().toISOString()
+      }
+    }, { status: 404 });
+  }
 
-    if (!program) {
-      return NextResponse.json(
-        { error: 'Program not found' },
-        { status: 404 }
-      );
-    }
+  // Find program by ID
+  const program = await (Program as any).findOne({
+    _id: params.programId,
+    school_id: params.schoolId
+  });
 
-    // Get request body
-    const body = await request.json();
+  if (!program) {
+    console.warn(JSON.stringify({
+      level: 'WARN',
+      message: 'Program not found for update',
+      auditId: securityContext.auditId,
+      programId: params.programId,
+      schoolId: params.schoolId,
+      timestamp: new Date().toISOString()
+    }));
+    
+    return NextResponse.json({
+      error: {
+        message: 'Program not found',
+        code: 'PROGRAM_NOT_FOUND',
+        requestId: securityContext.auditId,
+        timestamp: new Date().toISOString()
+      }
+    }, { status: 404 });
+  }
 
-    // Validate requirements format if provided
-    if (body.requirements && !Array.isArray(body.requirements)) {
-      return NextResponse.json({
-        error: 'Invalid requirements format',
+  // Get request body
+  const body = await request.json();
+
+  // Store original values for audit logging
+  const originalValues = {
+    program_name: program.program_name,
+    description: program.description,
+    duration: program.duration,
+    cost: program.cost
+  };
+
+  // Validate requirements format if provided
+  if (body.requirements && !Array.isArray(body.requirements)) {
+    return NextResponse.json({
+      error: {
+        message: 'Invalid requirements format',
+        code: 'INVALID_REQUIREMENTS_FORMAT',
+        requestId: securityContext.auditId,
+        timestamp: new Date().toISOString(),
         details: 'Requirements must be an array of objects with name, hours, and type properties',
         example: [
           { name: "Total Flight Time", hours: 18.5, type: "Standard" },
           { name: "Dual Instruction", hours: 16.2, type: "Key" }
         ]
-      }, { status: 400 });
-    }
+      }
+    }, { status: 400 });
+  }
 
-    // Validate each requirement if provided
-    if (body.requirements) {
-      const invalidRequirements = body.requirements.filter(req => 
-        !req.name || typeof req.hours !== 'number' || req.hours < 0 || !req.type || !['Standard', 'Key', 'Custom'].includes(req.type)
-      );
+  // Validate each requirement if provided
+  if (body.requirements) {
+    const invalidRequirements = body.requirements.filter(req => 
+      !req.name || typeof req.hours !== 'number' || req.hours < 0 || !req.type || !['Standard', 'Key', 'Custom'].includes(req.type)
+    );
 
-      if (invalidRequirements.length > 0) {
-        return NextResponse.json({
-          error: 'Invalid requirement format',
+    if (invalidRequirements.length > 0) {
+      return NextResponse.json({
+        error: {
+          message: 'Invalid requirement format',
+          code: 'INVALID_REQUIREMENT_FORMAT',
+          requestId: securityContext.auditId,
+          timestamp: new Date().toISOString(),
           details: 'Each requirement must have a name (string), hours (number >= 0), and type (Standard, Key, or Custom)',
           example: { name: "Total Flight Time", hours: 18.5, type: "Standard" }
-        }, { status: 400 });
-      }
+        }
+      }, { status: 400 });
     }
+  }
 
-    // Validate milestones if provided
-    if (body.milestones && !Array.isArray(body.milestones)) {
-      return NextResponse.json({
-        error: 'Invalid milestones format',
+  // Validate milestones if provided
+  if (body.milestones && !Array.isArray(body.milestones)) {
+    return NextResponse.json({
+      error: {
+        message: 'Invalid milestones format',
+        code: 'INVALID_MILESTONES_FORMAT',
+        requestId: securityContext.auditId,
+        timestamp: new Date().toISOString(),
         details: 'Milestones must be an array of objects with name and order properties',
         example: [
           { name: "First Solo", description: "Student's first solo flight", order: 1 },
           { name: "Cross Country", description: "First cross country flight", order: 2 }
         ]
-      }, { status: 400 });
-    }
+      }
+    }, { status: 400 });
+  }
 
-    // Validate each milestone if provided
-    if (body.milestones) {
-      const invalidMilestones = body.milestones.filter(milestone => 
-        !milestone.name || typeof milestone.order !== 'number' || milestone.order < 0
-      );
+  // Validate each milestone if provided
+  if (body.milestones) {
+    const invalidMilestones = body.milestones.filter(milestone => 
+      !milestone.name || typeof milestone.order !== 'number' || milestone.order < 0
+    );
 
-      if (invalidMilestones.length > 0) {
-        return NextResponse.json({
-          error: 'Invalid milestone format',
+    if (invalidMilestones.length > 0) {
+      return NextResponse.json({
+        error: {
+          message: 'Invalid milestone format',
+          code: 'INVALID_MILESTONE_FORMAT',
+          requestId: securityContext.auditId,
+          timestamp: new Date().toISOString(),
           details: 'Each milestone must have a name (string) and order (number >= 0)',
           example: { name: "First Solo", description: "Student's first solo flight", order: 1 }
-        }, { status: 400 });
-      }
+        }
+      }, { status: 400 });
     }
+  }
 
-    // Validate stages if provided
-    if (body.stages && !Array.isArray(body.stages)) {
-      return NextResponse.json({
-        error: 'Invalid stages format',
+  // Validate stages if provided
+  if (body.stages && !Array.isArray(body.stages)) {
+    return NextResponse.json({
+      error: {
+        message: 'Invalid stages format',
+        code: 'INVALID_STAGES_FORMAT',
+        requestId: securityContext.auditId,
+        timestamp: new Date().toISOString(),
         details: 'Stages must be an array of objects with name and order properties',
         example: [
           { name: "Pre-Solo", description: "Training before first solo", order: 1 },
           { name: "Post-Solo", description: "Training after first solo", order: 2 }
         ]
-      }, { status: 400 });
-    }
+      }
+    }, { status: 400 });
+  }
 
-    // Validate each stage if provided
-    if (body.stages) {
-      const invalidStages = body.stages.filter(stage => 
-        !stage.name || typeof stage.order !== 'number' || stage.order < 0
-      );
+  // Validate each stage if provided
+  if (body.stages) {
+    const invalidStages = body.stages.filter(stage => 
+      !stage.name || typeof stage.order !== 'number' || stage.order < 0
+    );
 
-      if (invalidStages.length > 0) {
-        return NextResponse.json({
-          error: 'Invalid stage format',
+    if (invalidStages.length > 0) {
+      return NextResponse.json({
+        error: {
+          message: 'Invalid stage format',
+          code: 'INVALID_STAGE_FORMAT',
+          requestId: securityContext.auditId,
+          timestamp: new Date().toISOString(),
           details: 'Each stage must have a name (string) and order (number >= 0)',
           example: { name: "Pre-Solo", description: "Training before first solo", order: 1 }
-        }, { status: 400 });
-      }
+        }
+      }, { status: 400 });
     }
-
-    // Update program
-    Object.assign(program, body);
-    await program.save();
-
-    return NextResponse.json({
-      message: 'Program updated successfully',
-      program
-    });
-  } catch (error) {
-    console.error('Error in PUT /api/schools/[schoolId]/programs/[programId]:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
   }
-}
+
+  // Update program
+  Object.assign(program, body);
+  await program.save();
+
+  console.log(JSON.stringify({
+    level: 'INFO',
+    message: 'Program updated successfully',
+    auditId: securityContext.auditId,
+    programId: params.programId,
+    programName: program.program_name,
+    updatedBy: securityContext.user?.id,
+    changes: {
+      program_name: originalValues.program_name !== program.program_name,
+      description: originalValues.description !== program.description,
+      duration: originalValues.duration !== program.duration,
+      cost: originalValues.cost !== program.cost
+    },
+    processingTime: Date.now() - startTime,
+    timestamp: new Date().toISOString()
+  }));
+
+  return NextResponse.json({
+    success: true,
+    message: 'Program updated successfully',
+    data: {
+      program
+    },
+    auditId: securityContext.auditId,
+    timestamp: new Date().toISOString()
+  });
+}, PROGRAM_DETAIL_SECURITY_CONFIG);
 
 // DELETE /api/schools/[schoolId]/programs/[programId] - Delete a program
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { schoolId: string; programId: string } }
-) {
-  try {
-    // Validate API key
-    const apiKeyResult = await validateApiKey(request);
-    if ('error' in apiKeyResult) {
-      return NextResponse.json({ error: apiKeyResult.error }, { status: 401 });
-    }
+export const DELETE = secureApiRoute(async (request, { params, securityContext }) => {
+  const startTime = Date.now();
+  
+  // Establish database connection with retry logic
+  await connectDB();
 
-    // Authenticate user
-    const authResult = await authenticateRequest(request);
-    if ('error' in authResult) {
-      return NextResponse.json({ error: authResult.error }, { status: 401 });
-    }
+  console.log(JSON.stringify({
+    level: 'INFO',
+    message: 'Processing program deletion request',
+    auditId: securityContext.auditId,
+    schoolId: params.schoolId,
+    programId: params.programId,
+    userId: securityContext.user?.id,
+    userRole: securityContext.user?.role,
+    timestamp: new Date().toISOString()
+  }));
 
-    // Validate IDs
-    if (!mongoose.Types.ObjectId.isValid(params.schoolId) || 
-        !mongoose.Types.ObjectId.isValid(params.programId)) {
-      return NextResponse.json(
-        { error: 'Invalid ID format' },
-        { status: 400 }
-      );
-    }
-
-    // Find school by ID
-    const school = await (School as any).findById(params.schoolId);
-    if (!school) {
-      return NextResponse.json(
-        { error: 'School not found' },
-        { status: 404 }
-      );
-    }
-
-    // Find and delete program
-    const program = await (Program as any).findOneAndDelete({
-      _id: params.programId,
-      school_id: params.schoolId
-    });
-
-    if (!program) {
-      return NextResponse.json(
-        { error: 'Program not found' },
-        { status: 404 }
-      );
-    }
-
+  // Role-based access control - only admins can delete programs
+  const userRole = securityContext.user?.role;
+  if (!['sys_admin', 'school_admin'].includes(userRole)) {
+    console.warn(JSON.stringify({
+      level: 'WARN',
+      message: 'Unauthorized attempt to delete program',
+      auditId: securityContext.auditId,
+      userId: securityContext.user?.id,
+      userRole: userRole,
+      programId: params.programId,
+      timestamp: new Date().toISOString()
+    }));
+    
     return NextResponse.json({
-      message: 'Program deleted successfully'
-    });
-  } catch (error) {
-    console.error('Error in DELETE /api/schools/[schoolId]/programs/[programId]:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+      error: {
+        message: 'Insufficient permissions to delete programs',
+        code: 'INSUFFICIENT_PERMISSIONS',
+        requestId: securityContext.auditId,
+        timestamp: new Date().toISOString()
+      }
+    }, { status: 403 });
   }
-} 
+
+  // Validate IDs
+  if (!mongoose.Types.ObjectId.isValid(params.schoolId) || 
+      !mongoose.Types.ObjectId.isValid(params.programId)) {
+    console.warn(JSON.stringify({
+      level: 'WARN',
+      message: 'Invalid ID format provided for program deletion',
+      auditId: securityContext.auditId,
+      schoolId: params.schoolId,
+      programId: params.programId,
+      timestamp: new Date().toISOString()
+    }));
+    
+    return NextResponse.json({
+      error: {
+        message: 'Invalid ID format',
+        code: 'INVALID_ID_FORMAT',
+        requestId: securityContext.auditId,
+        timestamp: new Date().toISOString()
+      }
+    }, { status: 400 });
+  }
+
+  // Find school by ID
+  const school = await (School as any).findById(params.schoolId);
+  if (!school) {
+    console.warn(JSON.stringify({
+      level: 'WARN',
+      message: 'School not found for program deletion',
+      auditId: securityContext.auditId,
+      schoolId: params.schoolId,
+      timestamp: new Date().toISOString()
+    }));
+    
+    return NextResponse.json({
+      error: {
+        message: 'School not found',
+        code: 'SCHOOL_NOT_FOUND',
+        requestId: securityContext.auditId,
+        timestamp: new Date().toISOString()
+      }
+    }, { status: 404 });
+  }
+
+  // Find and delete program
+  const program = await (Program as any).findOneAndDelete({
+    _id: params.programId,
+    school_id: params.schoolId
+  });
+
+  if (!program) {
+    console.warn(JSON.stringify({
+      level: 'WARN',
+      message: 'Program not found for deletion',
+      auditId: securityContext.auditId,
+      programId: params.programId,
+      schoolId: params.schoolId,
+      timestamp: new Date().toISOString()
+    }));
+    
+    return NextResponse.json({
+      error: {
+        message: 'Program not found',
+        code: 'PROGRAM_NOT_FOUND',
+        requestId: securityContext.auditId,
+        timestamp: new Date().toISOString()
+      }
+    }, { status: 404 });
+  }
+
+  console.log(JSON.stringify({
+    level: 'INFO',
+    message: 'Program deleted successfully',
+    auditId: securityContext.auditId,
+    programId: params.programId,
+    programName: program.program_name,
+    schoolId: params.schoolId,
+    deletedBy: securityContext.user?.id,
+    processingTime: Date.now() - startTime,
+    timestamp: new Date().toISOString()
+  }));
+
+  return NextResponse.json({
+    success: true,
+    message: 'Program deleted successfully',
+    auditId: securityContext.auditId,
+    timestamp: new Date().toISOString()
+  });
+}, PROGRAM_DETAIL_SECURITY_CONFIG); 

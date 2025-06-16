@@ -1,95 +1,142 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
 import { User } from '@/models/User';
-import { authenticateRequest } from '@/lib/auth';
-import { validateApiKey } from '@/middleware/apiKeyAuth';
+import { secureApiRoute, SecurityConfig } from '@/middleware/security';
 
 // Specify Node.js runtime
 export const runtime = 'nodejs';
 
-// Connect to MongoDB
-connectDB();
+// Debug endpoint configuration - requires authentication
+const DEBUG_CONFIG: SecurityConfig = {
+  requireAuth: true,
+  requireApiKey: true,
+  enableFraudDetection: true,
+  enableAdvancedAudit: true,
+  dataClassification: 'confidential',
+  rateLimiting: { maxRequests: 50, windowMs: 60000 }
+};
 
-export async function GET(request: NextRequest) {
+export const GET = secureApiRoute(async (request: NextRequest, { securityContext }) => {
   try {
-    // Validate API key first
-    const authResult = await validateApiKey(request);
-    if (authResult instanceof NextResponse) {
-      return authResult;
-    }
+    // Establish database connection with retry logic
+    await connectDB();
 
-    // Get user from token
-    const auth = authenticateRequest(request);
-    if (!auth.success) {
-      return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
-      );
-    }
+    console.log(JSON.stringify({
+      level: 'INFO',
+      message: 'Protected debug endpoint accessed',
+      auditId: securityContext.auditId,
+      userId: securityContext.user?.userId,
+      timestamp: new Date().toISOString()
+    }));
 
-    // Find user by ID from token
-    const userId = auth.userId;
+    // Find user by ID from security context
+    const userId = securityContext.user?.userId;
     const user = await User.findById(userId);
     
     if (!user) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({
+        success: false,
+        error: 'User not found',
+        auditId: securityContext.auditId,
+        timestamp: new Date().toISOString()
+      }, { status: 404 });
     }
+
+    console.log(JSON.stringify({
+      level: 'INFO',
+      message: 'Protected data retrieved successfully',
+      auditId: securityContext.auditId,
+      userId: user._id,
+      userRole: user.role,
+      timestamp: new Date().toISOString()
+    }));
 
     // Return protected data with debug information
     return NextResponse.json({
+      success: true,
       message: 'Protected data retrieved successfully',
-      userId: user._id,
-      email: user.email,
-      role: user.role,
-      isActive: user.isActive,
+      auditId: securityContext.auditId,
+      data: {
+        userId: user._id,
+        email: user.email,
+        role: user.role,
+        isActive: user.isActive
+      },
       timestamp: new Date().toISOString(),
       debugInfo: {
         requestHeaders: Object.fromEntries(request.headers.entries()),
-        authMethod: 'JWT Token + API Key'
+        authMethod: 'JWT Token + API Key',
+        securityContext: {
+          riskScore: securityContext.riskScore,
+          sessionId: securityContext.sessionId,
+          geoLocation: securityContext.geoLocation
+        }
       }
     });
+
   } catch (error) {
-    console.error('Protected route error:', error);
-    return NextResponse.json(
-      { error: 'Error accessing protected data' },
-      { status: 500 }
-    );
+    console.error(JSON.stringify({
+      level: 'ERROR',
+      message: 'Protected route error',
+      auditId: securityContext.auditId,
+      error: error.message,
+      timestamp: new Date().toISOString()
+    }));
+
+    throw error;
   }
-}
+}, DEBUG_CONFIG);
 
-export async function POST(request: NextRequest) {
+export const POST = secureApiRoute(async (request: NextRequest, { securityContext }) => {
   try {
-    // Validate API key
-    const authResult = await validateApiKey(request);
-    if (authResult instanceof NextResponse) {
-      return authResult;
-    }
-
-    const { userId, apiKeyDoc } = authResult;
+    console.log(JSON.stringify({
+      level: 'INFO',
+      message: 'Protected POST endpoint accessed',
+      auditId: securityContext.auditId,
+      userId: securityContext.user?.userId,
+      timestamp: new Date().toISOString()
+    }));
 
     // Get request body
     const body = await request.json();
 
+    console.log(JSON.stringify({
+      level: 'INFO',
+      message: 'Data received in protected endpoint',
+      auditId: securityContext.auditId,
+      userId: securityContext.user?.userId,
+      bodySize: JSON.stringify(body).length,
+      timestamp: new Date().toISOString()
+    }));
+
     // Return success response with request data and debug info
     return NextResponse.json({
+      success: true,
       message: 'Data received in protected endpoint',
-      userId,
+      auditId: securityContext.auditId,
+      userId: securityContext.user?.userId,
       data: body,
       timestamp: new Date().toISOString(),
       debugInfo: {
-        apiKeyUsed: apiKeyDoc?.label || 'Unknown',
         bodySize: JSON.stringify(body).length,
-        contentType: request.headers.get('content-type')
+        contentType: request.headers.get('content-type'),
+        securityContext: {
+          riskScore: securityContext.riskScore,
+          sessionId: securityContext.sessionId,
+          fraudFlags: securityContext.fraudFlags
+        }
       }
     });
+
   } catch (error) {
-    console.error('Error in protected route:', error);
-    return NextResponse.json(
-      { message: 'Internal server error' },
-      { status: 500 }
-    );
+    console.error(JSON.stringify({
+      level: 'ERROR',
+      message: 'Error in protected POST route',
+      auditId: securityContext.auditId,
+      error: error.message,
+      timestamp: new Date().toISOString()
+    }));
+
+    throw error;
   }
-} 
+}, DEBUG_CONFIG); 
