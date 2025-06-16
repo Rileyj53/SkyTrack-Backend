@@ -16,6 +16,50 @@ The Debug API provides testing and debugging utilities for developers and system
 - **API Key**: Required for all endpoints via `X-API-Key` header
 - **JWT Token**: Required for authenticated endpoints via `Authorization: Bearer <token>` header
 
+## 🔐 Security & Audit Features
+
+All debug endpoints include enterprise-grade security features:
+
+- **Audit Logging**: Every request generates a unique `auditId` for tracking
+- **Risk Scoring**: Fraud detection with risk scores (0-100) 
+- **Security Context**: Geographic location, session tracking, and fraud flags
+- **Rate Limiting**: Configurable limits per endpoint to prevent abuse
+- **Data Classification**: Each endpoint classified by data sensitivity level
+
+## 📊 Standardized Response Format
+
+### Success Response Structure
+```json
+{
+  "success": true,
+  "message": "Operation description",
+  "auditId": "unique_audit_identifier",
+  "data": {
+    // Endpoint-specific data
+  },
+  "timestamp": "2024-01-15T10:30:00.000Z",
+  "debugInfo": {
+    // Security context and debug information
+    "securityContext": {
+      "riskScore": 15,
+      "sessionId": "session_abc123",
+      "geoLocation": "US-CA",
+      "fraudFlags": []
+    }
+  }
+}
+```
+
+### Error Response Structure
+```json
+{
+  "success": false,
+  "error": "Error description",
+  "auditId": "unique_audit_identifier", 
+  "timestamp": "2024-01-15T10:30:00.000Z"
+}
+```
+
 ---
 
 ## Debug Endpoints
@@ -31,8 +75,10 @@ Test basic API functionality and connectivity.
 #### Success Response (200)
 ```json
 {
-  "status": "success",
+  "success": true,
+  "status": "success", 
   "message": "API is working correctly",
+  "auditId": "audit_12345",
   "timestamp": "2024-01-15T10:30:00.000Z",
   "environment": "development"
 }
@@ -62,12 +108,25 @@ Test API key validation and user authentication flow.
 #### Success Response (200)
 ```json
 {
+  "success": true,
   "message": "API key is valid",
-  "userId": "ObjectId",
-  "email": "user@example.com",
-  "userRole": "student",
-  "isActive": true,
-  "timestamp": "2024-01-15T10:30:00.000Z"
+  "auditId": "audit_12345",
+  "data": {
+    "userId": "ObjectId",
+    "email": "user@example.com",
+    "userRole": "student",
+    "isActive": true
+  },
+  "timestamp": "2024-01-15T10:30:00.000Z",
+  "debugInfo": {
+    "apiKeyValidation": "successful",
+    "userLookup": "successful",
+    "endpoint": "/api/debug/test-api-key",
+    "securityContext": {
+      "riskScore": 15,
+      "sessionId": "session_abc123"
+    }
+  }
 }
 ```
 
@@ -97,23 +156,28 @@ Get detailed MFA configuration and status for debugging.
 #### Success Response (200)
 ```json
 {
-  "mfaEnabled": true,
-  "mfaVerified": true,
-  "mfaSecret": "JBSWY3DPEHPK3PXP",
-  "mfaBackupCodes": [
-    {
-      "code": "123456789",
-      "used": false
-    },
-    {
-      "code": "987654321",
-      "used": true
-    }
-  ],
-  "userId": "ObjectId",
-  "email": "user@example.com",
-  "backupCodesCount": 10,
-  "unusedBackupCodes": 9,
+  "success": true,
+  "message": "MFA debug information retrieved",
+  "auditId": "audit_12345",
+  "data": {
+    "mfaEnabled": true,
+    "mfaVerified": true,
+    "mfaSecret": "JBSWY3DPEHPK3PXP",
+    "mfaBackupCodes": [
+      {
+        "code": "123456789",
+        "used": false
+      },
+      {
+        "code": "987654321",
+        "used": true
+      }
+    ],
+    "userId": "ObjectId",
+    "email": "user@example.com",
+    "backupCodesCount": 10,
+    "unusedBackupCodes": 9
+  },
   "timestamp": "2024-01-15T10:30:00.000Z"
 }
 ```
