@@ -31,7 +31,7 @@ export const GET = secureApiRoute(async (
       level: 'INFO',
       message: 'School details requested',
       auditId: securityContext.auditId,
-      userId: securityContext.user?.userId,
+      userId: securityContext.user?._id,
       userRole: securityContext.user?.role,
       schoolId: params.schoolId,
       timestamp: new Date().toISOString()
@@ -50,12 +50,12 @@ export const GET = secureApiRoute(async (
 
     // Role-based access control - school_admin can only access their own school
     if (securityContext.user?.role === 'school_admin') {
-      if (securityContext.user?.school_id !== schoolId) {
+      if (securityContext.user?.school_id?.toString() !== schoolId) {
         console.warn(JSON.stringify({
           level: 'WARN',
           message: 'School admin attempted to access different school',
           auditId: securityContext.auditId,
-          userId: securityContext.user?.userId,
+          userId: securityContext.user?._id,
           userSchoolId: securityContext.user?.school_id,
           requestedSchoolId: schoolId,
           timestamp: new Date().toISOString()
@@ -86,7 +86,7 @@ export const GET = secureApiRoute(async (
       level: 'INFO',
       message: 'School details retrieved',
       auditId: securityContext.auditId,
-      userId: securityContext.user?.userId,
+      userId: securityContext.user?._id,
       schoolId: school._id,
       schoolName: school.name,
       timestamp: new Date().toISOString()
@@ -105,7 +105,7 @@ export const GET = secureApiRoute(async (
       level: 'ERROR',
       message: 'Error getting school',
       auditId: securityContext.auditId,
-      userId: securityContext.user?.userId,
+      userId: securityContext.user?._id,
       schoolId: params.schoolId,
       error: error.message,
       timestamp: new Date().toISOString()
@@ -128,7 +128,7 @@ export const PUT = secureApiRoute(async (
       level: 'INFO',
       message: 'School update requested',
       auditId: securityContext.auditId,
-      userId: securityContext.user?.userId,
+      userId: securityContext.user?._id,
       userRole: securityContext.user?.role,
       schoolId: params.schoolId,
       timestamp: new Date().toISOString()
@@ -154,7 +154,7 @@ export const PUT = secureApiRoute(async (
         level: 'WARN',
         message: 'User with insufficient permissions attempted to update school',
         auditId: securityContext.auditId,
-        userId: securityContext.user?.userId,
+        userId: securityContext.user?._id,
         userRole: role,
         schoolId,
         timestamp: new Date().toISOString()
@@ -174,7 +174,7 @@ export const PUT = secureApiRoute(async (
         level: 'WARN',
         message: 'School admin attempted to update different school',
         auditId: securityContext.auditId,
-        userId: securityContext.user?.userId,
+        userId: securityContext.user?._id,
         userSchoolId: securityContext.user?.school_id,
         requestedSchoolId: schoolId,
         timestamp: new Date().toISOString()
@@ -207,16 +207,16 @@ export const PUT = secureApiRoute(async (
     if (body.name && body.name.trim() !== school.name) {
       const existingSchool = await School.findOne({ name: body.name.trim() });
       if (existingSchool) {
-        console.warn(JSON.stringify({
-          level: 'WARN',
-          message: 'Attempt to update school with duplicate name',
-          auditId: securityContext.auditId,
-          userId: securityContext.user?.userId,
-          schoolId,
-          newName: body.name.trim(),
-          existingSchoolId: existingSchool._id,
-          timestamp: new Date().toISOString()
-        }));
+              console.warn(JSON.stringify({
+        level: 'WARN',
+        message: 'Attempt to update school with duplicate name',
+        auditId: securityContext.auditId,
+        userId: securityContext.user?._id,
+        schoolId,
+        newName: body.name.trim(),
+        existingSchoolId: existingSchool._id,
+        timestamp: new Date().toISOString()
+      }));
 
         return NextResponse.json({
           success: false,
@@ -246,7 +246,7 @@ export const PUT = secureApiRoute(async (
       level: 'INFO',
       message: 'School updated successfully',
       auditId: securityContext.auditId,
-      userId: securityContext.user?.userId,
+      userId: securityContext.user?._id,
       schoolId: updatedSchool._id,
       schoolName: updatedSchool.name,
       updatedFields: Object.keys(body),
@@ -266,7 +266,7 @@ export const PUT = secureApiRoute(async (
       level: 'ERROR',
       message: 'Error updating school',
       auditId: securityContext.auditId,
-      userId: securityContext.user?.userId,
+      userId: securityContext.user?._id,
       schoolId: params.schoolId,
       error: error.message,
       timestamp: new Date().toISOString()
@@ -305,7 +305,7 @@ export const DELETE = secureApiRoute(async (
       level: 'INFO',
       message: 'School deletion requested',
       auditId: securityContext.auditId,
-      userId: securityContext.user?.userId,
+      userId: securityContext.user?._id,
       userRole: securityContext.user?.role,
       schoolId: params.schoolId,
       timestamp: new Date().toISOString()
@@ -317,7 +317,7 @@ export const DELETE = secureApiRoute(async (
         level: 'WARN',
         message: 'Non-sys_admin attempted to delete school',
         auditId: securityContext.auditId,
-        userId: securityContext.user?.userId,
+        userId: securityContext.user?._id,
         userRole: securityContext.user?.role,
         schoolId: params.schoolId,
         timestamp: new Date().toISOString()
@@ -358,7 +358,7 @@ export const DELETE = secureApiRoute(async (
       level: 'INFO',
       message: 'School deleted successfully',
       auditId: securityContext.auditId,
-      userId: securityContext.user?.userId,
+      userId: securityContext.user?._id,
       schoolId: school._id,
       schoolName: school.name,
       timestamp: new Date().toISOString()
@@ -376,7 +376,7 @@ export const DELETE = secureApiRoute(async (
       level: 'ERROR',
       message: 'Error deleting school',
       auditId: securityContext.auditId,
-      userId: securityContext.user?.userId,
+      userId: securityContext.user?._id,
       schoolId: params.schoolId,
       error: error.message,
       timestamp: new Date().toISOString()

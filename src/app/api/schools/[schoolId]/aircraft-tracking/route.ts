@@ -29,7 +29,7 @@ export const GET = secureApiRoute(async (
       level: 'INFO',
       message: 'Aircraft tracking data requested',
       auditId: securityContext.auditId,
-      userId: securityContext.user?.userId,
+      userId: securityContext.user?._id,
       userRole: securityContext.user?.role,
       schoolId: params.schoolId,
       timestamp: new Date().toISOString()
@@ -47,15 +47,19 @@ export const GET = secureApiRoute(async (
 
     // Role-based access control - school_admin and instructor can only access their own school
     if (securityContext.user?.role === 'school_admin' || securityContext.user?.role === 'instructor') {
-      if (securityContext.user?.school_id !== params.schoolId) {
+      // Convert both IDs to strings for comparison
+      const userSchoolId = securityContext.user?.school_id?.toString();
+      const requestedSchoolId = params.schoolId;
+      
+      if (userSchoolId !== requestedSchoolId) {
         console.warn(JSON.stringify({
           level: 'WARN',
           message: 'User attempted to access different school aircraft tracking',
           auditId: securityContext.auditId,
-          userId: securityContext.user?.userId,
+          userId: securityContext.user?._id,
           userRole: securityContext.user?.role,
-          userSchoolId: securityContext.user?.school_id,
-          requestedSchoolId: params.schoolId,
+          userSchoolId: userSchoolId,
+          requestedSchoolId: requestedSchoolId,
           timestamp: new Date().toISOString()
         }));
 
@@ -76,7 +80,7 @@ export const GET = secureApiRoute(async (
         level: 'INFO',
         message: 'No planes found for school',
         auditId: securityContext.auditId,
-        userId: securityContext.user?.userId,
+        userId: securityContext.user?._id,
         schoolId: params.schoolId,
         timestamp: new Date().toISOString()
       }));
@@ -103,7 +107,7 @@ export const GET = secureApiRoute(async (
       level: 'INFO',
       message: 'Fetching aircraft tracking data',
       auditId: securityContext.auditId,
-      userId: securityContext.user?.userId,
+      userId: securityContext.user?._id,
       schoolId: params.schoolId,
       planesCount: planes.length,
       timestamp: new Date().toISOString()
@@ -209,7 +213,7 @@ export const GET = secureApiRoute(async (
       level: 'INFO',
       message: 'Aircraft tracking data retrieved successfully',
       auditId: securityContext.auditId,
-      userId: securityContext.user?.userId,
+      userId: securityContext.user?._id,
       schoolId: params.schoolId,
       summary,
       timestamp: new Date().toISOString()
@@ -234,7 +238,7 @@ export const GET = secureApiRoute(async (
       level: 'ERROR',
       message: 'Error in aircraft tracking endpoint',
       auditId: securityContext.auditId,
-      userId: securityContext.user?.userId,
+      userId: securityContext.user?._id,
       schoolId: params.schoolId,
       error: error instanceof Error ? error.message : 'Unknown error',
       timestamp: new Date().toISOString()

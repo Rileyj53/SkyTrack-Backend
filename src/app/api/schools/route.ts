@@ -3,7 +3,6 @@ import { connectDB } from '@/lib/db';
 import { School, SchoolDocument } from '@/models/School';
 import { secureApiRoute, SecurityConfig } from '@/middleware/security';
 import mongoose from 'mongoose';
-import { User } from '@/models/User';
 
 // Security configuration for schools endpoints - requires authentication and appropriate roles
 const SCHOOLS_CONFIG: SecurityConfig = {
@@ -27,7 +26,7 @@ export const GET = secureApiRoute(async (request: NextRequest, { securityContext
       level: 'INFO',
       message: 'Schools list requested',
       auditId: securityContext.auditId,
-      userId: securityContext.user?.userId,
+      userId: securityContext.user?._id,
       userRole: securityContext.user?.role,
       timestamp: new Date().toISOString()
     }));
@@ -38,7 +37,7 @@ export const GET = secureApiRoute(async (request: NextRequest, { securityContext
         level: 'WARN',
         message: 'Non-sys_admin attempted to list all schools',
         auditId: securityContext.auditId,
-        userId: securityContext.user?.userId,
+        userId: securityContext.user?._id,
         userRole: securityContext.user?.role,
         timestamp: new Date().toISOString()
       }));
@@ -58,7 +57,7 @@ export const GET = secureApiRoute(async (request: NextRequest, { securityContext
       level: 'INFO',
       message: 'Schools list retrieved',
       auditId: securityContext.auditId,
-      userId: securityContext.user?.userId,
+      userId: securityContext.user?._id,
       schoolsCount: schools.length,
       timestamp: new Date().toISOString()
     }));
@@ -99,19 +98,19 @@ export const POST = secureApiRoute(async (request: NextRequest, { securityContex
       level: 'INFO',
       message: 'School creation requested',
       auditId: securityContext.auditId,
-      userId: securityContext.user?.userId,
+      userId: securityContext.user?._id,
       userRole: securityContext.user?.role,
       timestamp: new Date().toISOString()
     }));
 
     // Check if user has appropriate permissions
-    const user = await User.findById(securityContext.user?.userId);
+    const user = securityContext.user;
     if (!user || (user.role !== 'sys_admin' && user.role !== 'school_admin')) {
       console.warn(JSON.stringify({
         level: 'WARN',
         message: 'User with insufficient permissions attempted to create school',
         auditId: securityContext.auditId,
-        userId: securityContext.user?.userId,
+        userId: user?._id,
         userRole: user?.role || 'unknown',
         timestamp: new Date().toISOString()
       }));
@@ -172,7 +171,7 @@ export const POST = secureApiRoute(async (request: NextRequest, { securityContex
     const schoolData = {
       ...body,
       name: body.name.trim(),
-      created_by: securityContext.user?.userId,
+      created_by: securityContext.user?._id,
       created_at: new Date()
     };
 
@@ -183,7 +182,7 @@ export const POST = secureApiRoute(async (request: NextRequest, { securityContex
       level: 'INFO',
       message: 'School created successfully',
       auditId: securityContext.auditId,
-      userId: securityContext.user?.userId,
+      userId: securityContext.user?._id,
       schoolId: school._id,
       schoolName: school.name,
       timestamp: new Date().toISOString()
@@ -202,7 +201,7 @@ export const POST = secureApiRoute(async (request: NextRequest, { securityContex
       level: 'ERROR',
       message: 'Error creating school',
       auditId: securityContext.auditId,
-      userId: securityContext.user?.userId,
+      userId: securityContext.user?._id,
       error: error.message,
       timestamp: new Date().toISOString()
     }));

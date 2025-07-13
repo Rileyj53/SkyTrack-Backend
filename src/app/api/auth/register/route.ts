@@ -59,8 +59,8 @@ const SECURITY_CONFIG: SecurityConfig = {
   enableAdvancedAudit: true, // Track all registration attempts
   dataClassification: 'confidential', // Contains personal information
   rateLimiting: {
-    maxRequests: 5, // Very strict rate limiting to prevent abuse
-    windowMs: 300000, // 5 minute window
+    maxRequests: process.env.NODE_ENV === 'development' ? 100 : 5, // More lenient for development
+    windowMs: process.env.NODE_ENV === 'development' ? 60000 : 300000, // 1 minute in dev, 5 minutes in prod
     slidingWindow: true
   },
   maxRequestSize: 1024 * 4 // 4KB max for registration requests

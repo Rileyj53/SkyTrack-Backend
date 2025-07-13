@@ -1,7 +1,7 @@
 {
     "info": {
         "_postman_id": "skytrack-auth-collection-2024",
-        "name": "SkyTrack Authentication API Collection",
+        "name": "Authentication API Collection",
         "description": "Comprehensive collection for authentication endpoints in the SkyTrack system with enterprise-grade security. Includes endpoints for registration, login, MFA, magic links, password management, and account security.",
         "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
         "_exporter_id": "skytrack-auth"
