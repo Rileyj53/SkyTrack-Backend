@@ -1,7 +1,7 @@
 {
     "info": {
         "_postman_id": "albatross-backend-collection-2024",
-        "name": "albatross Backend API Collection",
+        "name": "Albatross Backend API Collection",
         "description": "Unified collection for the albatross backend API with enterprise-grade security. Includes all endpoints with proper authentication, fraud detection, and comprehensive audit logging.",
         "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
         "_exporter_id": "albatross-backend"

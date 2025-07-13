@@ -1,52 +1,131 @@
 import mongoose from 'mongoose';
 import { initializeModels } from '../models';
-import { exec } from 'child_process';
-import { promisify } from 'util';
-import os from 'os';
 
-const execAsync = promisify(exec);
-
-let isConnected = false;
+// Connection state management
+let connectionState: 'disconnected' | 'connecting' | 'connected' | 'error' = 'disconnected';
+let connectionPromise: Promise<void> | null = null;
 let connectionAttempts = 0;
-const MAX_RETRY_ATTEMPTS = 5;
-const INITIAL_RETRY_DELAY = 1000; // 1 second
-const MAX_RETRY_DELAY = 30000; // 30 seconds
+let lastConnectionError: Error | null = null;
 
-// Connection options for better reliability
+const MAX_RETRY_ATTEMPTS = 3; // Reduced from 5 for faster failure
+const INITIAL_RETRY_DELAY = 2000; // 2 seconds
+const MAX_RETRY_DELAY = 10000; // 10 seconds
+
+// Optimized connection options for stability
 const connectionOptions = {
-  maxPoolSize: 10, // Maintain up to 10 socket connections
-  serverSelectionTimeoutMS: 5000, // Keep trying to send operations for 5 seconds
-  socketTimeoutMS: 45000, // Close sockets after 45 seconds of inactivity
-  bufferMaxEntries: 0, // Disable mongoose buffering
-  bufferCommands: false, // Disable mongoose buffering
-  maxIdleTimeMS: 30000, // Close connections after 30 seconds of inactivity
-  family: 4, // Use IPv4, skip trying IPv6
-  retryWrites: true, // Retry failed writes
-  retryReads: true, // Retry failed reads
+  // Connection pool settings
+  maxPoolSize: 5, // Reduced pool size for development
+  minPoolSize: 1, // Maintain minimum connections
+  maxIdleTimeMS: 60000, // 1 minute idle timeout
+  
+  // Timeout settings
+  serverSelectionTimeoutMS: 10000, // 10 seconds to select server
+  socketTimeoutMS: 45000, // 45 seconds socket timeout
+  connectTimeoutMS: 10000, // 10 seconds connection timeout
+  
+  // Behavioral settings
+  bufferCommands: false, // Disable mongoose buffering for immediate errors
+  
+  // Network settings
+  family: 4, // IPv4 only
+  retryWrites: true,
+  retryReads: true,
+  
+  // Development specific
+  autoIndex: true, // Build indexes in development
+  autoCreate: true, // Create collections automatically
 };
 
-// Exponential backoff delay calculation
+// Exponential backoff with jitter
 function calculateRetryDelay(attempt: number): number {
   const delay = Math.min(INITIAL_RETRY_DELAY * Math.pow(2, attempt), MAX_RETRY_DELAY);
-  // Add jitter to prevent thundering herd
   const jitter = Math.random() * 0.1 * delay;
   return Math.floor(delay + jitter);
 }
 
-// Sleep utility for retry delays
+// Sleep utility
 function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+// Initialize event handlers once
+let eventHandlersInitialized = false;
+
+function initializeEventHandlers(): void {
+  if (eventHandlersInitialized) return;
+  eventHandlersInitialized = true;
+
+  mongoose.connection.on('connected', () => {
+    console.log('MongoDB connected');
+    connectionState = 'connected';
+    connectionAttempts = 0;
+    lastConnectionError = null;
+  });
+
+  mongoose.connection.on('error', (err) => {
+    console.error('MongoDB connection error:', err.message);
+    connectionState = 'error';
+    lastConnectionError = err;
+  });
+
+  mongoose.connection.on('disconnected', () => {
+    console.log('MongoDB disconnected');
+    if (connectionState !== 'connecting') {
+      connectionState = 'disconnected';
+    }
+  });
+
+  mongoose.connection.on('reconnected', () => {
+    console.log('MongoDB reconnected');
+    connectionState = 'connected';
+    connectionAttempts = 0;
+    lastConnectionError = null;
+  });
+
+  // Graceful shutdown handlers
+  const gracefulShutdown = async (signal: string) => {
+    console.log(`🛑 Received ${signal}, closing database connection...`);
+    try {
+      await disconnectDB();
+      console.log('Database connection closed successfully');
+    } catch (error) {
+      console.error('Error during graceful shutdown:', error);
+    }
+    process.exit(0);
+  };
+
+  process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+  process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+}
+
 export const connectDB = async (): Promise<void> => {
-  if (isConnected && mongoose.connection.readyState === 1) {
+  // Initialize event handlers
+  initializeEventHandlers();
+
+  // Return existing connection if already connected
+  if (connectionState === 'connected' && mongoose.connection.readyState === 1) {
     return;
   }
 
-  const mongoURI = process.env.MONGODB_URI;
+  // Return existing connection promise if currently connecting
+  if (connectionState === 'connecting' && connectionPromise) {
+    return connectionPromise;
+  }
+
+  // Create new connection promise
+  connectionPromise = performConnection();
+  return connectionPromise;
+};
+
+async function performConnection(): Promise<void> {
+  connectionState = 'connecting';
   
+  const mongoURI = process.env.MONGODB_URI;
   if (!mongoURI) {
-    throw new Error('MongoDB URI is not defined in environment variables');
+    const error = new Error('MongoDB URI is not defined in environment variables');
+    connectionState = 'error';
+    lastConnectionError = error;
+    throw error;
   }
 
   let lastError: Error | null = null;
@@ -55,23 +134,34 @@ export const connectDB = async (): Promise<void> => {
     try {
       console.log(`Database connection attempt ${attempt + 1}/${MAX_RETRY_ATTEMPTS}`);
       
-      // Close existing connection if it's in a bad state
-      if (mongoose.connection.readyState !== 0) {
+      // Only disconnect if we're in a bad state (not on first attempt)
+      if (attempt > 0 && mongoose.connection.readyState !== 0) {
+        console.log('Closing existing connection before retry...');
         await mongoose.disconnect();
+        await sleep(1000); // Brief pause after disconnect
       }
       
+      // Attempt connection
       await mongoose.connect(mongoURI, connectionOptions);
       
-      // Verify connection is actually working
+      // Verify connection with ping
       await mongoose.connection.db.admin().ping();
       
-      isConnected = true;
+      // Connection successful
+      connectionState = 'connected';
       connectionAttempts = 0;
+      lastConnectionError = null;
       
       console.log('Database connected successfully');
       
       // Initialize models after successful connection
-      initializeModels();
+      try {
+        initializeModels();
+        console.log('Database models initialized');
+      } catch (modelError) {
+        console.warn('Model initialization warning:', modelError.message);
+        // Don't fail connection for model initialization issues
+      }
       
       return;
       
@@ -82,19 +172,23 @@ export const connectDB = async (): Promise<void> => {
       console.error(`Database connection attempt ${attempt + 1} failed:`, {
         error: error.message,
         attempt: attempt + 1,
-        maxAttempts: MAX_RETRY_ATTEMPTS
+        maxAttempts: MAX_RETRY_ATTEMPTS,
+        readyState: mongoose.connection.readyState
       });
       
-      // Don't retry on the last attempt
+      // Wait before retry (except on last attempt)
       if (attempt < MAX_RETRY_ATTEMPTS - 1) {
         const delay = calculateRetryDelay(attempt);
-        console.log(`Retrying in ${delay}ms...`);
+        console.log(`Retrying connection in ${delay}ms...`);
         await sleep(delay);
       }
     }
   }
   
-  // If we get here, all retry attempts failed
+  // All attempts failed
+  connectionState = 'error';
+  lastConnectionError = lastError;
+  
   const finalError = new Error(
     `Failed to connect to database after ${MAX_RETRY_ATTEMPTS} attempts. Last error: ${lastError?.message}`
   );
@@ -102,24 +196,26 @@ export const connectDB = async (): Promise<void> => {
   console.error('Database connection failed permanently:', {
     attempts: MAX_RETRY_ATTEMPTS,
     lastError: lastError?.message,
-    mongoURI: mongoURI.replace(/\/\/[^:]+:[^@]+@/, '//***:***@') // Hide credentials in logs
+    readyState: mongoose.connection.readyState,
+    mongoURI: mongoURI.replace(/\/\/[^:]+:[^@]+@/, '//***:***@')
   });
   
   throw finalError;
-};
+}
 
-// Disconnect from MongoDB with retry logic
+// Disconnect from MongoDB
 export async function disconnectDB(): Promise<void> {
   try {
     if (mongoose.connection.readyState !== 0) {
       await mongoose.disconnect();
-      isConnected = false;
       console.log('Database disconnected successfully');
     }
+    connectionState = 'disconnected';
+    connectionPromise = null;
   } catch (error) {
-          console.error('Database disconnection error:', error.message);
-    // Force disconnect even if there's an error
-    isConnected = false;
+    console.error('Database disconnection error:', error);
+    connectionState = 'error';
+    connectionPromise = null;
     throw error;
   }
 }
@@ -127,11 +223,11 @@ export async function disconnectDB(): Promise<void> {
 // Health check function
 export async function checkDBHealth(): Promise<boolean> {
   try {
-    if (!isConnected || mongoose.connection.readyState !== 1) {
+    if (connectionState !== 'connected' || mongoose.connection.readyState !== 1) {
       return false;
     }
     
-    // Ping the database to ensure it's responsive
+    // Quick ping to verify connection
     await mongoose.connection.db.admin().ping();
     return true;
   } catch (error) {
@@ -140,66 +236,39 @@ export async function checkDBHealth(): Promise<boolean> {
   }
 }
 
-// Reconnection function for use in error handlers
-export async function reconnectDB(): Promise<void> {
-  console.log('Attempting database reconnection...');
-  isConnected = false;
-  await connectDB();
+// Get connection status
+export function getConnectionStatus(): {
+  state: string;
+  readyState: number;
+  attempts: number;
+  lastError: string | null;
+} {
+  return {
+    state: connectionState,
+    readyState: mongoose.connection.readyState,
+    attempts: connectionAttempts,
+    lastError: lastConnectionError?.message || null
+  };
 }
 
-// Enhanced connection event handlers
-mongoose.connection.on('error', async (err) => {
-      console.error('MongoDB connection error:', {
-    error: err.message,
-    readyState: mongoose.connection.readyState,
-    timestamp: new Date().toISOString()
-  });
+// Force reconnection (use sparingly)
+export async function forceReconnect(): Promise<void> {
+  console.log('Forcing database reconnection...');
   
-  isConnected = false;
-  
-  // Attempt reconnection for certain types of errors
-  if (err.message.includes('ENOTFOUND') || err.message.includes('ECONNREFUSED')) {
-    console.log('Network error detected, attempting reconnection...');
-    try {
-      await reconnectDB();
-    } catch (reconnectError) {
-              console.error('Reconnection failed:', reconnectError.message);
+  try {
+    // Disconnect first
+    if (mongoose.connection.readyState !== 0) {
+      await mongoose.disconnect();
     }
-  }
-});
-
-mongoose.connection.on('disconnected', () => {
-      console.warn('MongoDB disconnected');
-  isConnected = false;
-});
-
-mongoose.connection.on('reconnected', () => {
-      console.log('MongoDB reconnected');
-  isConnected = true;
-});
-
-mongoose.connection.on('connected', () => {
-      console.log('MongoDB connected');
-  isConnected = true;
-});
-
-// Handle process termination gracefully
-process.on('SIGINT', async () => {
-  console.log('🛑 Received SIGINT, closing database connection...');
-  try {
-    await disconnectDB();
+    
+    // Reset state
+    connectionState = 'disconnected';
+    connectionPromise = null;
+    
+    // Reconnect
+    await connectDB();
   } catch (error) {
-    console.error('Error during graceful shutdown:', error.message);
+    console.error('Force reconnection failed:', error);
+    throw error;
   }
-  process.exit(0);
-});
-
-process.on('SIGTERM', async () => {
-  console.log('🛑 Received SIGTERM, closing database connection...');
-  try {
-    await disconnectDB();
-  } catch (error) {
-    console.error('Error during graceful shutdown:', error.message);
-  }
-  process.exit(0);
-}); 
+} 

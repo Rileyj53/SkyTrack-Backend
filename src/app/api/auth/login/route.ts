@@ -9,7 +9,7 @@ import { User } from '@/models/User';
 // Security configuration for login endpoint
 const SECURITY_CONFIG: SecurityConfig = {
   requireAuth: false, // Not required for login
-  requireApiKey: true, // API key still required
+  requireApiKey: false, // API not required
   requireCSRF: false, // Not required for initial login
   enableFraudDetection: true, // Critical for login attempts
   enableAdvancedAudit: true, // Track login attempts

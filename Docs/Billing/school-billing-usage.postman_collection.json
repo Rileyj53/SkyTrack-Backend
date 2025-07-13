@@ -6,22 +6,22 @@
         "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
     },
     "variable": [{
-            "key": "baseUrl",
+            "key": "base_url",
             "value": "https://api.backend.com",
             "type": "string"
         },
         {
-            "key": "apiKey",
+            "key": "api_key",
             "value": "your-api-key-here",
             "type": "string"
         },
         {
-            "key": "jwtToken",
+            "key": "jwt_token",
             "value": "your-jwt-token-here",
             "type": "string"
         },
         {
-            "key": "csrfToken",
+            "key": "csrf_token",
             "value": "your-csrf-token-here",
             "type": "string"
         },
@@ -45,7 +45,7 @@
         "type": "bearer",
         "bearer": [{
             "key": "token",
-            "value": "{{jwtToken}}",
+            "value": "{{jwt_token}}",
             "type": "string"
         }]
     },
@@ -62,7 +62,7 @@
                     "console.log('📋 Headers:', JSON.stringify(pm.request.headers.toObject()));",
                     "",
                     "// Validate required variables",
-                    "const requiredVars = ['baseUrl', 'apiKey', 'jwtToken'];",
+                    "const requiredVars = ['base_url', 'api_key', 'jwt_token'];",
                     "requiredVars.forEach(varName => {",
                     "    if (!pm.collectionVariables.get(varName) || pm.collectionVariables.get(varName) === `your-${varName.toLowerCase().replace('jwt', 'jwt-')}-here`) {",
                     "        console.warn(`⚠️ Please set the ${varName} collection variable`);",
@@ -147,7 +147,7 @@
                 "method": "GET",
                 "header": [{
                         "key": "X-API-Key",
-                        "value": "{{apiKey}}",
+                        "value": "{{api_key}}",
                         "type": "text"
                     },
                     {
@@ -157,8 +157,8 @@
                     }
                 ],
                 "url": {
-                    "raw": "{{baseUrl}}/api/school-billing-usage?limit=10&skip=0&billed=false",
-                    "host": ["{{baseUrl}}"],
+                    "raw": "{{base_url}}/api/school-billing-usage?limit=10&skip=0&billed=false",
+                    "host": ["{{base_url}}"],
                     "path": ["api", "school-billing-usage"],
                     "query": [{
                             "key": "limit",
@@ -240,12 +240,12 @@
                 "method": "POST",
                 "header": [{
                         "key": "X-API-Key",
-                        "value": "{{apiKey}}",
+                        "value": "{{api_key}}",
                         "type": "text"
                     },
                     {
                         "key": "X-CSRF-Token",
-                        "value": "{{csrfToken}}",
+                        "value": "{{csrf_token}}",
                         "type": "text"
                     },
                     {
@@ -264,8 +264,8 @@
                     }
                 },
                 "url": {
-                    "raw": "{{baseUrl}}/api/school-billing-usage",
-                    "host": ["{{baseUrl}}"],
+                    "raw": "{{base_url}}/api/school-billing-usage",
+                    "host": ["{{base_url}}"],
                     "path": ["api", "school-billing-usage"]
                 },
                 "description": "Creates a new billing usage record or updates an existing one (upsert operation). Requires school_id, month, total_transactions, and stripe_transactions."
@@ -317,7 +317,7 @@
                 "method": "GET",
                 "header": [{
                         "key": "X-API-Key",
-                        "value": "{{apiKey}}",
+                        "value": "{{api_key}}",
                         "type": "text"
                     },
                     {
@@ -327,8 +327,8 @@
                     }
                 ],
                 "url": {
-                    "raw": "{{baseUrl}}/api/school-billing-usage/{{billingRecordId}}",
-                    "host": ["{{baseUrl}}"],
+                    "raw": "{{base_url}}/api/school-billing-usage/{{billingRecordId}}",
+                    "host": ["{{base_url}}"],
                     "path": ["api", "school-billing-usage", "{{billingRecordId}}"]
                 },
                 "description": "Retrieves a specific billing usage record by ID. Returns populated school information."
@@ -378,12 +378,12 @@
                 "method": "PUT",
                 "header": [{
                         "key": "X-API-Key",
-                        "value": "{{apiKey}}",
+                        "value": "{{api_key}}",
                         "type": "text"
                     },
                     {
                         "key": "X-CSRF-Token",
-                        "value": "{{csrfToken}}",
+                        "value": "{{csrf_token}}",
                         "type": "text"
                     },
                     {
@@ -402,8 +402,8 @@
                     }
                 },
                 "url": {
-                    "raw": "{{baseUrl}}/api/school-billing-usage/{{billingRecordId}}",
-                    "host": ["{{baseUrl}}"],
+                    "raw": "{{base_url}}/api/school-billing-usage/{{billingRecordId}}",
+                    "host": ["{{base_url}}"],
                     "path": ["api", "school-billing-usage", "{{billingRecordId}}"]
                 },
                 "description": "Updates a specific billing usage record by ID. Note: school_id and month cannot be updated."
@@ -450,12 +450,12 @@
                 "method": "PATCH",
                 "header": [{
                         "key": "X-API-Key",
-                        "value": "{{apiKey}}",
+                        "value": "{{api_key}}",
                         "type": "text"
                     },
                     {
                         "key": "X-CSRF-Token",
-                        "value": "{{csrfToken}}",
+                        "value": "{{csrf_token}}",
                         "type": "text"
                     },
                     {
@@ -474,8 +474,8 @@
                     }
                 },
                 "url": {
-                    "raw": "{{baseUrl}}/api/school-billing-usage/{{billingRecordId}}/mark-billed",
-                    "host": ["{{baseUrl}}"],
+                    "raw": "{{base_url}}/api/school-billing-usage/{{billingRecordId}}/mark-billed",
+                    "host": ["{{base_url}}"],
                     "path": ["api", "school-billing-usage", "{{billingRecordId}}", "mark-billed"]
                 },
                 "description": "Marks a billing usage record as billed and optionally associates it with a Stripe invoice ID."
@@ -524,7 +524,7 @@
                 "method": "GET",
                 "header": [{
                         "key": "X-API-Key",
-                        "value": "{{apiKey}}",
+                        "value": "{{api_key}}",
                         "type": "text"
                     },
                     {
@@ -534,8 +534,8 @@
                     }
                 ],
                 "url": {
-                    "raw": "{{baseUrl}}/api/school-billing-usage/school/{{schoolId}}?limit=12",
-                    "host": ["{{baseUrl}}"],
+                    "raw": "{{base_url}}/api/school-billing-usage/school/{{schoolId}}?limit=12",
+                    "host": ["{{base_url}}"],
                     "path": ["api", "school-billing-usage", "school", "{{schoolId}}"],
                     "query": [{
                         "key": "limit",
@@ -593,7 +593,7 @@
                 "method": "GET",
                 "header": [{
                         "key": "X-API-Key",
-                        "value": "{{apiKey}}",
+                        "value": "{{api_key}}",
                         "type": "text"
                     },
                     {
@@ -603,8 +603,8 @@
                     }
                 ],
                 "url": {
-                    "raw": "{{baseUrl}}/api/school-billing-usage/unbilled",
-                    "host": ["{{baseUrl}}"],
+                    "raw": "{{base_url}}/api/school-billing-usage/unbilled",
+                    "host": ["{{base_url}}"],
                     "path": ["api", "school-billing-usage", "unbilled"]
                 },
                 "description": "Retrieves all unbilled billing usage records. Access is restricted based on user role (school_admin sees only their school's records)."
@@ -646,12 +646,12 @@
                 "method": "DELETE",
                 "header": [{
                         "key": "X-API-Key",
-                        "value": "{{apiKey}}",
+                        "value": "{{api_key}}",
                         "type": "text"
                     },
                     {
                         "key": "X-CSRF-Token",
-                        "value": "{{csrfToken}}",
+                        "value": "{{csrf_token}}",
                         "type": "text"
                     },
                     {
@@ -661,8 +661,8 @@
                     }
                 ],
                 "url": {
-                    "raw": "{{baseUrl}}/api/school-billing-usage/{{billingRecordId}}",
-                    "host": ["{{baseUrl}}"],
+                    "raw": "{{base_url}}/api/school-billing-usage/{{billingRecordId}}",
+                    "host": ["{{base_url}}"],
                     "path": ["api", "school-billing-usage", "{{billingRecordId}}"]
                 },
                 "description": "Deletes a specific billing usage record by ID. This action is irreversible and requires proper authorization."
@@ -679,15 +679,15 @@
                     "console.log('📅 Request Time:', new Date().toISOString());",
                     "",
                     "// Validate authentication setup",
-                    "const jwtToken = pm.collectionVariables.get('jwtToken');",
-                    "const apiKey = pm.collectionVariables.get('apiKey');",
+                    "const jwt_token = pm.collectionVariables.get('jwt_token');",
+                    "const api_key = pm.collectionVariables.get('api_key');",
                     "",
-                    "if (!jwtToken || jwtToken === 'your-jwt-token-here') {",
-                    "    console.warn('⚠️ JWT Token not configured. Please set the jwtToken collection variable.');",
+                    "if (!jwt_token || jwt_token === 'your-jwt-token-here') {",
+                    "    console.warn('⚠️ JWT Token not configured. Please set the jwt_token collection variable.');",
                     "}",
                     "",
-                    "if (!apiKey || apiKey === 'your-api-key-here') {",
-                    "    console.warn('⚠️ API Key not configured. Please set the apiKey collection variable.');",
+                    "if (!api_key || api_key === 'your-api-key-here') {",
+                    "    console.warn('⚠️ API Key not configured. Please set the api_key collection variable.');",
                     "}",
                     "",
                     "// Set dynamic values",

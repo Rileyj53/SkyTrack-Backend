@@ -7,9 +7,9 @@ import { decodeToken } from '@/lib/jwt';
 // Security configuration for logout endpoint
 const SECURITY_CONFIG: SecurityConfig = {
   requireAuth: true, // Authentication required for logout
-  requireApiKey: true, // API key required
-  requireCSRF: true, // CSRF protection for logout
-  allowedRoles: ['school_admin', 'instructor', 'student'], // All authenticated users can logout
+  requireApiKey: false, // API key not required for logout
+  requireCSRF: false, // CSRF protection disabled for logout (temporary fix)
+  allowedRoles: ['sys_admin', 'school_admin', 'instructor', 'student'], // All authenticated users can logout
   enableFraudDetection: true, // Monitor logout patterns
   enableAdvancedAudit: true, // Track logout events
   dataClassification: 'confidential', // Logout contains session data

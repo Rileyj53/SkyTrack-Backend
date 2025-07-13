@@ -76,26 +76,31 @@ export const GET = secureApiRoute(async (request, { params, securityContext }) =
     })
     .populate({
       path: 'instructor_id',
+      model: 'Instructor', // Explicitly specify model
+      select: 'contact_email status flightHours',
       populate: {
         path: 'user_id',
+        model: 'User',
         select: 'first_name last_name email'
       }
     })
     .populate({
       path: 'student_id',
+      model: 'Student', // Explicitly specify model
+      select: 'contact_email program status enrollmentDate',
       populate: {
         path: 'user_id',
+        model: 'User',
         select: 'first_name last_name email'
       }
     })
-    .lean();
+        .lean();
 
   if (!schedule) {
-    console.warn(JSON.stringify({
-      level: 'WARN',
-      message: 'Flight schedule not found',
+    console.error(JSON.stringify({
+      level: 'ERROR',
+      message: 'Flight schedule not found after populate',
       auditId: securityContext.auditId,
-      schoolId: params.schoolId,
       scheduleId: params.scheduleId,
       timestamp: new Date().toISOString()
     }));
@@ -109,6 +114,8 @@ export const GET = secureApiRoute(async (request, { params, securityContext }) =
       }
     }, { status: 404 });
   }
+
+
 
   // Role-based access control
   const userRole = securityContext.user?.role;
@@ -273,14 +280,20 @@ export const PUT = secureApiRoute(async (request, { params, securityContext }) =
     }, { status: 404 });
   }
 
-  // Validate ObjectId fields if provided
-  const objectIdFields = ['plane_id', 'instructor_id', 'student_id'];
-  for (const field of objectIdFields) {
+  // Validate ObjectId fields if provided with specific messages
+  const objectIdFieldMessages = {
+    'plane_id': 'Invalid aircraft ID - please select a valid aircraft',
+    'instructor_id': 'Invalid instructor ID - please select a valid instructor',
+    'student_id': 'Invalid student ID - please select a valid student'
+  };
+  
+  for (const [field, message] of Object.entries(objectIdFieldMessages)) {
     if (body[field] && !mongoose.Types.ObjectId.isValid(body[field])) {
       return NextResponse.json({
         error: {
-          message: `Invalid ${field}`,
+          message: message,
           code: 'INVALID_OBJECT_ID',
+          field: field,
           requestId: securityContext.auditId,
           timestamp: new Date().toISOString()
         }
@@ -297,7 +310,7 @@ export const PUT = secureApiRoute(async (request, { params, securityContext }) =
     if (isNaN(scheduledStartTime.getTime()) || isNaN(scheduledEndTime.getTime())) {
       return NextResponse.json({
         error: {
-          message: 'Invalid scheduled_start_time or scheduled_end_time format',
+          message: 'Invalid date format - please use ISO 8601 format (YYYY-MM-DDTHH:mm:ss.sssZ)',
           code: 'INVALID_DATE_FORMAT',
           requestId: securityContext.auditId,
           timestamp: new Date().toISOString()
@@ -306,9 +319,10 @@ export const PUT = secureApiRoute(async (request, { params, securityContext }) =
     }
 
     if (scheduledStartTime >= scheduledEndTime) {
+      const duration = Math.round((scheduledEndTime.getTime() - scheduledStartTime.getTime()) / (1000 * 60));
       return NextResponse.json({
         error: {
-          message: 'Scheduled end time must be after scheduled start time',
+          message: `Flight end time must be after start time. Current duration is ${duration} minutes (negative).`,
           code: 'INVALID_TIME_RANGE',
           requestId: securityContext.auditId,
           timestamp: new Date().toISOString()
@@ -351,9 +365,10 @@ export const PUT = secureApiRoute(async (request, { params, securityContext }) =
   const finalActualStartTime = actualStartTime || existingSchedule.actual_start_time;
   const finalActualEndTime = actualEndTime || existingSchedule.actual_end_time;
   if (finalActualStartTime && finalActualEndTime && finalActualStartTime >= finalActualEndTime) {
+    const actualDuration = Math.round((finalActualEndTime.getTime() - finalActualStartTime.getTime()) / (1000 * 60));
     return NextResponse.json({
       error: {
-        message: 'Actual end time must be after actual start time',
+        message: `Actual flight end time must be after start time. Current actual duration is ${actualDuration} minutes (negative).`,
         code: 'INVALID_ACTUAL_TIME_RANGE',
         requestId: securityContext.auditId,
         timestamp: new Date().toISOString()
@@ -361,54 +376,201 @@ export const PUT = secureApiRoute(async (request, { params, securityContext }) =
     }, { status: 400 });
   }
 
-  // Check for scheduling conflicts (exclude current schedule)
+  // Check for scheduling conflicts with specific error messages (exclude current schedule)
   if (body.scheduled_start_time || body.scheduled_end_time || body.plane_id || body.instructor_id || body.student_id) {
-    const conflictConditions: Array<{ [key: string]: any }> = [
-      { plane_id: body.plane_id || existingSchedule.plane_id },
-      { student_id: body.student_id || existingSchedule.student_id }
-    ];
+    const finalScheduledStartTime = scheduledStartTime || existingSchedule.scheduled_start_time;
+    const finalScheduledEndTime = scheduledEndTime || existingSchedule.scheduled_end_time;
     
-    // Only add instructor conflict check if instructor_id is provided (either in update or existing)
-    const instructorId = body.instructor_id || existingSchedule.instructor_id;
-    if (instructorId) {
-      conflictConditions.push({ instructor_id: instructorId });
-    }
-
-    const conflictFilter = {
+    const timeFilter = {
       school_id: params.schoolId,
       _id: { $ne: params.scheduleId }, // Exclude current schedule
-      $or: conflictConditions,
       $and: [
-        { scheduled_start_time: { $lt: scheduledEndTime || existingSchedule.scheduled_end_time } },
-        { scheduled_end_time: { $gt: scheduledStartTime || existingSchedule.scheduled_start_time } }
+        { scheduled_start_time: { $lt: finalScheduledEndTime } },
+        { scheduled_end_time: { $gt: finalScheduledStartTime } }
       ],
       status: { $nin: ['canceled', 'completed'] }
     };
 
-    const existingConflict = await (FlightSchedule as any).findOne(conflictFilter);
-    if (existingConflict) {
+    // Check for plane conflict
+    const finalPlaneId = body.plane_id || existingSchedule.plane_id;
+    const planeConflict = await (FlightSchedule as any)
+      .findOne({
+        ...timeFilter,
+        plane_id: finalPlaneId
+      })
+      .populate('plane_id', 'registration aircraftModel')
+      .lean();
+
+    if (planeConflict) {
+      const conflictStart = new Date(planeConflict.scheduled_start_time).toLocaleTimeString('en-US', { 
+        hour: '2-digit', 
+        minute: '2-digit', 
+        timeZone: 'UTC' 
+      });
+      const conflictEnd = new Date(planeConflict.scheduled_end_time).toLocaleTimeString('en-US', { 
+        hour: '2-digit', 
+        minute: '2-digit', 
+        timeZone: 'UTC' 
+      });
+      
       console.warn(JSON.stringify({
         level: 'WARN',
-        message: 'Schedule conflict detected during update',
+        message: 'Aircraft conflict detected during update',
         auditId: securityContext.auditId,
-        conflictingScheduleId: existingConflict._id,
+        conflictingScheduleId: planeConflict._id,
         scheduleId: params.scheduleId,
+        aircraft: planeConflict.plane_id?.registration,
         timestamp: new Date().toISOString()
       }));
       
       return NextResponse.json({
         error: {
-          message: 'Schedule conflict detected. The plane, instructor, or student is already scheduled during this time.',
-          code: 'SCHEDULE_CONFLICT',
+          message: `Aircraft ${planeConflict.plane_id?.registration || 'Unknown'} (${planeConflict.plane_id?.aircraftModel || 'Unknown Model'}) is already scheduled from ${conflictStart} to ${conflictEnd}`,
+          code: 'AIRCRAFT_CONFLICT',
           requestId: securityContext.auditId,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
+          conflictDetails: {
+            type: 'aircraft',
+            resource: planeConflict.plane_id?.registration,
+            conflictStart: planeConflict.scheduled_start_time,
+            conflictEnd: planeConflict.scheduled_end_time,
+            conflictingScheduleId: planeConflict._id
+          }
         }
       }, { status: 409 });
+    }
+
+    // Check for student conflict
+    const finalStudentId = body.student_id || existingSchedule.student_id;
+    const studentConflict = await (FlightSchedule as any)
+      .findOne({
+        ...timeFilter,
+        student_id: finalStudentId
+      })
+      .populate({
+        path: 'student_id',
+        populate: {
+          path: 'user_id',
+          select: 'first_name last_name'
+        }
+      })
+      .lean();
+
+    if (studentConflict) {
+      const conflictStart = new Date(studentConflict.scheduled_start_time).toLocaleTimeString('en-US', { 
+        hour: '2-digit', 
+        minute: '2-digit', 
+        timeZone: 'UTC' 
+      });
+      const conflictEnd = new Date(studentConflict.scheduled_end_time).toLocaleTimeString('en-US', { 
+        hour: '2-digit', 
+        minute: '2-digit', 
+        timeZone: 'UTC' 
+      });
+      
+      const studentName = studentConflict.student_id?.user_id ? 
+        `${studentConflict.student_id.user_id.first_name} ${studentConflict.student_id.user_id.last_name}` : 
+        'Unknown Student';
+      
+      console.warn(JSON.stringify({
+        level: 'WARN',
+        message: 'Student conflict detected during update',
+        auditId: securityContext.auditId,
+        conflictingScheduleId: studentConflict._id,
+        scheduleId: params.scheduleId,
+        student: studentName,
+        timestamp: new Date().toISOString()
+      }));
+      
+      return NextResponse.json({
+        error: {
+          message: `Student ${studentName} is already scheduled for a flight from ${conflictStart} to ${conflictEnd}`,
+          code: 'STUDENT_CONFLICT',
+          requestId: securityContext.auditId,
+          timestamp: new Date().toISOString(),
+          conflictDetails: {
+            type: 'student',
+            resource: studentName,
+            conflictStart: studentConflict.scheduled_start_time,
+            conflictEnd: studentConflict.scheduled_end_time,
+            conflictingScheduleId: studentConflict._id
+          }
+        }
+      }, { status: 409 });
+    }
+
+    // Check for instructor conflict (only if instructor is provided)
+    const finalInstructorId = body.instructor_id || existingSchedule.instructor_id;
+    if (finalInstructorId) {
+      const instructorConflict = await (FlightSchedule as any)
+        .findOne({
+          ...timeFilter,
+          instructor_id: finalInstructorId
+        })
+        .populate({
+          path: 'instructor_id',
+          populate: {
+            path: 'user_id',
+            select: 'first_name last_name'
+          }
+        })
+        .lean();
+
+      if (instructorConflict) {
+        const conflictStart = new Date(instructorConflict.scheduled_start_time).toLocaleTimeString('en-US', { 
+          hour: '2-digit', 
+          minute: '2-digit', 
+          timeZone: 'UTC' 
+        });
+        const conflictEnd = new Date(instructorConflict.scheduled_end_time).toLocaleTimeString('en-US', { 
+          hour: '2-digit', 
+          minute: '2-digit', 
+          timeZone: 'UTC' 
+        });
+        
+        const instructorName = instructorConflict.instructor_id?.user_id ? 
+          `${instructorConflict.instructor_id.user_id.first_name} ${instructorConflict.instructor_id.user_id.last_name}` : 
+          'Unknown Instructor';
+        
+        console.warn(JSON.stringify({
+          level: 'WARN',
+          message: 'Instructor conflict detected during update',
+          auditId: securityContext.auditId,
+          conflictingScheduleId: instructorConflict._id,
+          scheduleId: params.scheduleId,
+          instructor: instructorName,
+          timestamp: new Date().toISOString()
+        }));
+        
+        return NextResponse.json({
+          error: {
+            message: `Instructor ${instructorName} is already scheduled for a flight from ${conflictStart} to ${conflictEnd}`,
+            code: 'INSTRUCTOR_CONFLICT',
+            requestId: securityContext.auditId,
+            timestamp: new Date().toISOString(),
+            conflictDetails: {
+              type: 'instructor',
+              resource: instructorName,
+              conflictStart: instructorConflict.scheduled_start_time,
+              conflictEnd: instructorConflict.scheduled_end_time,
+              conflictingScheduleId: instructorConflict._id
+            }
+          }
+        }, { status: 409 });
+      }
     }
   }
 
   // Prepare update object with proper time handling for duration calculation
   const updateData = { ...body };
+  
+  // Sanitize ObjectId fields - convert empty strings to null
+  const updateObjectIdFields = ['instructor_id', 'student_id', 'plane_id'];
+  updateObjectIdFields.forEach(field => {
+    if (updateData[field] === '' || updateData[field] === undefined) {
+      updateData[field] = null;
+    }
+  });
   
   // If either scheduled time is being updated, ensure both are included for duration calculation
   if (body.scheduled_start_time || body.scheduled_end_time) {

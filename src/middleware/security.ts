@@ -653,14 +653,36 @@ async function authenticateApiKey(request: NextRequest): Promise<{
 }
 
 /**
- * CSRF Validation
+ * CSRF Validation with enhanced debugging
  */
 async function validateCSRF(request: NextRequest): Promise<{
   error?: NextResponse;
 }> {
   try {
+    // Get CSRF token from header
     const csrfToken = request.headers.get('X-CSRF-Token');
+    
+    console.log(JSON.stringify({
+      level: 'DEBUG',
+      message: 'CSRF validation debug',
+      timestamp: new Date().toISOString(),
+      hasCSRFHeader: !!csrfToken,
+      csrfTokenLength: csrfToken?.length || 0,
+      csrfTokenPreview: csrfToken ? csrfToken.substring(0, 10) + '...' : 'missing',
+      allHeaders: Object.fromEntries(request.headers.entries()),
+      url: request.url,
+      method: request.method
+    }));
+    
     if (!csrfToken) {
+      console.warn(JSON.stringify({
+        level: 'WARN',
+        message: 'CSRF token missing from header',
+        timestamp: new Date().toISOString(),
+        url: request.url,
+        method: request.method
+      }));
+      
       return {
         error: NextResponse.json(
           { error: 'CSRF token required' },
@@ -669,8 +691,48 @@ async function validateCSRF(request: NextRequest): Promise<{
       };
     }
 
-    const storedToken = request.cookies.get('csrf-token')?.value;
+    // Get stored token from cookies with multiple parsing methods
+    let storedToken: string | undefined;
+    
+    // Method 1: Use request.cookies.get() - Next.js built-in
+    const cookieFromNextJS = request.cookies.get('csrf-token')?.value;
+    
+    // Method 2: Parse cookie header manually for comparison
+    const cookieHeader = request.headers.get('cookie');
+    let cookieFromHeader: string | undefined;
+    
+    if (cookieHeader) {
+      const cookies = parseCookies(cookieHeader);
+      cookieFromHeader = cookies['csrf-token'];
+    }
+    
+    // Use the first available method
+    storedToken = cookieFromNextJS || cookieFromHeader;
+    
+    console.log(JSON.stringify({
+      level: 'DEBUG',
+      message: 'CSRF cookie parsing debug',
+      timestamp: new Date().toISOString(),
+      cookieFromNextJS: cookieFromNextJS ? cookieFromNextJS.substring(0, 10) + '...' : 'missing',
+      cookieFromHeader: cookieFromHeader ? cookieFromHeader.substring(0, 10) + '...' : 'missing',
+      storedToken: storedToken ? storedToken.substring(0, 10) + '...' : 'missing',
+      cookieHeader: cookieHeader ? cookieHeader.substring(0, 100) + '...' : 'missing',
+      cookieHeaderLength: cookieHeader?.length || 0,
+      url: request.url,
+      method: request.method
+    }));
+    
     if (!storedToken) {
+      console.warn(JSON.stringify({
+        level: 'WARN',
+        message: 'CSRF token not found in cookies',
+        timestamp: new Date().toISOString(),
+        cookieHeader: cookieHeader ? cookieHeader.substring(0, 100) + '...' : 'missing',
+        parsedCookies: cookieHeader ? Object.keys(parseCookies(cookieHeader)) : [],
+        url: request.url,
+        method: request.method
+      }));
+      
       return {
         error: NextResponse.json(
           { error: 'CSRF token not found' },
@@ -679,7 +741,40 @@ async function validateCSRF(request: NextRequest): Promise<{
       };
     }
 
-    if (!validateCSRFToken(csrfToken, storedToken)) {
+    // Clean tokens to remove any whitespace or hidden characters
+    const cleanHeaderToken = csrfToken.trim();
+    const cleanStoredToken = storedToken.trim();
+    
+    console.log(JSON.stringify({
+      level: 'DEBUG',
+      message: 'CSRF token comparison debug',
+      timestamp: new Date().toISOString(),
+      headerToken: cleanHeaderToken.substring(0, 10) + '...',
+      storedToken: cleanStoredToken.substring(0, 10) + '...',
+      headerTokenLength: cleanHeaderToken.length,
+      storedTokenLength: cleanStoredToken.length,
+      tokensEqual: cleanHeaderToken === cleanStoredToken,
+      url: request.url,
+      method: request.method
+    }));
+
+    // Validate the tokens
+    const isValid = validateCSRFToken(cleanHeaderToken, cleanStoredToken);
+    
+    if (!isValid) {
+      console.warn(JSON.stringify({
+        level: 'WARN',
+        message: 'CSRF token validation failed',
+        timestamp: new Date().toISOString(),
+        headerToken: cleanHeaderToken.substring(0, 10) + '...',
+        storedToken: cleanStoredToken.substring(0, 10) + '...',
+        headerTokenLength: cleanHeaderToken.length,
+        storedTokenLength: cleanStoredToken.length,
+        tokensEqual: cleanHeaderToken === cleanStoredToken,
+        url: request.url,
+        method: request.method
+      }));
+      
       return {
         error: NextResponse.json(
           { error: 'Invalid CSRF token' },
@@ -688,9 +783,26 @@ async function validateCSRF(request: NextRequest): Promise<{
       };
     }
 
+    console.log(JSON.stringify({
+      level: 'DEBUG',
+      message: 'CSRF validation successful',
+      timestamp: new Date().toISOString(),
+      url: request.url,
+      method: request.method
+    }));
+
     return {};
   } catch (error) {
-    console.error('CSRF validation error:', error);
+    console.error(JSON.stringify({
+      level: 'ERROR',
+      message: 'CSRF validation error',
+      timestamp: new Date().toISOString(),
+      error: error.message,
+      stack: error.stack,
+      url: request.url,
+      method: request.method
+    }));
+    
     return {
       error: NextResponse.json(
         { error: 'CSRF validation failed' },
