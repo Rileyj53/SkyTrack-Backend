@@ -13,13 +13,10 @@ const ALLOWED_ORIGINS = [
   'http://localhost:3008',
   'http://localhost:3009',
   'http://localhost:3010',
-  'https://skytrack.com',
-  'https://www.skytrack.com',
-  'https://app.skytrack.com',
-  'https://admin.skytrack.com',
-  'https://api.skytrack.com',
-  'https://skytrack-nonprod-frontend.rileyjacobson.net',
-  'https://skytrack-nonprod-backend.rileyjacobson.net'
+  'https://nonprod.albatrossflight.com',
+  'https://nonprod-backend.albatrossflight.com',
+  'https://api.albatrossflight.com',
+  'https://albatrossflight.com',
 ];
 
 // Function to check if origin matches allowed patterns
