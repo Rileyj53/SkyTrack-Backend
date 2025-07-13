@@ -144,13 +144,11 @@ export const GET = secureApiRoute(async (request, { params, securityContext }) =
     if (startDate) {
       const startOfDay = new Date(startDate);
       startOfDay.setUTCHours(0, 0, 0, 0);
-      startOfDay.setUTCDate(startOfDay.getUTCDate() - 1);
       filter.scheduled_start_time.$gte = startOfDay;
     }
     if (endDate) {
       const endOfDay = new Date(endDate);
       endOfDay.setUTCHours(23, 59, 59, 999);
-      endOfDay.setUTCDate(endOfDay.getUTCDate() + 1);
       filter.scheduled_start_time.$lte = endOfDay;
     }
   }

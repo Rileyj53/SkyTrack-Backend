@@ -750,6 +750,180 @@
             ]
         },
         {
+            "name": "School Statistics",
+            "item": [{
+                    "name": "Get School Stats",
+                    "request": {
+                        "method": "GET",
+                        "header": [{
+                                "key": "Authorization",
+                                "value": "Bearer {{jwt_token}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-API-Key",
+                                "value": "{{api_key}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/schools/:schoolId/stats",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "schools",
+                                ":schoolId",
+                                "stats"
+                            ],
+                            "variable": [{
+                                "key": "schoolId",
+                                "value": "{{school_id}}",
+                                "type": "string"
+                            }]
+                        },
+                        "description": "Get comprehensive statistics for a specific school including operational metrics, resource utilization, and performance indicators."
+                    },
+                    "response": [{
+                        "name": "Success Response",
+                        "originalRequest": {
+                            "method": "GET",
+                            "header": [{
+                                    "key": "Authorization",
+                                    "value": "Bearer {{jwt_token}}"
+                                },
+                                {
+                                    "key": "X-API-Key",
+                                    "value": "{{api_key}}"
+                                }
+                            ],
+                            "url": {
+                                "raw": "{{baseUrl}}/api/schools/:schoolId/stats",
+                                "host": [
+                                    "{{baseUrl}}"
+                                ],
+                                "path": [
+                                    "api",
+                                    "schools",
+                                    ":schoolId",
+                                    "stats"
+                                ],
+                                "variable": [{
+                                    "key": "schoolId",
+                                    "value": "68389c818d13949c514ac59c"
+                                }]
+                            }
+                        },
+                        "status": "OK",
+                        "code": 200,
+                        "_postman_previewlanguage": "json",
+                        "header": [{
+                            "key": "Content-Type",
+                            "value": "application/json"
+                        }],
+                        "cookie": [],
+                        "body": "{\n  \"success\": true,\n  \"message\": \"School statistics retrieved successfully\",\n  \"data\": {\n    \"stats\": {\n      \"overview\": {\n        \"school_name\": \"Albatross Flight Academy\",\n        \"total_students\": 45,\n        \"active_students\": 38,\n        \"total_instructors\": 8,\n        \"active_instructors\": 7,\n        \"total_planes\": 12,\n        \"active_planes\": 10,\n        \"upcoming_lessons\": 25,\n        \"upcoming_lessons_next_7_days\": 15\n      },\n      \"flight_operations\": {\n        \"total_flights_period\": 156,\n        \"completed_flights\": 142,\n        \"completion_rate\": 91.03,\n        \"recent_flights_7_days\": 23,\n        \"schedule_adherence_percentage\": 85.2,\n        \"avg_delay_minutes\": 8.5\n      },\n      \"aircraft_efficiency\": {\n        \"average_utilization_rate\": 78.5,\n        \"maintenance_alerts\": {\n          \"count\": 3,\n          \"aircraft\": [\n            {\n              \"registration\": \"N123AB\",\n              \"days_until_maintenance\": 5\n            }\n          ]\n        }\n      },\n      \"instructor_efficiency\": {\n        \"average_utilization\": 82.3,\n        \"total_students_taught\": 38,\n        \"avg_students_per_instructor\": 5.4\n      }\n    },\n    \"metadata\": {\n      \"school_id\": \"68389c818d13949c514ac59c\",\n      \"school_name\": \"Albatross Flight Academy\",\n      \"time_range_days\": 30,\n      \"generated_at\": \"2024-01-16T14:30:00.000Z\",\n      \"processing_time_ms\": 245\n    }\n  },\n  \"auditId\": \"audit_12345\",\n  \"timestamp\": \"2024-01-16T14:30:00.000Z\"\n}"
+                    }]
+                },
+                {
+                    "name": "Get School Stats with Financials",
+                    "request": {
+                        "method": "GET",
+                        "header": [{
+                                "key": "Authorization",
+                                "value": "Bearer {{jwt_token}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-API-Key",
+                                "value": "{{api_key}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/schools/:schoolId/stats?range=90&include_financials=true",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "schools",
+                                ":schoolId",
+                                "stats"
+                            ],
+                            "query": [{
+                                    "key": "range",
+                                    "value": "90",
+                                    "description": "Time range in days (default: 30)"
+                                },
+                                {
+                                    "key": "include_financials",
+                                    "value": "true",
+                                    "description": "Include financial metrics in response"
+                                }
+                            ],
+                            "variable": [{
+                                "key": "schoolId",
+                                "value": "{{school_id}}",
+                                "type": "string"
+                            }]
+                        },
+                        "description": "Get extended school statistics with financial metrics for a 90-day period."
+                    },
+                    "response": [{
+                        "name": "Success Response with Financials",
+                        "originalRequest": {
+                            "method": "GET",
+                            "header": [{
+                                    "key": "Authorization",
+                                    "value": "Bearer {{jwt_token}}"
+                                },
+                                {
+                                    "key": "X-API-Key",
+                                    "value": "{{api_key}}"
+                                }
+                            ],
+                            "url": {
+                                "raw": "{{baseUrl}}/api/schools/:schoolId/stats?range=90&include_financials=true",
+                                "host": [
+                                    "{{baseUrl}}"
+                                ],
+                                "path": [
+                                    "api",
+                                    "schools",
+                                    ":schoolId",
+                                    "stats"
+                                ],
+                                "query": [{
+                                        "key": "range",
+                                        "value": "90"
+                                    },
+                                    {
+                                        "key": "include_financials",
+                                        "value": "true"
+                                    }
+                                ],
+                                "variable": [{
+                                    "key": "schoolId",
+                                    "value": "68389c818d13949c514ac59c"
+                                }]
+                            }
+                        },
+                        "status": "OK",
+                        "code": 200,
+                        "_postman_previewlanguage": "json",
+                        "header": [{
+                            "key": "Content-Type",
+                            "value": "application/json"
+                        }],
+                        "cookie": [],
+                        "body": "{\n  \"success\": true,\n  \"message\": \"School statistics retrieved successfully\",\n  \"data\": {\n    \"stats\": {\n      \"overview\": {\n        \"school_name\": \"Albatross Flight Academy\",\n        \"total_students\": 45,\n        \"active_students\": 38,\n        \"total_instructors\": 8,\n        \"active_instructors\": 7,\n        \"total_planes\": 12,\n        \"active_planes\": 10,\n        \"upcoming_lessons\": 25\n      },\n      \"financial_metrics\": {\n        \"total_revenue_period\": 26690.50,\n        \"average_invoice_value\": 264.25,\n        \"pending_invoices\": 12,\n        \"approved_invoices\": 89,\n        \"monthly_revenue_trend\": [\n          {\n            \"_id\": \"2024-01-01\",\n            \"dailyRevenue\": 1250.00,\n            \"invoiceCount\": 5\n          }\n        ]\n      }\n    },\n    \"metadata\": {\n      \"school_id\": \"68389c818d13949c514ac59c\",\n      \"time_range_days\": 90,\n      \"includes_financials\": true,\n      \"generated_at\": \"2024-01-16T14:30:00.000Z\"\n    }\n  },\n  \"auditId\": \"audit_12345\",\n  \"timestamp\": \"2024-01-16T14:30:00.000Z\"\n}"
+                    }]
+                }
+            ]
+        },
+        {
             "name": "Students",
             "item": [{
                     "name": "List Students",
