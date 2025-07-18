@@ -21,8 +21,7 @@ const WaitlistEntrySchema = new Schema<WaitlistEntryDocument>(
       unique: true,
       trim: true,
       lowercase: true,
-      match: [/^\S+@\S+\.\S+$/, 'Please enter a valid email address'],
-      index: true
+      match: [/^\S+@\S+\.\S+$/, 'Please enter a valid email address']
     },
     submittedAt: {
       type: Date,
@@ -57,8 +56,7 @@ const WaitlistEntrySchema = new Schema<WaitlistEntryDocument>(
   }
 );
 
-// Create index for efficient querying by email and status
-WaitlistEntrySchema.index({ email: 1 });
+// Create indexes for efficient querying (email index is automatically created by unique: true)
 WaitlistEntrySchema.index({ status: 1 });
 WaitlistEntrySchema.index({ submittedAt: -1 }); // For sorting by submission date
 

@@ -8,8 +8,8 @@ async function getEmailTransporter() {
   }
 
   try {
-    // Direct require at function level to avoid webpack bundling issues
-    const nodemailer = eval('require')('nodemailer');
+    // Import nodemailer properly for production environments
+    const nodemailer = require('nodemailer');
     
     const smtpSettings = {
       host: process.env.SMTP_HOST || 'smtp.gmail.com',
