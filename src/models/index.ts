@@ -6,6 +6,7 @@ import Instructor from './Instructor';
 import Plane from './Plane';
 import Program from './Program';
 import FlightSchedule from './FlightSchedule';
+import { WaitlistEntry } from './WaitlistEntry';
 
 // Export all models
 export {
@@ -15,7 +16,8 @@ export {
   Instructor,
   Plane,
   Program,
-  FlightSchedule
+  FlightSchedule,
+  WaitlistEntry
 };
 
 // Export a function to initialize all models
