@@ -27,9 +27,13 @@ if (!port) {
     process.exit(1);
 }
 
-// Set NEXT_PUBLIC_APP_URL based on PORT
-process.env.NEXT_PUBLIC_APP_URL = `http://localhost:${port}`;
-console.log('NEXT_PUBLIC_APP_URL:', process.env.NEXT_PUBLIC_APP_URL);
+// Only set NEXT_PUBLIC_APP_URL if it's not already configured
+if (!process.env.NEXT_PUBLIC_APP_URL) {
+    process.env.NEXT_PUBLIC_APP_URL = `http://localhost:${port}`;
+    console.log('NEXT_PUBLIC_APP_URL set to default:', process.env.NEXT_PUBLIC_APP_URL);
+} else {
+    console.log('NEXT_PUBLIC_APP_URL from environment:', process.env.NEXT_PUBLIC_APP_URL);
+}
 
 app.prepare().then(() => {
     createServer((req, res) => {

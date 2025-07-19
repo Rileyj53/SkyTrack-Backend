@@ -180,35 +180,112 @@ export const POST = secureApiRoute(async (request, { params, securityContext }) 
     await user.save();
 
     // Enhanced email template with security information
-    const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL}/reset-password?token=${resetToken}`;
+    const resetUrl = `${process.env.FRONTEND_URL}/auth/reset-password?token=${resetToken}`;
     const username = user.email.split('@')[0];
     
     const emailContent = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h1 style="color: #3366ff;">Password Reset Request</h1>
-        <p>Hi <strong>${username}</strong>,</p>
-        <p>You requested a password reset for your SkyTrack account. Click the button below to reset your password:</p>
-        <div style="margin: 20px 0; text-align: center;">
-          <a href="${resetUrl}" style="display: inline-block; padding: 12px 24px; background-color: #3366ff; color: white; text-decoration: none; border-radius: 4px;">Reset Password</a>
-        </div>
-        <div style="margin: 20px 0; padding: 15px; background-color: #fff3cd; border-left: 4px solid #ffc107;">
-          <p><strong>Security Information:</strong></p>
-          <ul>
-            <li>This link expires in 30 minutes for your security</li>
-            <li>Request ID: ${securityContext.auditId}</li>
-            <li>If you didn't request this, please ignore this email</li>
-            <li>Never share this link with anyone</li>
-          </ul>
-        </div>
-        <p>If the button doesn't work, copy and paste this link into your browser:</p>
-        <p style="word-break: break-all; color: #666;">${resetUrl}</p>
-        <p style="margin-top: 30px;">Best regards,<br><strong>SkyTrack Security Team</strong></p>
-      </div>
+<table style="width: 100%; max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif; background-color: #ffffff;" cellpadding="0" cellspacing="0" border="0">
+  <!-- Header -->
+  <tr>
+    <td style="background-color: #000000; padding: 40px 20px; text-align: center;">
+      <table style="width: 100%;" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td style="text-align: center;">
+            <div style="background-color: #333333; width: 80px; height: 80px; margin: 0 auto 20px auto; text-align: center; padding: 10px; box-sizing: border-box;">
+              <img src="https://d2xuqrfsvdwxue.cloudfront.net/images/Albatross.png" alt="Albatross Logo" style="width: 60px; height: 60px; display: block; margin: 0 auto;" />
+            </div>
+            <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: bold;">Albatross</h1>
+            <p style="color: #cccccc; margin: 8px 0 0 0; font-size: 14px;">Flight Training Management</p>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+  
+  <!-- Main Content -->
+  <tr>
+    <td style="padding: 40px 30px; background-color: #ffffff;">
+      <h2 style="color: #333333; margin: 0 0 20px 0; font-size: 24px; font-weight: bold;">Password Reset Request</h2>
+      
+      <p style="color: #666666; font-size: 16px; line-height: 24px; margin: 0 0 15px 0;">
+        Hi <strong style="color: #333333;">${username}</strong>,
+      </p>
+      
+      <p style="color: #666666; font-size: 16px; line-height: 24px; margin: 0 0 30px 0;">
+        You requested a password reset for your Albatross account. Click the button below to create a new password:
+      </p>
+
+      <!-- Reset Button -->
+      <table style="width: 100%; margin: 30px 0;" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td style="text-align: center;">
+            <a href="${resetUrl}" style="display: inline-block; padding: 16px 32px; background-color: #000000; color: #ffffff; text-decoration: none; font-weight: bold; font-size: 16px; border: none; text-align: center;">
+              Reset My Password
+            </a>
+          </td>
+        </tr>
+      </table>
+
+      <!-- Security Notice -->
+      <table style="width: 100%; margin: 30px 0; background-color: #fff3cd; border-left: 4px solid #ffc107;" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td style="padding: 20px;">
+            <p style="margin: 0 0 12px 0; font-weight: bold; color: #856404; font-size: 16px;">
+              🔒 Security Information
+            </p>
+            <ul style="margin: 0; padding-left: 20px; color: #856404; font-size: 14px; line-height: 20px;">
+              <li style="margin-bottom: 8px;">This link expires in 30 minutes for your security</li>
+              <li style="margin-bottom: 8px;">If you didn't request this reset, please ignore this email</li>
+              <li style="margin-bottom: 0;">Never share this link with anyone</li>
+              <li style="margin-bottom: 0;">Albatross will NEVER ask you for this link</li>
+            </ul>
+          </td>
+        </tr>
+      </table>
+
+      <!-- Alternative Link -->
+      <table style="width: 100%; margin: 30px 0; background-color: #f8f9fa; border: 1px solid #dee2e6;" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td style="padding: 20px;">
+            <p style="color: #666666; font-size: 14px; margin: 0 0 10px 0; font-weight: bold;">
+              If the button doesn't work, copy and paste this link into your browser:
+            </p>
+            <p style="word-break: break-all; color: #999999; font-size: 12px; font-family: monospace; background-color: #ffffff; padding: 10px; border: 1px solid #dddddd; margin: 0;">
+              ${resetUrl}
+            </p>
+          </td>
+        </tr>
+      </table>
+
+      <!-- Signature -->
+      <table style="width: 100%; margin-top: 40px; border-top: 1px solid #eeeeee;" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td style="padding-top: 20px;">
+            <p style="color: #666666; font-size: 16px; line-height: 24px; margin: 0;">
+              Best regards,<br>
+              <strong style="color: #333333;">The Albatross Security Team</strong>
+            </p>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+
+  <!-- Footer -->
+  <tr>
+    <td style="background-color: #f8f9fa; padding: 20px 30px; text-align: center; border-top: 1px solid #dee2e6;">
+      <p style="color: #999999; font-size: 12px; margin: 0; line-height: 18px;">
+        This email was sent from Albatross Flight Training Management System.<br>
+        © ${new Date().getFullYear()} Albatross. All rights reserved.
+      </p>
+    </td>
+  </tr>
+</table>
     `;
 
     await sendEmail(
       user.email,
-      'Reset Your Password - SkyTrack',
+      'Reset Your Password - Albatross',
       emailContent
     );
 
