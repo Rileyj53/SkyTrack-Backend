@@ -24,7 +24,7 @@ export const GET = secureApiRoute(async (request: NextRequest, { securityContext
 
     console.log(JSON.stringify({
       level: 'INFO',
-      message: 'School billing usage records requested',
+      message: 'Organization billing usage records requested',
       auditId: securityContext.auditId,
       userId: securityContext.user?.userId,
       userRole: securityContext.user?.role,
@@ -32,7 +32,7 @@ export const GET = secureApiRoute(async (request: NextRequest, { securityContext
     }));
     
     const { searchParams } = new URL(request.url);
-    const school_id = searchParams.get('school_id');
+    const organization_id = searchParams.get('organization_id');
     const month = searchParams.get('month');
     const billed = searchParams.get('billed');
     const limit = parseInt(searchParams.get('limit') || '50');
@@ -40,25 +40,25 @@ export const GET = secureApiRoute(async (request: NextRequest, { securityContext
     
     // Build filter object
     const filter: any = {};
-    if (school_id) filter.school_id = school_id;
+    if (organization_id) filter.organization_id = organization_id;
     if (month) filter.month = month;
     if (billed !== null) filter.billed = billed === 'true';
 
-    // Role-based access control - school_admin can only see their own school's data
-    if (securityContext.user?.role === 'school_admin' && securityContext.user?.school_id) {
-      filter.school_id = securityContext.user.school_id;
+    // Role-based access control - school_admin can only see their own organization's data
+    if (securityContext.user?.role === 'school_admin' && securityContext.user?.organization_id) {
+      filter.organization_id = securityContext.user.organization_id;
     }
 
     const records = await SchoolBillingUsage
       .find(filter)
-      .populate('school_id', 'name')
+      .populate('organization_id', 'name')
       .sort({ month: -1, createdAt: -1 })
       .limit(limit)
       .skip(skip);
 
     console.log(JSON.stringify({
       level: 'INFO',
-      message: 'School billing usage records retrieved',
+      message: 'Organization billing usage records retrieved',
       auditId: securityContext.auditId,
       userId: securityContext.user?.userId,
       recordsCount: records.length,
@@ -101,7 +101,7 @@ export const POST = secureApiRoute(async (request: NextRequest, { securityContex
 
     console.log(JSON.stringify({
       level: 'INFO',
-      message: 'School billing usage record creation/update requested',
+      message: 'Organization billing usage record creation/update requested',
       auditId: securityContext.auditId,
       userId: securityContext.user?.userId,
       userRole: securityContext.user?.role,
@@ -110,7 +110,7 @@ export const POST = secureApiRoute(async (request: NextRequest, { securityContex
     
     const body = await request.json();
     const {
-      school_id,
+      organization_id,
       month,
       total_transactions,
       stripe_transactions,
@@ -119,10 +119,10 @@ export const POST = secureApiRoute(async (request: NextRequest, { securityContex
     } = body;
 
     // Validate required fields
-    if (!school_id || !month || total_transactions === undefined || stripe_transactions === undefined) {
+    if (!organization_id || !month || total_transactions === undefined || stripe_transactions === undefined) {
       return NextResponse.json({
         success: false,
-        error: 'Missing required fields: school_id, month, total_transactions, stripe_transactions',
+        error: 'Missing required fields: organization_id, month, total_transactions, stripe_transactions',
         auditId: securityContext.auditId,
         timestamp: new Date().toISOString()
       }, { status: 400 });
@@ -139,31 +139,31 @@ export const POST = secureApiRoute(async (request: NextRequest, { securityContex
     }
 
     // Validate ObjectId
-    if (!mongoose.Types.ObjectId.isValid(school_id)) {
+    if (!mongoose.Types.ObjectId.isValid(organization_id)) {
       return NextResponse.json({
         success: false,
-        error: 'Invalid school ID',
+        error: 'Invalid organization ID',
         auditId: securityContext.auditId,
         timestamp: new Date().toISOString()
       }, { status: 400 });
     }
 
-    // Role-based access control - school_admin can only create/update their own school's data
+    // Role-based access control - school_admin can only create/update their own organization's data
     if (securityContext.user?.role === 'school_admin') {
-      if (securityContext.user?.school_id !== school_id) {
+      if (securityContext.user?.organization_id !== organization_id) {
         console.warn(JSON.stringify({
           level: 'WARN',
-          message: 'School admin attempted to access different school billing data',
+          message: 'School admin attempted to access different organization billing data',
           auditId: securityContext.auditId,
           userId: securityContext.user?.userId,
-          userSchoolId: securityContext.user?.school_id,
-          requestedSchoolId: school_id,
+          userOrganizationId: securityContext.user?.organization_id,
+          requestedOrganizationId: organization_id,
           timestamp: new Date().toISOString()
         }));
 
         return NextResponse.json({
           success: false,
-          error: 'Access denied: You can only manage billing data for your own school',
+          error: 'Access denied: You can only manage billing data for your own organization',
           auditId: securityContext.auditId,
           timestamp: new Date().toISOString()
         }, { status: 403 });
@@ -172,9 +172,9 @@ export const POST = secureApiRoute(async (request: NextRequest, { securityContex
 
     // Try to update existing record or create new one (upsert)
     const record = await SchoolBillingUsage.findOneAndUpdate(
-      { school_id, month },
+      { organization_id, month },
       {
-        school_id,
+        organization_id,
         month,
         total_transactions,
         stripe_transactions,
@@ -186,15 +186,15 @@ export const POST = secureApiRoute(async (request: NextRequest, { securityContex
         new: true,
         runValidators: true
       }
-    ).populate('school_id', 'name');
+    ).populate('organization_id', 'name');
 
     console.log(JSON.stringify({
       level: 'INFO',
-      message: 'School billing usage record created/updated',
+      message: 'Organization billing usage record created/updated',
       auditId: securityContext.auditId,
       userId: securityContext.user?.userId,
       recordId: record._id,
-      schoolId: school_id,
+      organizationId: organization_id,
       month,
       totalTransactions: total_transactions,
       timestamp: new Date().toISOString()
@@ -228,7 +228,7 @@ export const POST = secureApiRoute(async (request: NextRequest, { securityContex
     } else if (error.code === 11000) {
       return NextResponse.json({
         success: false,
-        error: 'Billing usage record already exists for this school and month',
+        error: 'Billing usage record already exists for this organization and month',
         auditId: securityContext.auditId,
         timestamp: new Date().toISOString()
       }, { status: 409 });

@@ -32,14 +32,14 @@ export const GET = secureApiRoute(async (request: NextRequest, { securityContext
     // Build filter for unbilled records
     const filter: any = { billed: false };
 
-    // Role-based access control - school_admin can only see their own school's data
-    if (securityContext.user?.role === 'school_admin' && securityContext.user?.school_id) {
-      filter.school_id = securityContext.user.school_id;
+    // Role-based access control - school_admin can only see their own organization's data
+    if (securityContext.user?.role === 'school_admin' && securityContext.user?.organization_id) {
+      filter.organization_id = securityContext.user.organization_id;
     }
     
     const records = await SchoolBillingUsage
       .find(filter)
-      .populate('school_id', 'name')
+      .populate('organization_id', 'name')
       .sort({ month: -1, createdAt: -1 });
 
     console.log(JSON.stringify({
@@ -60,7 +60,7 @@ export const GET = secureApiRoute(async (request: NextRequest, { securityContext
       timestamp: new Date().toISOString(),
       summary: {
         totalUnbilledRecords: records.length,
-        accessLevel: securityContext.user?.role === 'school_admin' ? 'school-specific' : 'all-schools'
+        accessLevel: securityContext.user?.role === 'school_admin' ? 'organization-specific' : 'all-organizations'
       }
     });
 

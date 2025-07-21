@@ -60,7 +60,7 @@ export interface ITrack extends Document {
   instructor_id?: mongoose.Types.ObjectId; // Reference to instructor if applicable
   student_id?: mongoose.Types.ObjectId; // Reference to student if applicable
   plane_id?: mongoose.Types.ObjectId; // Reference to plane
-  school_id?: mongoose.Types.ObjectId; // Reference to flight school
+  organization_id?: mongoose.Types.ObjectId; // Reference to flight organization
   notes?: string; // Additional notes about the flight
   weather_conditions?: {
     visibility?: number;
@@ -164,7 +164,7 @@ const TrackSchema = new Schema<ITrack>({
   instructor_id: { type: Schema.Types.ObjectId, ref: 'Instructor' },
   student_id: { type: Schema.Types.ObjectId, ref: 'Student' },
   plane_id: { type: Schema.Types.ObjectId, ref: 'Plane' },
-  school_id: { type: Schema.Types.ObjectId, ref: 'School' },
+  organization_id: { type: Schema.Types.ObjectId, ref: 'School' },
   notes: { type: String },
   weather_conditions: WeatherConditionsSchema,
   flight_events: [FlightEventSchema]
@@ -176,7 +176,7 @@ const TrackSchema = new Schema<ITrack>({
 TrackSchema.index({ fa_flight_id: 1 }, { unique: true });
 TrackSchema.index({ tail_number: 1 });
 TrackSchema.index({ date: 1 });
-TrackSchema.index({ school_id: 1 });
+TrackSchema.index({ organization_id: 1 });
 TrackSchema.index({ plane_id: 1 });
 TrackSchema.index({ instructor_id: 1 });
 TrackSchema.index({ student_id: 1 });

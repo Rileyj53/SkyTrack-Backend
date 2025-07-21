@@ -1,7 +1,7 @@
 # Students API Documentation
 
 ## Overview
-The Students API allows you to manage student records for flight schools, including comprehensive search functionality and pagination.
+The Students API allows you to manage student records for flight training organizations, including comprehensive search functionality and pagination.
 
 ## Enhanced Features
 - **Pagination**: Efficient handling of large student lists with customizable page size
@@ -16,14 +16,14 @@ The Students API allows you to manage student records for flight schools, includ
 | Role | List Students | Create Student | View Student | Update Student | Delete Student |
 |------|---------------|----------------|--------------|----------------|----------------|
 | **Student** | ❌ | ❌ | ✅ Own Only | ✅ Own Only | ❌ |
-| **Instructor** | ✅ School Only | ❌ | ✅ School Only | ❌ | ❌ |
-| **School Admin** | ✅ School Only | ✅ | ✅ School Only | ✅ School Only | ✅ School Only |
-| **System Admin** | ✅ All Schools | ✅ | ✅ All | ✅ All | ✅ All |
+| **Instructor** | ✅ Organization Only | ❌ | ✅ Organization Only | ❌ | ❌ |
+| **Organization Admin** | ✅ Organization Only | ✅ | ✅ Organization Only | ✅ Organization Only | ✅ Organization Only |
+| **System Admin** | ✅ All Organizations | ✅ | ✅ All | ✅ All | ✅ All |
 
 ### Security Features:
 - **API key validation** required for all requests
 - **JWT authentication** verifies user identity and role
-- **School-scoped access** prevents cross-school data access
+- **Organization-scoped access** prevents cross-organization data access
 - **Self-service restrictions** for students (own records only)
 
 ## Student Object
@@ -31,7 +31,7 @@ The Students API allows you to manage student records for flight schools, includ
 ```json
 {
   "_id": "ObjectId",
-  "school_id": "ObjectId",
+  "organization_id": "ObjectId",
   "user_id": "ObjectId", // Optional - links to User account
   "contact_email": "student@example.com",
   "phone": "555-123-4567",
@@ -62,7 +62,7 @@ The Students API allows you to manage student records for flight schools, includ
 
 ## Endpoints
 
-### GET /api/schools/{schoolId}/students
+### GET /api/organizations/{organizationId}/students
 List students with enhanced pagination and search functionality.
 
 **Query Parameters:**
@@ -97,32 +97,32 @@ List students with enhanced pagination and search functionality.
 
 **Basic pagination:**
 ```
-GET /api/schools/64a1b2c3d4e5f6789012345/students?page=1&limit=25
+GET /api/organizations/64a1b2c3d4e5f6789012345/students?page=1&limit=25
 ```
 
 **Search for students:**
 ```
-GET /api/schools/64a1b2c3d4e5f6789012345/students?search=john&page=1&limit=10
+GET /api/organizations/64a1b2c3d4e5f6789012345/students?search=john&page=1&limit=10
 ```
 
 **Filter by status and program:**
 ```
-GET /api/schools/64a1b2c3d4e5f6789012345/students?status=Active&program=Private%20Pilot&page=1
+GET /api/organizations/64a1b2c3d4e5f6789012345/students?status=Active&program=Private%20Pilot&page=1
 ```
 
 **Filter by certification:**
 ```
-GET /api/schools/64a1b2c3d4e5f6789012345/students?certification=instrument
+GET /api/organizations/64a1b2c3d4e5f6789012345/students?certification=instrument
 ```
 
 **Filter by enrollment date range:**
 ```
-GET /api/schools/64a1b2c3d4e5f6789012345/students?enrollment_start_date=2023-01-01&enrollment_end_date=2023-12-31
+GET /api/organizations/64a1b2c3d4e5f6789012345/students?enrollment_start_date=2023-01-01&enrollment_end_date=2023-12-31
 ```
 
 **Combined search and filters:**
 ```
-GET /api/schools/64a1b2c3d4e5f6789012345/students?search=smith&status=Active&program=Commercial&page=2&limit=15
+GET /api/organizations/64a1b2c3d4e5f6789012345/students?search=smith&status=Active&program=Commercial&page=2&limit=15
 ```
 
 **Response Format:**
@@ -131,7 +131,7 @@ GET /api/schools/64a1b2c3d4e5f6789012345/students?search=smith&status=Active&pro
   "students": [
     {
       "_id": "ObjectId",
-      "school_id": "ObjectId",
+      "organization_id": "ObjectId",
       "user_id": {
         "_id": "ObjectId",
         "first_name": "John",
@@ -172,12 +172,12 @@ GET /api/schools/64a1b2c3d4e5f6789012345/students?search=smith&status=Active&pro
 }
 ```
 
-### POST /api/schools/{schoolId}/students
+### POST /api/organizations/{organizationId}/students
 Create a new student record.
 
 **Required Fields:**
 - `contact_email` - Student's contact email
-- `program` - Program name that exists in the school
+- `program` - Program name that exists in the organization
 
 **Optional Fields:**
 - `user_id` - Link to existing User account
@@ -192,13 +192,13 @@ Create a new student record.
 - `notes` - General notes about the student
 - `studentNotes` - Array of detailed student notes
 
-### GET /api/schools/{schoolId}/students/{studentId}
+### GET /api/organizations/{organizationId}/students/{studentId}
 Get a specific student with all details.
 
-### PUT /api/schools/{schoolId}/students/{studentId}
+### PUT /api/organizations/{organizationId}/students/{studentId}
 Update a student record.
 
-### DELETE /api/schools/{schoolId}/students/{studentId}
+### DELETE /api/organizations/{organizationId}/students/{studentId}
 Delete a student record.
 
 ## Search Functionality Details
@@ -215,14 +215,14 @@ The search feature uses a comprehensive approach:
 
 - **Pagination Limits**: Maximum 200 items per page to ensure good performance
 - **Search Optimization**: Uses MongoDB aggregation pipeline for efficient searching
-- **Indexed Fields**: Key fields like school_id and user_id are indexed for fast queries
+- **Indexed Fields**: Key fields like organization_id and user_id are indexed for fast queries
 - **Default Sorting**: Results sorted by enrollment date (newest first) for relevance
 
 ## Error Handling
 
 **400 Bad Request:**
 - Invalid pagination parameters
-- Invalid school ID format
+- Invalid organization ID format
 - Invalid date formats
 
 **401 Unauthorized:**
@@ -230,7 +230,7 @@ The search feature uses a comprehensive approach:
 - Missing or invalid authentication token
 
 **403 Forbidden:**
-- Insufficient permissions to access school data
+- Insufficient permissions to access organization data
 
 **500 Internal Server Error:**
 - Database connection issues

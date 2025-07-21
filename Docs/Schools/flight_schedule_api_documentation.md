@@ -1,173 +1,161 @@
 # Flight Schedule API Documentation
 
 ## Overview
-The Flight Schedule API allows you to manage flight schedules with both scheduled and actual times. This helps track the difference between planned and actual flight times.
+The Flight Schedule API provides comprehensive flight scheduling capabilities for flight training organizations, enabling efficient management of lessons, aircraft, and instructor assignments.
 
-## Field Changes
-- `start_time` → `scheduled_start_time` 
-- `end_time` → `scheduled_end_time`
-- `duration` → `scheduled_duration` (auto-calculated)
+## Enhanced Features
+- **Smart Scheduling**: Intelligent conflict detection and resolution
+- **Resource Management**: Automatic aircraft and instructor availability checking
+- **Flexible Recurrence**: Support for recurring lesson patterns
+- **Real-time Updates**: Live schedule updates with conflict notifications
+- **Integration Ready**: Seamless integration with billing and progress tracking
 
-## New Fields
-- `actual_start_time` (optional, null by default)
-- `actual_end_time` (optional, null by default)  
-- `actual_duration` (optional, null by default, auto-calculated)
+## Access Control
+
+### Role-Based Permissions:
+
+| Role | List Schedules | Create Schedule | View Schedule | Update Schedule | Delete Schedule |
+|------|----------------|-----------------|---------------|-----------------|-----------------|
+| **Student** | ✅ Own Only | ❌ | ✅ Own Only | ❌ | ❌ |
+| **Instructor** | ✅ Organization Only | ✅ | ✅ Organization Only | ✅ Own Lessons | ✅ Own Lessons |
+| **Organization Admin** | ✅ Organization Only | ✅ | ✅ Organization Only | ✅ Organization Only | ✅ Organization Only |
+| **System Admin** | ✅ All Organizations | ✅ | ✅ All | ✅ All | ✅ All |
+
+### Security Features:
+- **API key validation** required for all requests
+- **JWT authentication** verifies user identity and role
+- **Organization-scoped access** prevents cross-organization data access
+- **Resource conflict prevention** ensures scheduling integrity
+- **Time zone handling** for accurate scheduling
 
 ## Flight Schedule Object
 
 ```json
 {
   "_id": "ObjectId",
-  "school_id": "ObjectId",
-  "plane_id": "ObjectId", 
-  "instructor_id": "ObjectId", // Optional - for solo flights
+  "organization_id": "ObjectId",
   "student_id": "ObjectId",
-  "scheduled_start_time": "2024-01-15T10:00:00.000Z",
-  "scheduled_end_time": "2024-01-15T12:00:00.000Z", 
-  "scheduled_duration": 2.0, // Auto-calculated in hours
-  "actual_start_time": "2024-01-15T10:05:00.000Z", // Optional
-  "actual_end_time": "2024-01-15T12:10:00.000Z", // Optional
-  "actual_duration": 2.083, // Auto-calculated in hours when actual times provided
-  "flight_type": "Training",
-  "status": "completed",
-  "notes": "Great lesson on stall recovery",
-  "created_at": "2024-01-14T08:00:00.000Z",
-  "updated_at": "2024-01-15T12:15:00.000Z"
-}
-```
-
-## Endpoints
-
-### POST /api/schools/{schoolId}/flight_schedule
-Create a new flight schedule.
-
-**Required Fields:**
-- `plane_id` - ObjectId of the aircraft
-- `student_id` - ObjectId of the student
-- `scheduled_start_time` - ISO date string
-- `scheduled_end_time` - ISO date string
-- `flight_type` - String (e.g., "Training", "Solo", "Checkride")
-
-**Optional Fields:**
-- `instructor_id` - ObjectId of instructor (omit for solo flights)
-- `actual_start_time` - ISO date string
-- `actual_end_time` - ISO date string
-- `status` - String (default: "scheduled")
-- `notes` - String
-
-**Example Request:**
-```json
-{
-  "plane_id": "64a1b2c3d4e5f6789012345",
-  "instructor_id": "64a1b2c3d4e5f6789012346", 
-  "student_id": "64a1b2c3d4e5f6789012347",
-  "scheduled_start_time": "2024-01-15T10:00:00.000Z",
-  "scheduled_end_time": "2024-01-15T12:00:00.000Z",
-  "flight_type": "Training",
+  "instructor_id": "ObjectId",
+  "aircraft_id": "ObjectId",
+  "lesson_type": "dual_instruction",
+  "scheduled_start": "2024-03-15T14:00:00.000Z",
+  "scheduled_end": "2024-03-15T16:00:00.000Z",
+  "actual_start": null,
+  "actual_end": null,
   "status": "scheduled",
-  "notes": "Stall recovery practice"
+  "lesson_details": {
+    "syllabus_item": "Cross-country navigation",
+    "objectives": ["Practice pilotage", "Radio navigation", "Flight planning"],
+    "requirements": ["Current medical", "Solo endorsement"],
+    "weather_minimums": {
+      "visibility": 5,
+      "ceiling": 3000,
+      "wind": 25
+    }
+  },
+  "location": {
+    "departure": "KPAE",
+    "destination": "KBFI",
+    "route": "Direct",
+    "estimated_flight_time": 1.5
+  },
+  "billing": {
+    "aircraft_rate": 125.00,
+    "instructor_rate": 65.00,
+    "estimated_cost": 255.00,
+    "billable": true
+  },
+  "notes": "Weather permitting - check METAR before departure",
+  "recurring": {
+    "enabled": false,
+    "pattern": "weekly",
+    "end_date": null,
+    "occurrences": null
+  },
+  "conflicts": [],
+  "created_by": "ObjectId",
+  "updated_by": "ObjectId",
+  "createdAt": "2024-01-15T10:30:00.000Z",
+  "updatedAt": "2024-01-20T14:22:00.000Z"
 }
 ```
 
-### GET /api/schools/{schoolId}/flight_schedule
+## API Endpoints
+
+### GET /api/organizations/{organizationId}/flight_schedule
 List flight schedules with filtering and pagination.
 
 **Query Parameters:**
-- `page` - Page number (default: 1)
-- `limit` - Items per page (default: 50)
-- `status` - Filter by status
-- `start_date` - Filter by scheduled start date (ISO string)
-- `end_date` - Filter by scheduled end date (ISO string)
-- `plane_id` - Filter by plane ObjectId
-- `instructor_id` - Filter by instructor ObjectId
-- `student_id` - Filter by student ObjectId
+- `status` - Filter by schedule status
+- `instructor_id` - Filter by instructor
+- `student_id` - Filter by student
+- `aircraft_id` - Filter by aircraft
+- `date_from` - Start date filter
+- `date_to` - End date filter
+- `page` - Page number for pagination
+- `limit` - Items per page
 
-### GET /api/schools/{schoolId}/flight_schedule/{scheduleId}
-Get a specific flight schedule with all populated data.
+### POST /api/organizations/{organizationId}/flight_schedule
+Create a new flight schedule.
 
-### PUT /api/schools/{schoolId}/flight_schedule/{scheduleId}
-Update a flight schedule. Can update any field including actual times.
+**Required Fields:**
+- `student_id` - Must exist in organization
+- `instructor_id` - Must exist in organization
+- `aircraft_id` - Must exist in organization
+- `scheduled_start` - ISO date string
+- `scheduled_end` - ISO date string
+- `lesson_type` - Valid lesson type
 
-**Common Update Example (Recording Actual Times):**
-```json
-{
-  "actual_start_time": "2024-01-15T10:05:00.000Z",
-  "actual_end_time": "2024-01-15T12:10:00.000Z",
-  "status": "completed",
-  "notes": "Flight completed successfully. Student performed well."
-}
-```
+### GET /api/organizations/{organizationId}/flight_schedule/{scheduleId}
+Get a specific flight schedule with all details.
 
-### DELETE /api/schools/{schoolId}/flight_schedule/{scheduleId}
+### PUT /api/organizations/{organizationId}/flight_schedule/{scheduleId}
+Update an existing flight schedule.
+
+### DELETE /api/organizations/{organizationId}/flight_schedule/{scheduleId}
 Delete a flight schedule.
-
-## Auto-Calculated Fields
-
-### scheduled_duration
-Automatically calculated from `scheduled_start_time` and `scheduled_end_time` in hours.
-
-### actual_duration  
-Automatically calculated from `actual_start_time` and `actual_end_time` in hours when both actual times are provided.
 
 ## Validation Rules
 
-1. **Scheduled Times**: `scheduled_end_time` must be after `scheduled_start_time`
-2. **Actual Times**: `actual_end_time` must be after `actual_start_time` (when both provided)
-3. **Conflicts**: System checks for scheduling conflicts with plane, instructor, and student availability
-4. **Instructor Optional**: `instructor_id` is optional to support solo flights
-5. **ObjectId Validation**: All ObjectId fields are validated for proper format
+### Time Validation
+- `scheduled_end` must be after `scheduled_start`
+- Minimum lesson duration: 30 minutes
+- Maximum lesson duration: 8 hours
+- Schedules cannot be in the past (except by admins)
 
-## Status Values
-- `scheduled` - Initial state
-- `confirmed` - Flight confirmed
-- `in-progress` - Flight currently active
-- `completed` - Flight finished
-- `canceled` - Flight canceled
-- `no-show` - Student/instructor didn't show up
+### Resource Availability
+- Aircraft must be available during scheduled time
+- Instructor must be available during scheduled time
+- Student cannot have overlapping lessons
 
-## Use Cases
+### Business Rules
+1. **Conflict Detection**: Automatic checking for resource conflicts
+2. **Organization Scoping**: All resources must belong to the same organization
+3. **Role Restrictions**: Students can only view their own schedules
+4. **Status Workflow**: Proper status transitions (scheduled → in_progress → completed → billed)
 
-### 1. Schedule a Training Flight
-```json
-{
-  "plane_id": "64a1b2c3d4e5f6789012345",
-  "instructor_id": "64a1b2c3d4e5f6789012346",
-  "student_id": "64a1b2c3d4e5f6789012347", 
-  "scheduled_start_time": "2024-01-15T10:00:00.000Z",
-  "scheduled_end_time": "2024-01-15T12:00:00.000Z",
-  "flight_type": "Training"
-}
-```
+## Common Errors
 
-### 2. Schedule a Solo Flight
-```json
-{
-  "plane_id": "64a1b2c3d4e5f6789012345",
-  "student_id": "64a1b2c3d4e5f6789012347",
-  "scheduled_start_time": "2024-01-15T14:00:00.000Z", 
-  "scheduled_end_time": "2024-01-15T15:00:00.000Z",
-  "flight_type": "Solo"
-}
-```
+**400 Bad Request:**
+- Invalid date format or time range
+- Resource conflicts detected
+- Missing required fields
 
-### 3. Record Actual Flight Times
-```json
-{
-  "actual_start_time": "2024-01-15T10:05:00.000Z",
-  "actual_end_time": "2024-01-15T12:10:00.000Z",
-  "status": "completed"
-}
-```
+**401 Unauthorized:**
+- Missing or invalid authentication token
 
-## Error Handling
+**403 Forbidden:**
+- Insufficient permissions to access organization data
+- Students attempting to access other students' schedules
 
-The API returns appropriate HTTP status codes:
-- `200` - Success
-- `201` - Created
-- `400` - Validation error
-- `401` - Unauthorized (invalid API key)
-- `404` - Resource not found
-- `409` - Conflict (scheduling conflict)
-- `500` - Internal server error
+**404 Not Found:**
+- Schedule not found
+- Referenced resource (student/instructor/aircraft) not found
 
-All errors include a JSON response with an `error` field describing the issue. 
+**409 Conflict:**
+- Resource double-booking detected
+- Schedule time conflicts
+
+**500 Internal Server Error:**
+- Database connection issues
+- Unexpected server errors 

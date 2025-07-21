@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken';
 import { UserDocument } from '../models/User';
 import { User } from '../models/User';
+import { School } from '../models/Organization';
 import { connectDB } from './db';
 import Student from '../models/Student';
 import Instructor from '../models/Instructor';
@@ -20,7 +21,8 @@ export interface TokenPayload {
   exp?: number;
   mfaPending?: boolean;
   _id?: string;
-  school_id?: string | null;
+  organization_id?: string | null;
+  organization_type?: 'school' | 'club' | null;
   student_id?: string | null;
   instructor_id?: string | null;
 }
@@ -46,7 +48,20 @@ export const generateToken = async (user: Partial<UserDocument> | UserDocument) 
     }
   }
   
-  let schoolId = userData.school_id?.toString() || null;
+  let organizationId = userData.organization_id?.toString() || null;
+  let organizationType: 'school' | 'club' | null = null;
+  
+  // If user has an organization, fetch the organization type
+  if (organizationId) {
+    try {
+      const organization = await School.findById(organizationId);
+      if (organization) {
+        organizationType = organization.type;
+      }
+    } catch (error) {
+      console.error('Error fetching organization data for token generation:', error);
+    }
+  }
   
   // Search for student and instructor records associated with this user
   let studentId = null;
@@ -75,7 +90,8 @@ export const generateToken = async (user: Partial<UserDocument> | UserDocument) 
     first_name: userData.first_name || '',
     last_name: userData.last_name || '',
     role: userData.role || 'user',
-    school_id: schoolId,
+    organization_id: organizationId,
+    organization_type: organizationType,
     student_id: studentId,
     instructor_id: instructorId
   };

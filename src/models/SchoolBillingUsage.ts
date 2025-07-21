@@ -2,7 +2,7 @@ import mongoose, { Document, Model, Schema } from 'mongoose';
 
 // Define the SchoolBillingUsage document interface
 export interface SchoolBillingUsageDocument extends Document {
-  school_id: mongoose.Types.ObjectId;
+  organization_id: mongoose.Types.ObjectId;
   month: string; // "YYYY-MM" format
   total_transactions: number;
   stripe_transactions: number;
@@ -17,7 +17,7 @@ export interface SchoolBillingUsageDocument extends Document {
 // Create the schema
 const SchoolBillingUsageSchema = new Schema<SchoolBillingUsageDocument>(
   {
-    school_id: {
+    organization_id: {
       type: Schema.Types.ObjectId,
       ref: 'School',
       required: true,
@@ -65,8 +65,8 @@ const SchoolBillingUsageSchema = new Schema<SchoolBillingUsageDocument>(
   }
 );
 
-// Create compound index for school_id and month (unique combination)
-SchoolBillingUsageSchema.index({ school_id: 1, month: 1 }, { unique: true });
+// Create compound index for organization_id and month (unique combination)
+SchoolBillingUsageSchema.index({ organization_id: 1, month: 1 }, { unique: true });
 
 // Virtual for external_transactions (auto-calculated)
 SchoolBillingUsageSchema.virtual('calculated_external_transactions').get(function() {

@@ -48,7 +48,7 @@ interface Stage {
 
 // Define the Student document interface
 export interface StudentDocument extends Document {
-  school_id: mongoose.Types.ObjectId;
+  organization_id: mongoose.Types.ObjectId;
   user_id?: mongoose.Types.ObjectId;
   contact_email: string;
   phone?: string;
@@ -83,7 +83,7 @@ export interface StudentDocument extends Document {
 // Create the schema
 const StudentSchema = new Schema<StudentDocument>(
   {
-    school_id: {
+    organization_id: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'School',
       required: true,
@@ -290,10 +290,10 @@ const StudentSchema = new Schema<StudentDocument>(
   }
 );
 
-// Create compound index for school_id and license_number to ensure uniqueness within a school
+// Create compound index for organization_id and license_number to ensure uniqueness within an organization
 // Use partialFilterExpression to only enforce uniqueness when license_number exists
 StudentSchema.index(
-  { school_id: 1, license_number: 1 }, 
+  { organization_id: 1, license_number: 1 }, 
   { 
     unique: true, 
     partialFilterExpression: { license_number: { $ne: null } }

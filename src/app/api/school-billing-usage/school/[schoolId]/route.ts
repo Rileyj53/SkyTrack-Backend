@@ -9,14 +9,14 @@ const BILLING_CONFIG: SecurityConfig = {
   requireAuth: true,
   requireApiKey: true,
   allowedRoles: ['school_admin', 'sys_admin'],
-  requireSchoolAccess: true,
+  requireOrganizationAccess: true,
   enableFraudDetection: true,
   enableAdvancedAudit: true,
   dataClassification: 'confidential',
   rateLimiting: { maxRequests: 100, windowMs: 60000 }
 };
 
-// GET /api/school-billing-usage/school/[schoolId] - Get billing usage for specific school
+// GET /api/school-billing-usage/school/[organizationId] - Get billing usage for specific organization
 export const GET = secureApiRoute(async (
   request: NextRequest,
   { params, securityContext }: { params: { schoolId: string }, securityContext: any }
@@ -27,43 +27,43 @@ export const GET = secureApiRoute(async (
 
     console.log(JSON.stringify({
       level: 'INFO',
-      message: 'School-specific billing usage records requested',
+      message: 'Organization-specific billing usage records requested',
       auditId: securityContext.auditId,
       userId: securityContext.user?.userId,
       userRole: securityContext.user?.role,
-      requestedSchoolId: params.schoolId,
+      requestedOrganizationId: params.schoolId,
       timestamp: new Date().toISOString()
     }));
     
-    const { schoolId } = params;
+    const { schoolId: organizationId } = params; // Note: keeping param name for backward compatibility
     const { searchParams } = new URL(request.url);
     const limit = parseInt(searchParams.get('limit') || '12'); // Default to 12 months
     
-    if (!mongoose.Types.ObjectId.isValid(schoolId)) {
+    if (!mongoose.Types.ObjectId.isValid(organizationId)) {
       return NextResponse.json({
         success: false,
-        error: 'Invalid school ID',
+        error: 'Invalid organization ID',
         auditId: securityContext.auditId,
         timestamp: new Date().toISOString()
       }, { status: 400 });
     }
 
-    // Role-based access control - school_admin can only see their own school's data
+    // Role-based access control - school_admin can only see their own organization's data
     if (securityContext.user?.role === 'school_admin') {
-      if (securityContext.user?.school_id !== schoolId) {
+      if (securityContext.user?.organization_id !== organizationId) {
         console.warn(JSON.stringify({
           level: 'WARN',
-          message: 'School admin attempted to access different school billing data',
+          message: 'School admin attempted to access different organization billing data',
           auditId: securityContext.auditId,
           userId: securityContext.user?.userId,
-          userSchoolId: securityContext.user?.school_id,
-          requestedSchoolId: schoolId,
+          userOrganizationId: securityContext.user?.organization_id,
+          requestedOrganizationId: organizationId,
           timestamp: new Date().toISOString()
         }));
 
         return NextResponse.json({
           success: false,
-          error: 'Access denied: You can only view billing data for your own school',
+          error: 'Access denied: You can only view billing data for your own organization',
           auditId: securityContext.auditId,
           timestamp: new Date().toISOString()
         }, { status: 403 });
@@ -71,16 +71,16 @@ export const GET = secureApiRoute(async (
     }
 
     const records = await SchoolBillingUsage
-      .find({ school_id: schoolId })
+      .find({ organization_id: organizationId })
       .sort({ month: -1 })
       .limit(limit);
 
     console.log(JSON.stringify({
       level: 'INFO',
-      message: 'School billing usage records retrieved',
+      message: 'Organization billing usage records retrieved',
       auditId: securityContext.auditId,
       userId: securityContext.user?.userId,
-      schoolId,
+      organizationId,
       recordsCount: records.length,
       limit,
       timestamp: new Date().toISOString()
@@ -88,24 +88,24 @@ export const GET = secureApiRoute(async (
 
     return NextResponse.json({
       success: true,
-      message: 'School billing usage records retrieved successfully',
+      message: 'Organization billing usage records retrieved successfully',
       data: records,
       auditId: securityContext.auditId,
       timestamp: new Date().toISOString(),
       pagination: {
         limit,
         count: records.length,
-        schoolId
+        organizationId
       }
     });
 
   } catch (error) {
     console.error(JSON.stringify({
       level: 'ERROR',
-      message: 'Error fetching school billing usage',
+      message: 'Error fetching organization billing usage',
       auditId: securityContext.auditId,
       userId: securityContext.user?.userId,
-      schoolId: params.schoolId,
+      organizationId: params.schoolId,
       error: error.message,
       timestamp: new Date().toISOString()
     }));

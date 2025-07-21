@@ -27,7 +27,7 @@ export const GET = secureApiRoute(async (
 
     console.log(JSON.stringify({
       level: 'INFO',
-      message: 'School billing usage record requested',
+      message: 'Organization billing usage record requested',
       auditId: securityContext.auditId,
       userId: securityContext.user?.userId,
       userRole: securityContext.user?.role,
@@ -48,7 +48,7 @@ export const GET = secureApiRoute(async (
 
     const record = await SchoolBillingUsage
       .findById(id)
-      .populate('school_id', 'name');
+      .populate('organization_id', 'name');
 
     if (!record) {
       return NextResponse.json({
@@ -59,22 +59,22 @@ export const GET = secureApiRoute(async (
       }, { status: 404 });
     }
 
-    // Role-based access control - school_admin can only see their own school's data
+    // Role-based access control - school_admin can only see their own organization's data
     if (securityContext.user?.role === 'school_admin') {
-      if (securityContext.user?.school_id !== record.school_id.toString()) {
+      if (securityContext.user?.organization_id !== record.organization_id.toString()) {
         console.warn(JSON.stringify({
           level: 'WARN',
-          message: 'School admin attempted to access different school billing record',
+          message: 'School admin attempted to access different organization billing record',
           auditId: securityContext.auditId,
           userId: securityContext.user?.userId,
-          userSchoolId: securityContext.user?.school_id,
-          recordSchoolId: record.school_id.toString(),
+          userOrganizationId: securityContext.user?.organization_id,
+          recordOrganizationId: record.organization_id.toString(),
           timestamp: new Date().toISOString()
         }));
 
         return NextResponse.json({
           success: false,
-          error: 'Access denied: You can only view billing data for your own school',
+          error: 'Access denied: You can only view billing data for your own organization',
           auditId: securityContext.auditId,
           timestamp: new Date().toISOString()
         }, { status: 403 });
@@ -83,11 +83,11 @@ export const GET = secureApiRoute(async (
 
     console.log(JSON.stringify({
       level: 'INFO',
-      message: 'School billing usage record retrieved',
+      message: 'Organization billing usage record retrieved',
       auditId: securityContext.auditId,
       userId: securityContext.user?.userId,
       recordId: record._id,
-      schoolId: record.school_id,
+      organizationId: record.organization_id,
       timestamp: new Date().toISOString()
     }));
 
@@ -125,7 +125,7 @@ export const PUT = secureApiRoute(async (
 
     console.log(JSON.stringify({
       level: 'INFO',
-      message: 'School billing usage record update requested',
+      message: 'Organization billing usage record update requested',
       auditId: securityContext.auditId,
       userId: securityContext.user?.userId,
       userRole: securityContext.user?.role,
@@ -156,45 +156,45 @@ export const PUT = secureApiRoute(async (
       }, { status: 404 });
     }
 
-    // Role-based access control - school_admin can only update their own school's data
+    // Role-based access control - school_admin can only update their own organization's data
     if (securityContext.user?.role === 'school_admin') {
-      if (securityContext.user?.school_id !== existingRecord.school_id.toString()) {
+      if (securityContext.user?.organization_id !== existingRecord.organization_id.toString()) {
         console.warn(JSON.stringify({
           level: 'WARN',
-          message: 'School admin attempted to update different school billing record',
+          message: 'School admin attempted to update different organization billing record',
           auditId: securityContext.auditId,
           userId: securityContext.user?.userId,
-          userSchoolId: securityContext.user?.school_id,
-          recordSchoolId: existingRecord.school_id.toString(),
+          userOrganizationId: securityContext.user?.organization_id,
+          recordOrganizationId: existingRecord.organization_id.toString(),
           timestamp: new Date().toISOString()
         }));
 
         return NextResponse.json({
           success: false,
-          error: 'Access denied: You can only update billing data for your own school',
+          error: 'Access denied: You can only update billing data for your own organization',
           auditId: securityContext.auditId,
           timestamp: new Date().toISOString()
         }, { status: 403 });
       }
     }
 
-    // Don't allow updating school_id or month
-    delete updateData.school_id;
+    // Don't allow updating organization_id or month
+    delete updateData.organization_id;
     delete updateData.month;
 
     const record = await SchoolBillingUsage.findByIdAndUpdate(
       id,
       updateData,
       { new: true, runValidators: true }
-    ).populate('school_id', 'name');
+    ).populate('organization_id', 'name');
 
     console.log(JSON.stringify({
       level: 'INFO',
-      message: 'School billing usage record updated',
+      message: 'Organization billing usage record updated',
       auditId: securityContext.auditId,
       userId: securityContext.user?.userId,
       recordId: record._id,
-      schoolId: record.school_id,
+      organizationId: record.organization_id,
       updatedFields: Object.keys(updateData),
       timestamp: new Date().toISOString()
     }));
@@ -242,7 +242,7 @@ export const DELETE = secureApiRoute(async (
 
     console.log(JSON.stringify({
       level: 'INFO',
-      message: 'School billing usage record deletion requested',
+      message: 'Organization billing usage record deletion requested',
       auditId: securityContext.auditId,
       userId: securityContext.user?.userId,
       userRole: securityContext.user?.role,
@@ -272,22 +272,22 @@ export const DELETE = secureApiRoute(async (
       }, { status: 404 });
     }
 
-    // Role-based access control - school_admin can only delete their own school's data
+    // Role-based access control - school_admin can only delete their own organization's data
     if (securityContext.user?.role === 'school_admin') {
-      if (securityContext.user?.school_id !== existingRecord.school_id.toString()) {
+      if (securityContext.user?.organization_id !== existingRecord.organization_id.toString()) {
         console.warn(JSON.stringify({
           level: 'WARN',
-          message: 'School admin attempted to delete different school billing record',
+          message: 'School admin attempted to delete different organization billing record',
           auditId: securityContext.auditId,
           userId: securityContext.user?.userId,
-          userSchoolId: securityContext.user?.school_id,
-          recordSchoolId: existingRecord.school_id.toString(),
+          userOrganizationId: securityContext.user?.organization_id,
+          recordOrganizationId: existingRecord.organization_id.toString(),
           timestamp: new Date().toISOString()
         }));
 
         return NextResponse.json({
           success: false,
-          error: 'Access denied: You can only delete billing data for your own school',
+          error: 'Access denied: You can only delete billing data for your own organization',
           auditId: securityContext.auditId,
           timestamp: new Date().toISOString()
         }, { status: 403 });
@@ -298,11 +298,11 @@ export const DELETE = secureApiRoute(async (
 
     console.log(JSON.stringify({
       level: 'INFO',
-      message: 'School billing usage record deleted',
+      message: 'Organization billing usage record deleted',
       auditId: securityContext.auditId,
       userId: securityContext.user?.userId,
       recordId: id,
-      schoolId: existingRecord.school_id,
+      organizationId: existingRecord.organization_id,
       timestamp: new Date().toISOString()
     }));
 

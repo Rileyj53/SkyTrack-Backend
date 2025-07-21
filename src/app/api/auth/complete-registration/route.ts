@@ -205,7 +205,7 @@ export const POST = secureApiRoute(async (request, { params, securityContext }) 
       last_name: last_name.trim(),
       password: hashedPassword,
       role: inviteeType,
-      school_id: invitee.school_id,
+      organization_id: invitee.organization_id,
       isActive: true,
       emailVerified: true, // Auto-verify since they came through invitation
       mfaEnabled: false,
@@ -290,7 +290,7 @@ export const POST = secureApiRoute(async (request, { params, securityContext }) 
       userId: newUser._id.toString(),
       email: newUser.email,
       role: newUser.role,
-      school_id: newUser.school_id?.toString()
+      organization_id: newUser.organization_id?.toString()
     };
 
     // Add the appropriate ID field based on user type
@@ -309,7 +309,7 @@ export const POST = secureApiRoute(async (request, { params, securityContext }) 
       userId: newUser._id.toString(),
       [`${inviteeType}Id`]: invitee._id.toString(),
       email: sanitizeData(email, 'confidential'),
-      schoolId: invitee.school_id.toString(),
+      organizationId: invitee.organization_id.toString(),
       processingTime: Date.now() - startTime,
       timestamp: new Date().toISOString()
     }));
@@ -326,7 +326,7 @@ export const POST = secureApiRoute(async (request, { params, securityContext }) 
         first_name: newUser.first_name,
         last_name: newUser.last_name,
         role: newUser.role,
-        school_id: newUser.school_id,
+        organization_id: newUser.organization_id,
         isActive: newUser.isActive,
         emailVerified: newUser.emailVerified
       }, 'confidential'),
@@ -423,13 +423,13 @@ export const GET = secureApiRoute(async (request, { params, securityContext }) =
     const student = await (Student as any).findOne({
       invitation_token: invitation_token,
       contact_email: email.toLowerCase()
-    }).populate('school_id', 'name');
+    }).populate('organization_id', 'name');
 
     // Try to find instructor by invitation token and email
     const instructor = await (Instructor as any).findOne({
       invitation_token: invitation_token,
       contact_email: email.toLowerCase()
-    }).populate('school_id', 'name');
+    }).populate('organization_id', 'name');
 
     // Check if either student or instructor invitation exists
     if (!student && !instructor) {
@@ -489,7 +489,7 @@ export const GET = secureApiRoute(async (request, { params, securityContext }) =
         type: inviteeType,
         invitation: sanitizeData({
           email: invitee.contact_email,
-          school: invitee.school_id,
+          organization: invitee.organization_id,
           expires_at: invitee.invitation_expires_at,
           sent_at: invitee.invitation_sent_at
         }, 'confidential')

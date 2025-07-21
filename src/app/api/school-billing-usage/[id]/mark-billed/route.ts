@@ -59,22 +59,22 @@ export const PATCH = secureApiRoute(async (
       }, { status: 404 });
     }
 
-    // Role-based access control - school_admin can only mark their own school's data as billed
+    // Role-based access control - school_admin can only mark their own organization's data as billed
     if (securityContext.user?.role === 'school_admin') {
-      if (securityContext.user?.school_id !== existingRecord.school_id.toString()) {
+      if (securityContext.user?.organization_id !== existingRecord.organization_id.toString()) {
         console.warn(JSON.stringify({
           level: 'WARN',
-          message: 'School admin attempted to mark different school billing record as billed',
+          message: 'School admin attempted to mark different organization billing record as billed',
           auditId: securityContext.auditId,
           userId: securityContext.user?.userId,
-          userSchoolId: securityContext.user?.school_id,
-          recordSchoolId: existingRecord.school_id.toString(),
+          userOrganizationId: securityContext.user?.organization_id,
+          recordOrganizationId: existingRecord.organization_id.toString(),
           timestamp: new Date().toISOString()
         }));
 
         return NextResponse.json({
           success: false,
-          error: 'Access denied: You can only mark billing data for your own school as billed',
+          error: 'Access denied: You can only mark billing data for your own organization as billed',
           auditId: securityContext.auditId,
           timestamp: new Date().toISOString()
         }, { status: 403 });
@@ -89,15 +89,15 @@ export const PATCH = secureApiRoute(async (
         last_updated: new Date()
       },
       { new: true, runValidators: true }
-    ).populate('school_id', 'name');
+    ).populate('organization_id', 'name');
 
     console.log(JSON.stringify({
       level: 'INFO',
-      message: 'School billing usage record marked as billed',
+      message: 'Organization billing usage record marked as billed',
       auditId: securityContext.auditId,
       userId: securityContext.user?.userId,
       recordId: record._id,
-      schoolId: record.school_id,
+      organizationId: record.organization_id,
       stripeInvoiceId: stripe_invoice_id,
       timestamp: new Date().toISOString()
     }));

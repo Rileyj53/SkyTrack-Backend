@@ -1,0 +1,790 @@
+{
+    "info": {
+        "name": "SkyTrack Backend API",
+        "description": "Comprehensive API collection for SkyTrack flight school management system",
+        "version": "1.0.0",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "auth": {
+        "type": "bearer",
+        "bearer": [{
+            "key": "token",
+            "value": "{{jwt_token}}",
+            "type": "string"
+        }]
+    },
+    "variable": [{
+            "key": "base_url",
+            "value": "https://api.skytrack.com",
+            "type": "string"
+        },
+        {
+            "key": "api_key",
+            "value": "your-api-key",
+            "type": "string"
+        },
+        {
+            "key": "csrf_token",
+            "value": "csrf-token-here",
+            "type": "string"
+        },
+        {
+            "key": "jwt_token",
+            "value": "jwt-token-here",
+            "type": "string"
+        }
+    ],
+    "item": [{
+            "name": "Authentication",
+            "item": [{
+                    "name": "Get CSRF Token",
+                    "request": {
+                        "method": "GET",
+                        "header": [{
+                            "key": "X-API-Key",
+                            "value": "{{api_key}}",
+                            "type": "text"
+                        }],
+                        "url": {
+                            "raw": "{{base_url}}/api/auth/csrf-token",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "auth", "csrf-token"]
+                        },
+                        "description": "Generate and retrieve a CSRF token for secure form submissions"
+                    },
+                    "event": [{
+                        "listen": "test",
+                        "script": {
+                            "exec": [
+                                "pm.test('Status code is 200', function () {",
+                                "    pm.response.to.have.status(200);",
+                                "});",
+                                "",
+                                "pm.test('Response has CSRF token', function () {",
+                                "    const jsonData = pm.response.json();",
+                                "    pm.expect(jsonData.data.token).to.be.a('string');",
+                                "    pm.collectionVariables.set('csrf_token', jsonData.data.token);",
+                                "});"
+                            ]
+                        }
+                    }]
+                },
+                {
+                    "name": "Login",
+                    "request": {
+                        "method": "POST",
+                        "header": [{
+                            "key": "Content-Type",
+                            "value": "application/json",
+                            "type": "text"
+                        }],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"your-password\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/auth/login",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "auth", "login"]
+                        },
+                        "description": "Authenticate user with email and password"
+                    },
+                    "event": [{
+                        "listen": "test",
+                        "script": {
+                            "exec": [
+                                "pm.test('Status code is 200', function () {",
+                                "    pm.response.to.have.status(200);",
+                                "});",
+                                "",
+                                "pm.test('Response has JWT token', function () {",
+                                "    const jsonData = pm.response.json();",
+                                "    pm.expect(jsonData.data.token).to.be.a('string');",
+                                "    pm.collectionVariables.set('jwt_token', jsonData.data.token);",
+                                "    pm.collectionVariables.set('csrf_token', jsonData.data.csrfToken);",
+                                "});"
+                            ]
+                        }
+                    }]
+                },
+                {
+                    "name": "Get User Profile",
+                    "request": {
+                        "method": "GET",
+                        "header": [{
+                                "key": "Authorization",
+                                "value": "Bearer {{jwt_token}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-API-Key",
+                                "value": "{{api_key}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-CSRF-Token",
+                                "value": "{{csrf_token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/auth/me",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "auth", "me"]
+                        },
+                        "description": "Retrieve current authenticated user's profile information"
+                    },
+                    "event": [{
+                        "listen": "test",
+                        "script": {
+                            "exec": [
+                                "pm.test('Status code is 200', function () {",
+                                "    pm.response.to.have.status(200);",
+                                "});",
+                                "",
+                                "pm.test('Response has user data', function () {",
+                                "    const jsonData = pm.response.json();",
+                                "    pm.expect(jsonData.data.user).to.be.an('object');",
+                                "    pm.expect(jsonData.data.user.email).to.be.a('string');",
+                                "});"
+                            ]
+                        }
+                    }]
+                },
+                {
+                    "name": "Update Profile",
+                    "request": {
+                        "method": "PUT",
+                        "header": [{
+                                "key": "Authorization",
+                                "value": "Bearer {{jwt_token}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-API-Key",
+                                "value": "{{api_key}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-CSRF-Token",
+                                "value": "{{csrf_token}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"first_name\": \"John\",\n  \"last_name\": \"Doe\",\n  \"email\": \"john.doe.new@example.com\",\n  \"phone\": \"+1-555-123-4567\",\n  \"avatar\": \"https://example.com/avatars/john-doe.jpg\",\n  \"emergency_contact\": {\n    \"name\": \"Jane Doe\",\n    \"relationship\": \"spouse\",\n    \"phone\": \"+1-555-987-6543\",\n    \"email\": \"jane.doe@example.com\"\n  }\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/auth/update-profile",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "auth", "update-profile"]
+                        },
+                        "description": "Update authenticated user's profile information"
+                    },
+                    "event": [{
+                        "listen": "test",
+                        "script": {
+                            "exec": [
+                                "pm.test('Status code is 200', function () {",
+                                "    pm.response.to.have.status(200);",
+                                "});",
+                                "",
+                                "pm.test('Profile updated successfully', function () {",
+                                "    const jsonData = pm.response.json();",
+                                "    pm.expect(jsonData.success).to.be.true;",
+                                "    pm.expect(jsonData.data.user).to.be.an('object');",
+                                "});"
+                            ]
+                        }
+                    }]
+                },
+                {
+                    "name": "Request Magic Link",
+                    "request": {
+                        "method": "POST",
+                        "header": [{
+                                "key": "X-API-Key",
+                                "value": "{{api_key}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"user@example.com\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/auth/magic-link/request",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "auth", "magic-link", "request"]
+                        },
+                        "description": "Request a magic link for passwordless login"
+                    },
+                    "event": [{
+                        "listen": "test",
+                        "script": {
+                            "exec": [
+                                "pm.test('Status code is 200', function () {",
+                                "    pm.response.to.have.status(200);",
+                                "});",
+                                "",
+                                "pm.test('Magic link sent', function () {",
+                                "    const jsonData = pm.response.json();",
+                                "    pm.expect(jsonData.success).to.be.true;",
+                                "});"
+                            ]
+                        }
+                    }]
+                },
+                {
+                    "name": "Magic Link Login",
+                    "request": {
+                        "method": "POST",
+                        "header": [{
+                                "key": "X-API-Key",
+                                "value": "{{api_key}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"token\": \"magic-token-from-email\",\n  \"code\": \"123456\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/auth/magic-link/login",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "auth", "magic-link", "login"]
+                        },
+                        "description": "Login using magic link token or code"
+                    },
+                    "event": [{
+                        "listen": "test",
+                        "script": {
+                            "exec": [
+                                "pm.test('Status code is 200', function () {",
+                                "    pm.response.to.have.status(200);",
+                                "});",
+                                "",
+                                "pm.test('Login successful with token', function () {",
+                                "    const jsonData = pm.response.json();",
+                                "    pm.expect(jsonData.success).to.be.true;",
+                                "    pm.expect(jsonData.data.token).to.be.a('string');",
+                                "    pm.collectionVariables.set('jwt_token', jsonData.data.token);",
+                                "});"
+                            ]
+                        }
+                    }]
+                },
+                {
+                    "name": "Complete Registration",
+                    "request": {
+                        "method": "POST",
+                        "header": [{
+                                "key": "X-API-Key",
+                                "value": "{{api_key}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-CSRF-Token",
+                                "value": "{{csrf_token}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"invitation_token\": \"invitation-token-here\",\n  \"email\": \"user@example.com\",\n  \"password\": \"SecurePassword123!\",\n  \"first_name\": \"John\",\n  \"last_name\": \"Doe\",\n  \"phone\": \"+1-555-123-4567\",\n  \"emergency_contact\": {\n    \"name\": \"Jane Doe\",\n    \"relationship\": \"spouse\",\n    \"phone\": \"+1-555-987-6543\"\n  }\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/auth/complete-registration",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "auth", "complete-registration"]
+                        },
+                        "description": "Complete student/instructor registration with invitation token"
+                    },
+                    "event": [{
+                        "listen": "test",
+                        "script": {
+                            "exec": [
+                                "pm.test('Status code is 201', function () {",
+                                "    pm.response.to.have.status(201);",
+                                "});",
+                                "",
+                                "pm.test('Registration completed', function () {",
+                                "    const jsonData = pm.response.json();",
+                                "    pm.expect(jsonData.success).to.be.true;",
+                                "    pm.expect(jsonData.token).to.be.a('string');",
+                                "});"
+                            ]
+                        }
+                    }]
+                },
+                {
+                    "name": "Logout",
+                    "request": {
+                        "method": "POST",
+                        "header": [{
+                            "key": "Authorization",
+                            "value": "Bearer {{jwt_token}}",
+                            "type": "text"
+                        }],
+                        "url": {
+                            "raw": "{{base_url}}/api/auth/logout",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "auth", "logout"]
+                        },
+                        "description": "Logout and invalidate current session"
+                    },
+                    "event": [{
+                        "listen": "test",
+                        "script": {
+                            "exec": [
+                                "pm.test('Status code is 200', function () {",
+                                "    pm.response.to.have.status(200);",
+                                "});",
+                                "",
+                                "pm.test('Logout successful', function () {",
+                                "    const jsonData = pm.response.json();",
+                                "    pm.expect(jsonData.success).to.be.true;",
+                                "});"
+                            ]
+                        }
+                    }]
+                }
+            ]
+        },
+        {
+            "name": "Multi-Factor Authentication",
+            "item": [{
+                    "name": "Get MFA Status",
+                    "request": {
+                        "method": "GET",
+                        "header": [{
+                                "key": "Authorization",
+                                "value": "Bearer {{jwt_token}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-API-Key",
+                                "value": "{{api_key}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/auth/mfa/status",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "auth", "mfa", "status"]
+                        },
+                        "description": "Check current MFA status for authenticated user"
+                    },
+                    "event": [{
+                        "listen": "test",
+                        "script": {
+                            "exec": [
+                                "pm.test('Status code is 200', function () {",
+                                "    pm.response.to.have.status(200);",
+                                "});",
+                                "",
+                                "pm.test('MFA status returned', function () {",
+                                "    const jsonData = pm.response.json();",
+                                "    pm.expect(jsonData.data).to.have.property('mfaEnabled');",
+                                "    pm.expect(jsonData.data).to.have.property('mfaVerified');",
+                                "});"
+                            ]
+                        }
+                    }]
+                },
+                {
+                    "name": "Setup MFA",
+                    "request": {
+                        "method": "POST",
+                        "header": [{
+                                "key": "Authorization",
+                                "value": "Bearer {{jwt_token}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-API-Key",
+                                "value": "{{api_key}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-CSRF-Token",
+                                "value": "{{csrf_token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/auth/mfa/setup",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "auth", "mfa", "setup"]
+                        },
+                        "description": "Setup MFA and get QR code for authenticator app"
+                    },
+                    "event": [{
+                        "listen": "test",
+                        "script": {
+                            "exec": [
+                                "pm.test('Status code is 200', function () {",
+                                "    pm.response.to.have.status(200);",
+                                "});",
+                                "",
+                                "pm.test('MFA setup data returned', function () {",
+                                "    const jsonData = pm.response.json();",
+                                "    pm.expect(jsonData.data.qrCode).to.be.a('string');",
+                                "    pm.expect(jsonData.data.backupCodes).to.be.an('array');",
+                                "});"
+                            ]
+                        }
+                    }]
+                },
+                {
+                    "name": "Verify MFA Setup",
+                    "request": {
+                        "method": "POST",
+                        "header": [{
+                                "key": "Authorization",
+                                "value": "Bearer {{jwt_token}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-API-Key",
+                                "value": "{{api_key}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-CSRF-Token",
+                                "value": "{{csrf_token}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"token\": \"123456\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/auth/mfa/verify",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "auth", "mfa", "verify"]
+                        },
+                        "description": "Verify MFA setup with 6-digit code from authenticator app"
+                    },
+                    "event": [{
+                        "listen": "test",
+                        "script": {
+                            "exec": [
+                                "pm.test('Status code is 200', function () {",
+                                "    pm.response.to.have.status(200);",
+                                "});",
+                                "",
+                                "pm.test('MFA verification successful', function () {",
+                                "    const jsonData = pm.response.json();",
+                                "    pm.expect(jsonData.success).to.be.true;",
+                                "    pm.expect(jsonData.data.mfaVerified).to.be.true;",
+                                "});"
+                            ]
+                        }
+                    }]
+                },
+                {
+                    "name": "Verify MFA for Login",
+                    "request": {
+                        "method": "POST",
+                        "header": [{
+                                "key": "Authorization",
+                                "value": "Bearer {{jwt_token}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-API-Key",
+                                "value": "{{api_key}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"token\": \"123456\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/auth/mfa/verify-login",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "auth", "mfa", "verify-login"]
+                        },
+                        "description": "Complete MFA verification during login process"
+                    },
+                    "event": [{
+                        "listen": "test",
+                        "script": {
+                            "exec": [
+                                "pm.test('Status code is 200', function () {",
+                                "    pm.response.to.have.status(200);",
+                                "});",
+                                "",
+                                "pm.test('MFA login verification successful', function () {",
+                                "    const jsonData = pm.response.json();",
+                                "    pm.expect(jsonData.success).to.be.true;",
+                                "    pm.expect(jsonData.data.token).to.be.a('string');",
+                                "    pm.collectionVariables.set('jwt_token', jsonData.data.token);",
+                                "});"
+                            ]
+                        }
+                    }]
+                },
+                {
+                    "name": "Disable MFA",
+                    "request": {
+                        "method": "POST",
+                        "header": [{
+                                "key": "Authorization",
+                                "value": "Bearer {{jwt_token}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-API-Key",
+                                "value": "{{api_key}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-CSRF-Token",
+                                "value": "{{csrf_token}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"token\": \"123456\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/auth/mfa/disable",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "auth", "mfa", "disable"]
+                        },
+                        "description": "Disable MFA with verification code"
+                    },
+                    "event": [{
+                        "listen": "test",
+                        "script": {
+                            "exec": [
+                                "pm.test('Status code is 200', function () {",
+                                "    pm.response.to.have.status(200);",
+                                "});",
+                                "",
+                                "pm.test('MFA disabled successfully', function () {",
+                                "    const jsonData = pm.response.json();",
+                                "    pm.expect(jsonData.success).to.be.true;",
+                                "});"
+                            ]
+                        }
+                    }]
+                }
+            ]
+        },
+        {
+            "name": "Organizations",
+            "item": [{
+                "name": "Flight Schedules",
+                "item": [{
+                        "name": "Get Flight Schedule",
+                        "request": {
+                            "method": "GET",
+                            "header": [{
+                                    "key": "Authorization",
+                                    "value": "Bearer {{jwt_token}}",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "X-API-Key",
+                                    "value": "{{api_key}}",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "X-CSRF-Token",
+                                    "value": "{{csrf_token}}",
+                                    "type": "text"
+                                }
+                            ],
+                            "url": {
+                                "raw": "{{base_url}}/api/organizations/:organizationId/flight_schedule/:scheduleId",
+                                "host": ["{{base_url}}"],
+                                "path": ["api", "organizations", ":organizationId", "flight_schedule", ":scheduleId"],
+                                "variable": [{
+                                        "key": "organizationId",
+                                        "value": "organization-id-here"
+                                    },
+                                    {
+                                        "key": "scheduleId",
+                                        "value": "schedule-id-here"
+                                    }
+                                ]
+                            },
+                            "description": "Get details of a specific flight schedule"
+                        },
+                        "event": [{
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status code is 200', function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "",
+                                    "pm.test('Flight schedule returned', function () {",
+                                    "    const jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData.data.schedule).to.be.an('object');",
+                                    "});"
+                                ]
+                            }
+                        }]
+                    },
+                    {
+                        "name": "Update Flight Schedule",
+                        "request": {
+                            "method": "PUT",
+                            "header": [{
+                                    "key": "Authorization",
+                                    "value": "Bearer {{jwt_token}}",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "X-API-Key",
+                                    "value": "{{api_key}}",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "X-CSRF-Token",
+                                    "value": "{{csrf_token}}",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "Content-Type",
+                                    "value": "application/json",
+                                    "type": "text"
+                                }
+                            ],
+                            "body": {
+                                "mode": "raw",
+                                "raw": "{\n  \"scheduled_start_time\": \"2024-01-15T10:00:00.000Z\",\n  \"scheduled_end_time\": \"2024-01-15T12:00:00.000Z\",\n  \"flight_type\": \"training\",\n  \"status\": \"scheduled\"\n}"
+                            },
+                            "url": {
+                                "raw": "{{base_url}}/api/organizations/:organizationId/flight_schedule/:scheduleId",
+                                "host": ["{{base_url}}"],
+                                "path": ["api", "organizations", ":organizationId", "flight_schedule", ":scheduleId"],
+                                "variable": [{
+                                        "key": "organizationId",
+                                        "value": "organization-id-here"
+                                    },
+                                    {
+                                        "key": "scheduleId",
+                                        "value": "schedule-id-here"
+                                    }
+                                ]
+                            },
+                            "description": "Update a specific flight schedule"
+                        },
+                        "event": [{
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status code is 200', function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "",
+                                    "pm.test('Flight schedule updated', function () {",
+                                    "    const jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData.success).to.be.true;",
+                                    "    pm.expect(jsonData.data.schedule).to.be.an('object');",
+                                    "});"
+                                ]
+                            }
+                        }]
+                    },
+                    {
+                        "name": "Delete Flight Schedule",
+                        "request": {
+                            "method": "DELETE",
+                            "header": [{
+                                    "key": "Authorization",
+                                    "value": "Bearer {{jwt_token}}",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "X-API-Key",
+                                    "value": "{{api_key}}",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "X-CSRF-Token",
+                                    "value": "{{csrf_token}}",
+                                    "type": "text"
+                                }
+                            ],
+                            "url": {
+                                "raw": "{{base_url}}/api/organizations/:organizationId/flight_schedule/:scheduleId",
+                                "host": ["{{base_url}}"],
+                                "path": ["api", "organizations", ":organizationId", "flight_schedule", ":scheduleId"],
+                                "variable": [{
+                                        "key": "organizationId",
+                                        "value": "organization-id-here"
+                                    },
+                                    {
+                                        "key": "scheduleId",
+                                        "value": "schedule-id-here"
+                                    }
+                                ]
+                            },
+                            "description": "Delete a specific flight schedule"
+                        },
+                        "event": [{
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status code is 200', function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "",
+                                    "pm.test('Flight schedule deleted', function () {",
+                                    "    const jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData.success).to.be.true;",
+                                    "});"
+                                ]
+                            }
+                        }]
+                    }
+                ]
+            }]
+        }
+    ]
+}

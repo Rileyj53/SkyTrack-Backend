@@ -62,7 +62,8 @@ export const POST = secureApiRoute(async (request: NextRequest, { securityContex
           userId: decoded.userId,
           email: decoded.email,
           role: decoded.role,
-          school_id: decoded.school_id,
+          organization_id: decoded.organization_id,
+          organization_type: decoded.organization_type,
           student_id: decoded.student_id,
           instructor_id: decoded.instructor_id,
           iat: decoded.iat,
@@ -174,7 +175,7 @@ export const GET = secureApiRoute(async (request: NextRequest, { securityContext
       _id: '507f1f77bcf86cd799439011',
       email: 'test@example.com',
       role: 'student',
-      school_id: '507f1f77bcf86cd799439012',
+      organization_id: '507f1f77bcf86cd799439012',
       student_id: '507f1f77bcf86cd799439013'
     };
 
@@ -210,7 +211,8 @@ export const GET = secureApiRoute(async (request: NextRequest, { securityContext
           userId: 'User ID from database',
           email: 'User email address',
           role: 'User role (student, instructor, school_admin, sys_admin)',
-          school_id: 'Associated school ID',
+          organization_id: 'Associated organization ID',
+          organization_type: 'Organization type (school or club)',
           student_id: 'Student ID if applicable',
           instructor_id: 'Instructor ID if applicable',
           iat: 'Issued at timestamp',

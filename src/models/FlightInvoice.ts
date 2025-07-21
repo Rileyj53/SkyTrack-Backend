@@ -11,7 +11,7 @@ export interface ILineItem {
 
 export interface IFlightInvoice extends Document {
   flight_schedule_id: mongoose.Types.ObjectId;
-  school_id: mongoose.Types.ObjectId;
+  organization_id: mongoose.Types.ObjectId;
   student_id: mongoose.Types.ObjectId;
   plane_id: mongoose.Types.ObjectId;
   instructor_id?: mongoose.Types.ObjectId;
@@ -88,10 +88,10 @@ const FlightInvoiceSchema = new Schema<IFlightInvoice>({
     required: [true, 'Flight schedule ID is required'],
     index: true
   },
-  school_id: {
+  organization_id: {
     type: Schema.Types.ObjectId,
     ref: 'School',
-    required: [true, 'School ID is required'],
+    required: [true, 'Organization ID is required'],
     index: true
   },
   student_id: {
@@ -275,7 +275,7 @@ FlightInvoiceSchema.pre(['findOneAndUpdate', 'updateOne'], function(next) {
 });
 
 // Indexes for efficient querying
-FlightInvoiceSchema.index({ school_id: 1, status: 1, created_at: -1 });
+FlightInvoiceSchema.index({ organization_id: 1, status: 1, created_at: -1 });
 FlightInvoiceSchema.index({ student_id: 1, created_at: -1 });
 FlightInvoiceSchema.index({ flight_schedule_id: 1 });
 FlightInvoiceSchema.index({ invoice_number: 1 }, { unique: true });

@@ -15,7 +15,7 @@ export interface SecurityConfig {
   requireApiKey?: boolean;
   requireCSRF?: boolean;
   allowedRoles?: string[];
-  requireSchoolAccess?: boolean;
+  requireOrganizationAccess?: boolean;
   allowedMethods?: string[];
   rateLimiting?: {
     maxRequests: number;
@@ -40,7 +40,7 @@ export interface SecurityConfig {
 export interface SecureRequest extends NextRequest {
   user?: any;
   apiKey?: any;
-  schoolId?: string;
+  organizationId?: string;
   permissions?: string[];
 }
 
@@ -50,7 +50,7 @@ export interface SecurityContext {
   apiKey: any | null;
   isAuthenticated: boolean;
   permissions: string[];
-  schoolId: string | null;
+  organizationId: string | null;
   // Advanced security context
   riskScore: number;
   sessionId: string;
@@ -98,9 +98,9 @@ const ROLE_HIERARCHY = {
 // Permission matrix by role with advanced permissions
 const ROLE_PERMISSIONS = {
   'sys_admin': ['*'], // All permissions
-  'school_admin': ['school:read', 'school:write', 'user:read', 'user:write', 'student:*', 'instructor:*', 'plane:*', 'payment:read', 'payment:write'],
-  'instructor': ['school:read', 'user:read', 'student:read', 'plane:read', 'flight:*', 'payment:read:own'],
-  'student': ['school:read', 'user:read:own', 'student:read:own', 'flight:read:own', 'payment:read:own']
+  'school_admin': ['organization:read', 'organization:write', 'user:read', 'user:write', 'student:*', 'instructor:*', 'plane:*', 'payment:read', 'payment:write'],
+  'instructor': ['organization:read', 'user:read', 'student:read', 'plane:read', 'flight:*', 'payment:read:own'],
+  'student': ['organization:read', 'user:read:own', 'student:read:own', 'flight:read:own', 'payment:read:own']
 } as const;
 
 /**
@@ -123,7 +123,7 @@ export function withSecurity(config: SecurityConfig = {}) {
         apiKey: null,
         isAuthenticated: false,
         permissions: [],
-        schoolId: null,
+        organizationId: null,
         riskScore: 0,
         sessionId: '',
         clientFingerprint: '',
@@ -274,16 +274,16 @@ export function withSecurity(config: SecurityConfig = {}) {
         }
       }
 
-      // School access control
-      if (config.requireSchoolAccess && context?.params?.schoolId) {
-        const schoolAccessResult = await validateSchoolAccess(
+      // Organization access control
+      if (config.requireOrganizationAccess && context?.params?.organizationId) {
+        const organizationAccessResult = await validateOrganizationAccess(
           securityContext.user,
-          context.params.schoolId
+          context.params.organizationId
         );
-        if (schoolAccessResult.error) {
-          return { response: schoolAccessResult.error };
+        if (organizationAccessResult.error) {
+          return { response: organizationAccessResult.error };
         }
-        securityContext.schoolId = context.params.schoolId;
+        securityContext.organizationId = context.params.organizationId;
       }
 
       // Set user permissions
@@ -813,42 +813,42 @@ async function validateCSRF(request: NextRequest): Promise<{
 }
 
 /**
- * School Access Validation
+ * Organization Access Validation
  */
-async function validateSchoolAccess(user: any, schoolId: string): Promise<{
+async function validateOrganizationAccess(user: any, organizationId: string): Promise<{
   error?: NextResponse;
 }> {
   try {
-    // System admins have access to all schools
+    // System admins have access to all organizations
     if (user.role === 'sys_admin') {
       return {};
     }
 
-    // Check if user has school_id and it matches
-    if (!user.school_id) {
+    // Check if user has organization_id and it matches
+    if (!user.organization_id) {
       return {
         error: NextResponse.json(
-          { error: 'User not assigned to any school' },
+          { error: 'User not assigned to any organization' },
           { status: 403 }
         )
       };
     }
 
-    if (user.school_id.toString() !== schoolId) {
+    if (user.organization_id.toString() !== organizationId) {
       return {
         error: NextResponse.json(
-          { error: 'Access denied to this school' },
+          { error: 'Access denied to this organization' },
           { status: 403 }
         )
       };
     }
 
-    // Verify school exists
-    const school = await School.findById(schoolId);
-    if (!school) {
+    // Verify organization exists
+    const organization = await School.findById(organizationId);
+    if (!organization) {
       return {
         error: NextResponse.json(
-          { error: 'School not found' },
+          { error: 'Organization not found' },
           { status: 404 }
         )
       };
@@ -856,10 +856,10 @@ async function validateSchoolAccess(user: any, schoolId: string): Promise<{
 
     return {};
   } catch (error) {
-    console.error('School access validation error:', error);
+    console.error('Organization access validation error:', error);
     return {
       error: NextResponse.json(
-        { error: 'School access validation failed' },
+        { error: 'Organization access validation failed' },
         { status: 500 }
       )
     };
@@ -935,6 +935,7 @@ async function logAdvancedAudit(request: NextRequest, context: SecurityContext, 
     userAgent: request.headers.get('user-agent'),
     clientIP: getClientIP(request),
     userId: context.user?._id,
+    organizationId: context.organizationId,
     sessionId: context.sessionId,
     riskScore: context.riskScore,
     fraudFlags: context.fraudFlags,

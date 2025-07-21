@@ -193,7 +193,7 @@ export const POST = secureApiRoute(async (request, { params, securityContext }) 
           id: user._id,
           email: user.email,
           role: user.role,
-          schoolId: user.school_id,
+          organizationId: user.organization_id,
           mfaEnabled: user.mfaEnabled
         }
       },

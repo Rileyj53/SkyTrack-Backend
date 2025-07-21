@@ -82,8 +82,8 @@ export const GET = secureApiRoute(async (request, { params, securityContext }) =
   const canViewUser = 
     securityContext.user.id === params.userId || // Own profile
     securityContext.user.role === 'sys_admin' || // System admin can view all
-    (securityContext.user.role === 'school_admin' && user.school_id?.toString() === securityContext.schoolId) || // School admin can view users in their school
-    (securityContext.user.role === 'instructor' && user.school_id?.toString() === securityContext.schoolId); // Instructor can view users in their school
+    (securityContext.user.role === 'school_admin' && user.organization_id?.toString() === securityContext.organizationId) || // School admin can view users in their organization
+    (securityContext.user.role === 'instructor' && user.organization_id?.toString() === securityContext.organizationId); // Instructor can view users in their organization
 
   if (!canViewUser) {
     return NextResponse.json({
@@ -103,7 +103,7 @@ export const GET = secureApiRoute(async (request, { params, securityContext }) =
     first_name: user.first_name,
     last_name: user.last_name,
     role: user.role,
-    school_id: user.school_id,
+    organization_id: user.organization_id,
     isActive: user.isActive,
     emailVerified: user.emailVerified,
     mfaEnabled: user.mfaEnabled,
@@ -120,7 +120,7 @@ export const GET = secureApiRoute(async (request, { params, securityContext }) =
     auditId: securityContext.auditId,
     targetUserId: params.userId,
     userRole: user.role,
-    userSchoolId: user.school_id,
+    userOrganizationId: user.organization_id,
     processingTime,
     timestamp: new Date().toISOString()
   }));
@@ -181,7 +181,7 @@ export const PUT = secureApiRoute(async (request, { params, securityContext }) =
   const canUpdateUser = 
     securityContext.user.id === params.userId || // Own profile
     securityContext.user.role === 'sys_admin' || // System admin can update all
-    (securityContext.user.role === 'school_admin' && user.school_id?.toString() === securityContext.schoolId); // School admin can update users in their school
+    (securityContext.user.role === 'school_admin' && user.organization_id?.toString() === securityContext.organizationId); // School admin can update users in their organization
 
   if (!canUpdateUser) {
     return NextResponse.json({
@@ -203,7 +203,7 @@ export const PUT = secureApiRoute(async (request, { params, securityContext }) =
     'first_name',
     'last_name',
     'role',
-    'school_id',
+    'organization_id',
     'isActive',
     'emailVerified',
     'mfaEnabled',
@@ -275,12 +275,12 @@ export const PUT = secureApiRoute(async (request, { params, securityContext }) =
     }
   }
 
-  // Validate school_id if being updated
-  if (updates.school_id && !mongoose.Types.ObjectId.isValid(updates.school_id)) {
+  // Validate organization_id if being updated
+  if (updates.organization_id && !mongoose.Types.ObjectId.isValid(updates.organization_id)) {
     return NextResponse.json({
       error: {
-        message: 'Invalid school ID format',
-        code: 'INVALID_SCHOOL_ID',
+        message: 'Invalid organization ID format',
+        code: 'INVALID_ORGANIZATION_ID',
         requestId: securityContext.auditId,
         timestamp: new Date().toISOString()
       }
@@ -312,7 +312,7 @@ export const PUT = secureApiRoute(async (request, { params, securityContext }) =
     first_name: updatedUser.first_name,
     last_name: updatedUser.last_name,
     role: updatedUser.role,
-    school_id: updatedUser.school_id,
+    organization_id: updatedUser.organization_id,
     isActive: updatedUser.isActive,
     emailVerified: updatedUser.emailVerified,
     mfaEnabled: updatedUser.mfaEnabled,

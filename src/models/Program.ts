@@ -21,7 +21,7 @@ interface IStage {
 
 // Define the Program document interface
 export interface IProgram extends Document {
-  school_id: mongoose.Types.ObjectId;
+  organization_id: mongoose.Types.ObjectId;
   program_name: string;
   requirements: IRequirement[];
   milestones: IMilestone[];
@@ -34,10 +34,10 @@ export interface IProgram extends Document {
 }
 
 const ProgramSchema = new Schema({
-  school_id: {
+  organization_id: {
     type: Schema.Types.ObjectId,
     ref: 'School',
-    required: [true, 'School ID is required']
+    required: [true, 'Organization ID is required']
   },
   program_name: {
     type: String,
@@ -105,7 +105,7 @@ const ProgramSchema = new Schema({
 });
 
 // Create indexes
-ProgramSchema.index({ school_id: 1, program_name: 1 }, { unique: true });
+ProgramSchema.index({ organization_id: 1, program_name: 1 }, { unique: true });
 
 // Create the model if it doesn't exist, otherwise use the existing one
 const Program = mongoose.models.Program || mongoose.model<IProgram>('Program', ProgramSchema);

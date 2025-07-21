@@ -1,7 +1,7 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IFlightSchedule extends Document {
-  school_id: mongoose.Types.ObjectId;
+  organization_id: mongoose.Types.ObjectId;
   plane_id: mongoose.Types.ObjectId;
   instructor_id?: mongoose.Types.ObjectId;
   student_id: mongoose.Types.ObjectId;
@@ -19,10 +19,10 @@ export interface IFlightSchedule extends Document {
 }
 
 const FlightScheduleSchema = new Schema<IFlightSchedule>({
-  school_id: {
+  organization_id: {
     type: Schema.Types.ObjectId,
     ref: 'School',
-    required: [true, 'School ID is required'],
+    required: [true, 'Organization ID is required'],
     index: true
   },
   plane_id: {
@@ -149,7 +149,7 @@ FlightScheduleSchema.pre(['findOneAndUpdate', 'updateOne'], function(next) {
 });
 
 // Create compound indexes for efficient querying
-FlightScheduleSchema.index({ school_id: 1, scheduled_start_time: 1 });
+FlightScheduleSchema.index({ organization_id: 1, scheduled_start_time: 1 });
 FlightScheduleSchema.index({ plane_id: 1, scheduled_start_time: 1 });
 FlightScheduleSchema.index({ instructor_id: 1, scheduled_start_time: 1 });
 FlightScheduleSchema.index({ student_id: 1, scheduled_start_time: 1 });

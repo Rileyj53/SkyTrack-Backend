@@ -1,70 +1,97 @@
-# Planes API Documentation
+# Aircraft/Planes API Documentation
 
 ## Overview
-The Planes API provides comprehensive aircraft management functionality including aircraft registration and maintenance record tracking. All endpoints are school-scoped with role-based access control.
+The Aircraft API provides comprehensive fleet management capabilities for flight training organizations, including aircraft registration, maintenance tracking, scheduling, and performance monitoring.
 
-## Access Control Matrix
+## Enhanced Features
+- **Fleet Management**: Complete aircraft inventory with detailed specifications
+- **Maintenance Tracking**: Scheduled and unscheduled maintenance records
+- **Availability Management**: Real-time aircraft availability for scheduling
+- **Performance Monitoring**: Flight hours, utilization rates, and operational metrics
+- **Compliance Tracking**: Registration, insurance, and certification management
 
-| Role | Planes | Records |
-|------|---------|---------|
-| **Student** | ✅ View Only | ❌ No Access |
-| **Instructor** | ✅ View Only | ✅ View Only |
-| **School Admin** | ✅ Full CRUD | ✅ Full CRUD |
-| **System Admin** | ✅ Full CRUD | ✅ Full CRUD |
+## Access Control
 
-## Plane Object Structure
+### Role-Based Permissions:
+
+| Role | List Aircraft | Create Aircraft | View Aircraft | Update Aircraft | Delete Aircraft |
+|------|---------------|-----------------|---------------|-----------------|-----------------|
+| **Student** | ✅ Organization Only | ❌ | ✅ Organization Only | ❌ | ❌ |
+| **Instructor** | ✅ Organization Only | ❌ | ✅ Organization Only | ❌ | ❌ |
+| **Organization Admin** | ✅ Organization Only | ✅ | ✅ Organization Only | ✅ Organization Only | ✅ Organization Only |
+| **System Admin** | ✅ All Organizations | ✅ | ✅ All | ✅ All | ✅ All |
+
+### Security Features:
+- **API key validation** required for all requests
+- **JWT authentication** verifies user identity and role
+- **Organization-scoped access** prevents cross-organization data access
+- **Maintenance alerts** for proactive fleet management
+- **Insurance tracking** with expiration notifications
+
+## Aircraft Object
 
 ```json
 {
-  "id": "ObjectId",
-  "registration": "N123AB",
-  "type": "Single Engine",
-  "model": "Cessna 172",
-  "year": 2020,
-  "engineHours": 1250.5,
-  "tach_time": 1248.2,
-  "hopps_time": 1252.8,
-  "lastMaintenance": "2024-01-15T00:00:00.000Z",
-  "nextMaintenance": "2024-04-15T00:00:00.000Z",
+  "_id": "ObjectId",
+  "organization_id": "ObjectId",
+  "registration": "N12345A",
+  "make": "Cessna",
+  "model": "172S",
+  "year": 2018,
+  "serial_number": "172S12345",
+  "category": "airplane",
+  "class": "single_engine_land",
+  "complex": false,
+  "high_performance": false,
+  "turbine": false,
+  "retractable_gear": false,
+  "engine": {
+    "type": "piston",
+    "manufacturer": "Lycoming",
+    "model": "IO-360-L2A",
+    "horsepower": 180,
+    "fuel_type": "100LL"
+  },
+  "avionics": {
+    "gps": "Garmin G1000",
+    "autopilot": true,
+    "transponder": "Mode S",
+    "ads_b": true
+  },
   "status": "Available",
-  "hourlyRates": {
-    "wet": 150.00,
-    "dry": 120.00,
-    "block": 140.00,
-    "instruction": 175.00,
-    "weekend": 160.00,
-    "solo": 130.00,
-    "checkride": 200.00
+  "hourly_rate": 125.00,
+  "total_time": 2450.7,
+  "time_since_overhaul": 450.2,
+  "next_annual": "2024-08-15T00:00:00.000Z",
+  "next_100hr": "2024-03-01T00:00:00.000Z",
+  "insurance": {
+    "company": "AOPA Insurance",
+    "policy_number": "INS123456",
+    "expiration": "2024-12-31T23:59:59.999Z",
+    "coverage_amount": 1000000
   },
-  "specialRates": [
-    {
-      "name": "Multi-Engine Training",
-      "rate": 250.00,
-      "conditions": "Requires multi-engine instructor"
-    }
-  ],
+  "maintenance_notes": "Recent annual inspection completed",
   "utilization": {
-    "monthly": 45.5,
-    "yearly": 520.2
-  },
-  "location": "Hangar A",
-  "notes": "Recently overhauled engine"
+    "daily_hours": 6.5,
+    "monthly_hours": 85.2,
+    "capacity_percentage": 78.5
+  }
 }
 ```
 
-## Core Planes Endpoints
+## Core Aircraft Endpoints
 
-### GET /api/schools/{schoolId}/planes
-List all planes for a school.
+### GET /api/organizations/{organizationId}/aircraft
+List all aircraft for an organization.
 
-**Access:** Students, Instructors, School Admins, System Admins
+**Access:** Students, Instructors, Organization Admins, System Admins
 
-**Student Access:** Students can view basic plane information including registration, model, status, rates, and location. This allows them to see available aircraft for booking and understand training fleet.
+**Student Access:** Students can view basic aircraft information including registration, model, status, rates, and location. This allows them to see available aircraft for booking and understand training fleet.
 
 **Response:**
 ```json
 {
-  "planes": [
+  "aircraft": [
     {
       "id": "64a1b2c3d4e5f6789012345",
       "registration": "N123AB",
@@ -83,10 +110,10 @@ List all planes for a school.
 }
 ```
 
-### POST /api/schools/{schoolId}/planes
-Create a new plane.
+### POST /api/organizations/{organizationId}/aircraft
+Create a new aircraft.
 
-**Access:** School Admins, System Admins
+**Access:** Organization Admins, System Admins
 
 **Required Fields:**
 - `registration` - Aircraft registration (automatically converted to uppercase)
@@ -122,27 +149,27 @@ Create a new plane.
 }
 ```
 
-### GET /api/schools/{schoolId}/planes/{planeId}
-Get a specific plane with all details.
+### GET /api/organizations/{organizationId}/aircraft/{aircraftId}
+Get a specific aircraft with all details.
 
-**Access:** Students, Instructors, School Admins, System Admins
+**Access:** Students, Instructors, Organization Admins, System Admins
 
-**Student Access:** Students can view basic plane details for aircraft at their school. This is essential for flight planning and understanding the aircraft they'll be training in.
+**Student Access:** Students can view basic aircraft details for aircraft at their organization. This is essential for flight planning and understanding the aircraft they'll be training in.
 
-### PUT /api/schools/{schoolId}/planes/{planeId}
-Update a plane's information.
+### PUT /api/organizations/{organizationId}/aircraft/{aircraftId}
+Update an aircraft's information.
 
-**Access:** School Admins, System Admins
+**Access:** Organization Admins, System Admins
 
 **Validation:**
 - All hourly rate fields must be present if `hourlyRates` is provided
 - `specialRates` must be an array
 - Automatic removal of `_id` fields from `specialRates`
 
-### DELETE /api/schools/{schoolId}/planes/{planeId}
-Delete a plane.
+### DELETE /api/organizations/{organizationId}/aircraft/{aircraftId}
+Delete an aircraft.
 
-**Access:** School Admins, System Admins
+**Access:** Organization Admins, System Admins
 
 ## Records System
 
@@ -182,10 +209,10 @@ The Records system provides a unified approach to tracking all aircraft maintena
 
 ## Records Collection Endpoints
 
-### GET /api/schools/{schoolId}/planes/{planeId}/records
+### GET /api/organizations/{organizationId}/aircraft/{aircraftId}/records
 Get all records for a specific aircraft.
 
-**Access:** Instructors, School Admins, System Admins
+**Access:** Instructors, Organization Admins, System Admins
 
 **Query Parameters:**
 - `record_type` - Filter by record type (`maintenance`, `airworthiness`, `service_bulletin`)
@@ -195,7 +222,7 @@ Get all records for a specific aircraft.
 
 **Example Request:**
 ```
-GET /api/schools/{schoolId}/planes/{planeId}/records?record_type=maintenance&status=completed&limit=10&offset=0
+GET /api/organizations/{organizationId}/aircraft/{aircraftId}/records?record_type=maintenance&status=completed&limit=10&offset=0
 ```
 
 **Response:**
@@ -225,10 +252,10 @@ GET /api/schools/{schoolId}/planes/{planeId}/records?record_type=maintenance&sta
 }
 ```
 
-### POST /api/schools/{schoolId}/planes/{planeId}/records
+### POST /api/organizations/{organizationId}/aircraft/{aircraftId}/records
 Create a new record for an aircraft.
 
-**Access:** Instructors, School Admins, System Admins
+**Access:** Instructors, Organization Admins, System Admins
 
 **Required Fields:**
 - `description` - Record description
@@ -264,10 +291,10 @@ Create a new record for an aircraft.
 }
 ```
 
-### PUT /api/schools/{schoolId}/planes/{planeId}/records
+### PUT /api/organizations/{organizationId}/aircraft/{aircraftId}/records
 Bulk update multiple records for an aircraft.
 
-**Access:** School Admins, System Admins
+**Access:** Organization Admins, System Admins
 
 **Request Body:**
 ```json
@@ -291,10 +318,10 @@ Bulk update multiple records for an aircraft.
 }
 ```
 
-### DELETE /api/schools/{schoolId}/planes/{planeId}/records
+### DELETE /api/organizations/{organizationId}/aircraft/{aircraftId}/records
 Bulk delete records for an aircraft.
 
-**Access:** School Admins, System Admins
+**Access:** Organization Admins, System Admins
 
 **Query Parameters:**
 - `ids` - Comma-separated list of record IDs to delete
@@ -303,8 +330,8 @@ Bulk delete records for an aircraft.
 
 **Example Requests:**
 ```
-DELETE /api/schools/{schoolId}/planes/{planeId}/records?ids=id1,id2,id3
-DELETE /api/schools/{schoolId}/planes/{planeId}/records?record_type=maintenance&status=draft
+DELETE /api/organizations/{organizationId}/aircraft/{aircraftId}/records?ids=id1,id2,id3
+DELETE /api/organizations/{organizationId}/aircraft/{aircraftId}/records?record_type=maintenance&status=draft
 ```
 
 **Response:**
@@ -317,10 +344,10 @@ DELETE /api/schools/{schoolId}/planes/{planeId}/records?record_type=maintenance&
 
 ## Individual Record Endpoints
 
-### GET /api/schools/{schoolId}/planes/{planeId}/records/{recordId}
+### GET /api/organizations/{organizationId}/aircraft/{aircraftId}/records/{recordId}
 Get a specific record.
 
-**Access:** Instructors, School Admins, System Admins
+**Access:** Instructors, Organization Admins, System Admins
 
 **Response:**
 ```json
@@ -349,10 +376,10 @@ Get a specific record.
 }
 ```
 
-### PUT /api/schools/{schoolId}/planes/{planeId}/records/{recordId}
+### PUT /api/organizations/{organizationId}/aircraft/{aircraftId}/records/{recordId}
 Update a specific record.
 
-**Access:** Instructors, School Admins, System Admins
+**Access:** Instructors, Organization Admins, System Admins
 
 **Example Request:**
 ```json
@@ -368,10 +395,10 @@ Update a specific record.
 }
 ```
 
-### DELETE /api/schools/{schoolId}/planes/{planeId}/records/{recordId}
+### DELETE /api/organizations/{organizationId}/aircraft/{aircraftId}/records/{recordId}
 Delete a specific record.
 
-**Access:** School Admins, System Admins
+**Access:** Organization Admins, System Admins
 
 **Response:**
 ```json
@@ -382,7 +409,7 @@ Delete a specific record.
 
 ## Status Values
 
-### Plane Status
+### Aircraft Status
 - `Available` - Ready for flight
 - `Maintenance` - Under maintenance
 - `Out of Service` - Not airworthy
@@ -400,7 +427,7 @@ Delete a specific record.
 
 ### Aircraft Registration
 - Automatically converted to uppercase
-- Must be unique within school
+- Must be unique within organization
 - Cannot be changed once created
 
 ### Hourly Rates
@@ -415,11 +442,11 @@ Delete a specific record.
 - `partsReplaced` must be an array of strings
 - `attachments` must be an array of objects with `url` and `name` fields
 
-### School Scoping
-- All aircraft belong to a specific school
-- Cross-school access is prevented
-- Students can only view aircraft at their enrolled school
-- System admins can access all schools
+### Organization Scoping
+- All aircraft belong to a specific organization
+- Cross-organization access is prevented
+- Students can only view aircraft at their enrolled organization
+- System admins can access all organizations
 
 ## Error Handling
 
@@ -442,7 +469,7 @@ Delete a specific record.
 **404 - Not Found:**
 ```json
 {
-  "error": "Plane not found or does not belong to this school"
+  "error": "Aircraft not found or does not belong to this organization"
 }
 ```
 
@@ -457,11 +484,11 @@ Delete a specific record.
 
 ### Aircraft Management
 - Registration numbers are automatically uppercased
-- Duplicate registrations within a school are prevented
+- Duplicate registrations within an organization are prevented
 - Aircraft deletion removes all associated records
 
 ### Records Management
-- Records are linked to specific aircraft and schools
+- Records are linked to specific aircraft and organizations
 - Historical record data is preserved
 - Flexible categorization supports different record types
 - Bulk operations support efficient data management
@@ -493,7 +520,7 @@ Delete a specific record.
 
 ### 1. Aircraft Registration
 ```json
-POST /api/schools/{schoolId}/planes
+POST /api/organizations/{organizationId}/aircraft
 {
   "registration": "n789gh",
   "type": "Multi Engine",
@@ -516,7 +543,7 @@ POST /api/schools/{schoolId}/planes
 
 ### 2. Maintenance Record Creation
 ```json
-POST /api/schools/{schoolId}/planes/{planeId}/records
+POST /api/organizations/{organizationId}/aircraft/{aircraftId}/records
 {
   "record_type": "maintenance",
   "title": "Annual Inspection",
@@ -537,7 +564,7 @@ POST /api/schools/{schoolId}/planes/{planeId}/records
 
 ### 3. Airworthiness Directive Compliance
 ```json
-POST /api/schools/{schoolId}/planes/{planeId}/records
+POST /api/organizations/{organizationId}/aircraft/{aircraftId}/records
 {
   "record_type": "airworthiness",
   "title": "AD 2024-03-22",
@@ -552,7 +579,7 @@ POST /api/schools/{schoolId}/planes/{planeId}/records
 
 ### 4. Service Bulletin Implementation
 ```json
-POST /api/schools/{schoolId}/planes/{planeId}/records
+POST /api/organizations/{organizationId}/aircraft/{aircraftId}/records
 {
   "record_type": "service_bulletin",
   "title": "SB 2024-05 - Avionics Update",
@@ -566,7 +593,7 @@ POST /api/schools/{schoolId}/planes/{planeId}/records
 
 ### 5. Bulk Status Update
 ```json
-PUT /api/schools/{schoolId}/planes/{planeId}/records
+PUT /api/organizations/{organizationId}/aircraft/{aircraftId}/records
 {
   "filter": {
     "record_type": "maintenance",
@@ -582,7 +609,7 @@ PUT /api/schools/{schoolId}/planes/{planeId}/records
 ## Security Features
 
 - **Role-based Access Control:** Different permissions for students, instructors, and admins
-- **School Isolation:** Aircraft and records isolated by school; students limited to their enrolled school
+- **Organization Isolation:** Aircraft and records isolated by organization; students limited to their enrolled organization
 - **API Key Authentication:** Required for all requests
 - **JWT Validation:** User identity verification
 - **Input Validation:** Comprehensive data validation

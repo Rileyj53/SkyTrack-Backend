@@ -9,7 +9,7 @@ export interface IPayment {
 }
 
 export interface IStudentLedger extends Document {
-  school_id: mongoose.Types.ObjectId;
+  organization_id: mongoose.Types.ObjectId;
   student_id: mongoose.Types.ObjectId;
   balance: number; // Can be negative
   charges: mongoose.Types.ObjectId[]; // References to approved flight invoices
@@ -47,10 +47,10 @@ const PaymentSchema = new Schema<IPayment>({
 }, { _id: false });
 
 const StudentLedgerSchema = new Schema<IStudentLedger>({
-  school_id: {
+  organization_id: {
     type: Schema.Types.ObjectId,
     ref: 'School',
-    required: [true, 'School ID is required'],
+    required: [true, 'Organization ID is required'],
     index: true
   },
   student_id: {
@@ -97,7 +97,7 @@ StudentLedgerSchema.pre(['findOneAndUpdate', 'updateOne'], function(next) {
 });
 
 // Create compound index for efficient querying
-StudentLedgerSchema.index({ school_id: 1, student_id: 1 }, { unique: true });
+StudentLedgerSchema.index({ organization_id: 1, student_id: 1 }, { unique: true });
 
 // Instance method to calculate balance from charges and payments
 StudentLedgerSchema.methods.calculateBalance = function() {

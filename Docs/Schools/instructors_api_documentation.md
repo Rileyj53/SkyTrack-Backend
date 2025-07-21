@@ -1,476 +1,144 @@
 # Instructors API Documentation
 
 ## Overview
-The Instructors API provides comprehensive management of flight instructors within schools. It includes full CRUD operations with role-based access control, instructor certification tracking, availability management, and student assignment capabilities.
+The Instructors API allows you to manage flight instructor records for flight training organizations, including comprehensive certification management, availability tracking, and performance analytics.
 
-## Base URL
-```
-{baseUrl}/api/schools/{schoolId}/instructors
-```
+## Enhanced Features
+- **Certification Management**: Track current certifications, expiration dates, and renewal requirements
+- **Availability Tracking**: Manage instructor schedules and availability windows
+- **Rate Management**: Flexible hourly rate structures for different services
+- **Performance Analytics**: Track flight hours, student success rates, and instructor ratings
+- **Status Management**: Active/Inactive status with automatic scheduling integration
 
-## Authentication
-All endpoints require:
-- **API Key**: Provided via `x-api-key` header
-- **JWT Token**: Provided via `Authorization: Bearer {token}` header
+## Access Control
 
-## Access Control Matrix
+### Role-Based Permissions:
 
-| Role | List Instructors | Create Instructor | Get Instructor | Update Instructor | Delete Instructor |
-|------|------------------|-------------------|----------------|-------------------|-------------------|
-| **Student** | ❌ | ❌ | ❌ | ❌ | ❌ |
-| **Instructor** | ✅ | ❌ | ✅ | ✅ (Own Only) | ❌ |
-| **School Admin** | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **System Admin** | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Role | List Instructors | Create Instructor | View Instructor | Update Instructor | Delete Instructor |
+|------|------------------|-------------------|-----------------|-------------------|-------------------|
+| **Student** | ✅ Organization Only | ❌ | ✅ Organization Only | ❌ | ❌ |
+| **Instructor** | ✅ Organization Only | ❌ | ✅ Own + Organization | ✅ Own Only | ❌ |
+| **Organization Admin** | ✅ Organization Only | ✅ | ✅ Organization Only | ✅ Organization Only | ✅ Organization Only |
+| **System Admin** | ✅ All Organizations | ✅ | ✅ All | ✅ All | ✅ All |
 
-## Instructor Object Structure
+### Security Features:
+- **API key validation** required for all requests
+- **JWT authentication** verifies user identity and role
+- **Organization-scoped access** prevents cross-organization data access
+- **Self-service capabilities** for instructors (own records only)
+- **Certification tracking** with expiration alerts
+
+## Instructor Object
 
 ```json
 {
   "_id": "ObjectId",
-  "school_id": "ObjectId",
-  "user_id": "ObjectId (references User)",
-  "contact_email": "string (required)",
-  "phone": "string (required)",
-  "certifications": ["string"],
-  "license_number": "string (required, unique)",
-  "emergency_contact": {
-    "name": "string",
-    "relationship": "string",
-    "phone": "string"
+  "organization_id": "ObjectId",
+  "user_id": "ObjectId", // Optional - links to User account
+  "contact_email": "instructor@example.com",
+  "phone": "555-123-4567",
+  "certifications": {
+    "cfi": {
+      "number": "CFI123456789",
+      "expiration_date": "2024-12-31T23:59:59.999Z",
+      "status": "active"
+    },
+    "cfii": {
+      "number": "CFII987654321",
+      "expiration_date": "2024-08-15T23:59:59.999Z",
+      "status": "active"
+    },
+    "mei": null
   },
-  "specialties": ["string"],
-  "status": "string (default: 'Active')",
+  "specialties": ["private_pilot", "instrument_rating", "commercial"],
   "hourlyRates": {
-    "primary": "number",
-    "instrument": "number",
-    "advanced": "number",
-    "multiEngine": "number"
+    "dual_instruction": 85.00,
+    "ground_instruction": 65.00,
+    "checkride_prep": 95.00
   },
-  "flightHours": "number",
-  "teachingHours": "number",
-  "availability": "string (default: 'Full-time')",
-  "students": "number",
-  "utilization": "number",
-  "ratings": ["object"],
-  "availability_time": {
-    "monday": ["string"],
-    "tuesday": ["string"],
-    "wednesday": ["string"],
-    "thursday": ["string"],
-    "friday": ["string"],
-    "saturday": ["string"],
-    "sunday": ["string"]
+  "availability": {
+    "monday": {
+      "available": true,
+      "start_time": "08:00",
+      "end_time": "17:00"
+    },
+    "tuesday": {
+      "available": true,
+      "start_time": "08:00",
+      "end_time": "17:00"
+    }
+    // ... other days
   },
-  "notes": "string",
-  "documents": ["object"],
-  "createdAt": "Date",
-  "updatedAt": "Date"
+  "status": "Active",
+  "hire_date": "2023-01-15T00:00:00.000Z",
+  "total_flight_hours": 2450.5,
+  "total_instruction_hours": 1250.0,
+  "rating": 4.7,
+  "student_success_rate": 92.3,
+  "emergency_contact": {
+    "name": "Emergency Contact Name",
+    "relationship": "Spouse",
+    "phone": "555-987-6543"
+  },
+  "notes": "Additional instructor notes",
+  "documents": [],
+  "createdAt": "2023-01-15T10:30:00.000Z",
+  "updatedAt": "2024-01-16T14:22:00.000Z"
 }
 ```
 
 ## API Endpoints
 
-### 1. List All Instructors
-**GET** `/api/schools/{schoolId}/instructors`
+### GET /api/organizations/{organizationId}/instructors
+List all instructors for a specific organization.
 
-Lists all instructors for a specific school with populated user information.
+### POST /api/organizations/{organizationId}/instructors
+Create a new instructor record.
 
-**Access Control:**
-- Students: ❌ No access
-- Instructors: ✅ Can view all instructors in their school
-- School Admins: ✅ Can view instructors in their school
-- System Admins: ✅ Full access
+### GET /api/organizations/{organizationId}/instructors/{instructorId}
+Get a specific instructor with all details.
 
-**Parameters:**
-- `schoolId` (path, required): School identifier
+### PUT /api/organizations/{organizationId}/instructors/{instructorId}
+Update an instructor record.
 
-**Response:**
-```json
-[
-  {
-    "_id": "instructor_id",
-    "school_id": "school_id",
-    "user_id": {
-      "_id": "user_id",
-      "first_name": "John",
-      "last_name": "Doe",
-      "email": "john.doe@example.com",
-      "role": "instructor"
-    },
-    "contact_email": "john.doe@flyschool.com",
-    "phone": "+1-555-0123",
-    "license_number": "CFI123456",
-    "certifications": ["CFI", "CFII", "MEI"],
-    "specialties": ["Instrument Training", "Commercial Training"],
-    "status": "Active",
-    "hourlyRates": {
-      "primary": 65,
-      "instrument": 75,
-      "advanced": 85,
-      "multiEngine": 95
-    },
-    "flightHours": 2500,
-    "teachingHours": 1200
-  }
-]
-```
-
-### 2. Create New Instructor
-**POST** `/api/schools/{schoolId}/instructors`
-
-Creates a new instructor record for a school.
-
-**Access Control:**
-- Students: ❌ No access
-- Instructors: ❌ No access
-- School Admins: ✅ Can create instructors in their school
-- System Admins: ✅ Full access
-
-**Parameters:**
-- `schoolId` (path, required): School identifier
-
-**Required Fields:**
-- `user_id`: Valid ObjectId referencing existing user with 'instructor' role
-- `contact_email`: Instructor's contact email
-- `phone`: Phone number
-- `license_number`: Unique instructor license number
-
-**Request Body:**
-```json
-{
-  "user_id": "user_object_id",
-  "contact_email": "instructor@example.com",
-  "phone": "+1-555-0123",
-  "license_number": "CFI123456",
-  "certifications": ["CFI", "CFII"],
-  "emergency_contact": {
-    "name": "Jane Doe",
-    "relationship": "Spouse",
-    "phone": "+1-555-0124"
-  },
-  "specialties": ["Primary Training", "Instrument Training"],
-  "hourlyRates": {
-    "primary": 65,
-    "instrument": 75,
-    "advanced": 85,
-    "multiEngine": 95
-  },
-  "availability_time": {
-    "monday": ["09:00-17:00"],
-    "tuesday": ["09:00-17:00"],
-    "wednesday": ["09:00-17:00"],
-    "thursday": ["09:00-17:00"],
-    "friday": ["09:00-17:00"],
-    "saturday": ["08:00-12:00"],
-    "sunday": []
-  }
-}
-```
-
-**Success Response (201 Created):**
-```json
-{
-  "message": "Instructor created successfully",
-  "instructor": { /* full instructor object */ },
-  "status": "success"
-}
-```
-
-### 3. Get Specific Instructor
-**GET** `/api/schools/{schoolId}/instructors/{instructorId}`
-
-Retrieves a specific instructor with populated user information.
-
-**Access Control:**
-- Students: ❌ No access
-- Instructors: ✅ Can view any instructor in their school
-- School Admins: ✅ Can view instructors in their school
-- System Admins: ✅ Full access
-
-**Parameters:**
-- `schoolId` (path, required): School identifier
-- `instructorId` (path, required): Instructor identifier
-
-**Success Response (200 OK):**
-```json
-{
-  "_id": "instructor_id",
-  "school_id": "school_id",
-  "user_id": {
-    "_id": "user_id",
-    "first_name": "John",
-    "last_name": "Doe",
-    "email": "john.doe@example.com",
-    "role": "instructor"
-  },
-  "contact_email": "john.doe@flyschool.com",
-  "phone": "+1-555-0123",
-  "license_number": "CFI123456",
-  "certifications": ["CFI", "CFII", "MEI"],
-  "emergency_contact": {
-    "name": "Jane Doe",
-    "relationship": "Spouse",
-    "phone": "+1-555-0124"
-  },
-  "specialties": ["Instrument Training", "Commercial Training"],
-  "status": "Active",
-  "hourlyRates": {
-    "primary": 65,
-    "instrument": 75,
-    "advanced": 85,
-    "multiEngine": 95
-  },
-  "flightHours": 2500,
-  "teachingHours": 1200,
-  "availability": "Full-time",
-  "students": 12,
-  "utilization": 85,
-  "ratings": [],
-  "availability_time": {
-    "monday": ["09:00-17:00"],
-    "tuesday": ["09:00-17:00"],
-    "wednesday": ["09:00-17:00"],
-    "thursday": ["09:00-17:00"],
-    "friday": ["09:00-17:00"],
-    "saturday": ["08:00-12:00"],
-    "sunday": []
-  },
-  "notes": "Experienced instructor specializing in instrument training",
-  "documents": []
-}
-```
-
-### 4. Update Instructor
-**PUT** `/api/schools/{schoolId}/instructors/{instructorId}`
-
-Updates an existing instructor record.
-
-**Access Control:**
-- Students: ❌ No access
-- Instructors: ✅ Can update only their own data
-- School Admins: ✅ Can update instructors in their school
-- System Admins: ✅ Full access
-
-**Parameters:**
-- `schoolId` (path, required): School identifier
-- `instructorId` (path, required): Instructor identifier
-
-**Request Body:** (All fields optional for update)
-```json
-{
-  "contact_email": "newemail@example.com",
-  "phone": "+1-555-9999",
-  "certifications": ["CFI", "CFII", "MEI", "ATP"],
-  "license_number": "CFI789012",
-  "specialties": ["Advanced Training", "Multi-Engine"],
-  "status": "Active",
-  "hourlyRates": {
-    "primary": 70,
-    "instrument": 80,
-    "advanced": 90,
-    "multiEngine": 100
-  },
-  "flightHours": 2600,
-  "teachingHours": 1250,
-  "availability": "Part-time",
-  "notes": "Updated instructor profile"
-}
-```
-
-**Success Response (200 OK):**
-```json
-{
-  "message": "Instructor updated successfully",
-  "instructor": { /* updated instructor object */ },
-  "status": "success"
-}
-```
-
-### 5. Delete Instructor
-**DELETE** `/api/schools/{schoolId}/instructors/{instructorId}`
-
-Deletes an instructor record.
-
-**Access Control:**
-- Students: ❌ No access
-- Instructors: ❌ No access
-- School Admins: ✅ Can delete instructors in their school
-- System Admins: ✅ Full access
-
-**Parameters:**
-- `schoolId` (path, required): School identifier
-- `instructorId` (path, required): Instructor identifier
-
-**Success Response (200 OK):**
-```json
-{
-  "message": "Instructor deleted successfully",
-  "status": "success"
-}
-```
+### DELETE /api/organizations/{organizationId}/instructors/{instructorId}
+Delete an instructor record.
 
 ## Validation Rules
 
-### Required Fields (Creation)
-- `user_id`: Must be valid ObjectId referencing existing user
-- `contact_email`: Valid email format
-- `phone`: Non-empty string
-- `license_number`: Non-empty string, must be unique
+### Required Fields
+- `contact_email` - Must be valid email format
+- `phone` - Valid phone number format
+- `license_number` - Must be unique across all instructors
 
 ### Business Rules
-1. **User Role Validation**: Referenced user must have 'instructor' role
-2. **License Uniqueness**: License numbers must be unique across all instructors
-3. **School Association**: Instructors can only be created/accessed within their associated school
-4. **Single Instructor Per User**: Each user can only have one instructor record per school
-5. **Self-Update Only**: Instructors can only update their own records (except admins)
+1. **License Uniqueness**: License numbers must be unique
+2. **Organization Association**: Instructors can only be created/accessed within their associated organization
+3. **Self-Update Only**: Instructors can only update their own records (except admins)
+4. **Certification Tracking**: Monitor expiration dates and renewal requirements
 
-### Optional Fields with Defaults
-- `status`: Defaults to 'Active'
-- `availability`: Defaults to 'Full-time'
-- `hourlyRates`: Defaults to all zeros
-- `certifications`: Defaults to empty array
-- `specialties`: Defaults to empty array
-- `emergency_contact`: Defaults to empty object
-- `availability_time`: Defaults to empty schedule
+## Common Errors
 
-## Error Responses
+**400 Bad Request:**
+- Invalid organization ID format
+- Missing required fields
+- Invalid certification format
 
-### 400 Bad Request
-```json
-{
-  "error": "Invalid school ID or instructor ID"
-}
-```
+**401 Unauthorized:**
+- Missing or invalid authentication token
 
-```json
-{
-  "error": "Missing required fields: user_id, contact_email, phone, license_number"
-}
-```
+**403 Forbidden:**
+- Insufficient permissions to access organization data
+- Instructors attempting to update other instructors' records
 
-```json
-{
-  "error": "Validation error",
-  "details": { /* Mongoose validation errors */ }
-}
-```
+**404 Not Found:**
+- Instructor not found
+- Organization not found
 
-### 401 Unauthorized
-```json
-{
-  "error": "No token provided"
-}
-```
+**409 Conflict:**
+- License number already in use
+- Instructor already exists for this user
 
-```json
-{
-  "error": "Invalid token"
-}
-```
-
-### 403 Forbidden
-```json
-{
-  "error": "You do not have access to this school"
-}
-```
-
-```json
-{
-  "error": "Insufficient permissions to create instructors"
-}
-```
-
-```json
-{
-  "error": "Forbidden: Instructors can only update their own data"
-}
-```
-
-### 404 Not Found
-```json
-{
-  "error": "Instructor not found"
-}
-```
-
-```json
-{
-  "error": "User not found"
-}
-```
-
-### 409 Conflict
-```json
-{
-  "error": "Instructor already exists for this user in this school"
-}
-```
-
-```json
-{
-  "error": "License number is already in use"
-}
-```
-
-### 500 Internal Server Error
-```json
-{
-  "error": "Failed to create instructor"
-}
-```
-
-## Integration Points
-
-### User Management Integration
-- Instructors are linked to User accounts via `user_id`
-- User must have `instructor` role to create instructor record
-- User information is populated in responses (first_name, last_name, email, role)
-
-### School Management Integration
-- All instructor operations are scoped to specific schools
-- School access validation ensures users can only access instructors in their schools
-- School admins have full control within their school boundaries
-
-### Flight Scheduling Integration
-- Instructor availability schedules support flight booking systems
-- Hourly rates support different training types and pricing
-- Student assignments and utilization tracking
-
-### Certification Tracking
-- Support for multiple instructor certifications (CFI, CFII, MEI, ATP, etc.)
-- License number tracking with uniqueness validation
-- Document storage for certification files
-
-## Use Cases & Scenarios
-
-### Scenario 1: School Admin Creating New Instructor
-1. School admin authenticates and provides school access
-2. Selects existing user with 'instructor' role
-3. Provides required contact information and license details
-4. Sets hourly rates and availability schedule
-5. System validates license uniqueness and creates instructor record
-
-### Scenario 2: Instructor Updating Own Profile
-1. Instructor authenticates with their credentials
-2. Updates contact information, availability, or hourly rates
-3. System validates they're only updating their own record
-4. Changes are saved and reflected in scheduling system
-
-### Scenario 3: System Admin Managing Instructors
-1. System admin accesses any school's instructor records
-2. Can create, update, or delete any instructor
-3. Manages instructor certifications and specialties
-4. Tracks utilization and performance metrics
-
-### Scenario 4: Instructor License Management
-1. Admin attempts to update instructor's license number
-2. System validates new license number isn't already in use
-3. If unique, license is updated across all related records
-4. If duplicate, returns conflict error with details
-
-### Scenario 5: Instructor Role Verification
-1. Admin attempts to create instructor for existing user
-2. System verifies user has 'instructor' role
-3. If correct role, proceeds with instructor creation
-4. If incorrect role, returns validation error 
+**500 Internal Server Error:**
+- Database connection issues
+- Unexpected server errors

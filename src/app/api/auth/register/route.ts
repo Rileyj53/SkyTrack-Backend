@@ -113,7 +113,7 @@ export const POST = secureApiRoute(async (request, { params, securityContext }) 
     first_name, 
     last_name, 
     role = 'student', 
-    school_id, 
+    organization_id, 
     student_id, 
     instructor_id 
   } = await request.json();
@@ -217,7 +217,7 @@ export const POST = secureApiRoute(async (request, { params, securityContext }) 
       auditId: securityContext.auditId,
       email: email,
       role: role,
-      hasSchoolId: !!school_id,
+      hasOrganizationId: !!organization_id,
       hasStudentId: !!student_id,
       hasInstructorId: !!instructor_id,
       timestamp: new Date().toISOString()
@@ -230,7 +230,7 @@ export const POST = secureApiRoute(async (request, { params, securityContext }) 
       first_name: first_name.trim(),
       last_name: last_name.trim(),
       role,
-      school_id: school_id || null,
+      organization_id: organization_id || null,
       student_id: student_id || null,
       instructor_id: instructor_id || null,
       isActive: true,
@@ -286,7 +286,7 @@ export const POST = secureApiRoute(async (request, { params, securityContext }) 
           first_name: user.first_name,
           last_name: user.last_name,
           role: user.role,
-          school_id: user.school_id,
+          organization_id: user.organization_id,
           student_id: user.student_id,
           instructor_id: user.instructor_id,
           isActive: user.isActive,

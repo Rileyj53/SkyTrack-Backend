@@ -5,7 +5,7 @@ export interface IPlane extends Document {
   type: string;
   aircraftModel: string;
   year?: number;
-  school_id: mongoose.Types.ObjectId;
+  organization_id: mongoose.Types.ObjectId;
   status: string;
   engineHours?: number;
   tach_time?: number;
@@ -38,7 +38,7 @@ const planeSchema = new Schema<IPlane>({
   type: { type: String, required: true },
   aircraftModel: { type: String, required: true },
   year: { type: Number },
-  school_id: { type: Schema.Types.ObjectId, ref: 'School', required: true },
+  organization_id: { type: Schema.Types.ObjectId, ref: 'School', required: true },
   status: { type: String, required: true, default: 'active' },
   engineHours: { type: Number },
   tach_time: { type: Number },

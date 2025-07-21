@@ -18,6 +18,8 @@ export interface UserDocument extends Document {
   first_name?: string;
   last_name?: string;
   password: string | null;
+  phone?: string;
+  avatar?: string;
   googleId?: string;
   isActive: boolean;
   resetToken?: string;
@@ -26,7 +28,7 @@ export interface UserDocument extends Document {
   magicTokenExpiration?: Date;
   magicCode?: string;
   role: string;
-  school_id?: mongoose.Types.ObjectId;
+  organization_id?: mongoose.Types.ObjectId;
   student_id?: mongoose.Types.ObjectId;
   instructor_id?: mongoose.Types.ObjectId;
   failedLoginAttempts: number;
@@ -101,6 +103,17 @@ const UserSchema = new Schema<UserDocument>(
       required: [true, 'Password is required'],
       minlength: [8, 'Password must be at least 8 characters long']
     },
+    phone: {
+      type: String,
+      required: false,
+      trim: true,
+      default: null,
+    },
+    avatar: {
+      type: String,
+      required: false,
+      default: null,
+    },
     googleId: {
       type: String,
       default: null,
@@ -136,7 +149,7 @@ const UserSchema = new Schema<UserDocument>(
       enum: ['sys_admin', 'school_admin', 'instructor', 'student'],
       default: 'student',
     },
-    school_id: {
+    organization_id: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'School',
       required: false,

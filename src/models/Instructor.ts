@@ -32,7 +32,7 @@ interface IHourlyRates {
 
 // Main instructor interface
 export interface IInstructor extends Document {
-  school_id: mongoose.Types.ObjectId;
+  organization_id: mongoose.Types.ObjectId;
   user_id?: mongoose.Types.ObjectId;
   contact_email: string;
   phone?: string;
@@ -62,7 +62,7 @@ export interface IInstructor extends Document {
 // Schema definition
 const InstructorSchema = new Schema<IInstructor>(
   {
-    school_id: {
+    organization_id: {
       type: Schema.Types.ObjectId,
       ref: 'School',
       required: true,
@@ -242,7 +242,7 @@ const InstructorSchema = new Schema<IInstructor>(
 );
 
 // Create indexes
-InstructorSchema.index({ school_id: 1 });
+InstructorSchema.index({ organization_id: 1 });
 InstructorSchema.index({ license_number: 1 }, { unique: true, sparse: true });
 InstructorSchema.index({ status: 1 });
 

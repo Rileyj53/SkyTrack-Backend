@@ -9,7 +9,7 @@ const SECURITY_CONFIG: SecurityConfig = {
   requireApiKey: true, // API key required
   requireCSRF: true, // CSRF protection required
   allowedRoles: ['sys_admin', 'school_admin', 'instructor', 'student'], // All authenticated users
-  requireSchoolAccess: false, // User can access their own profile regardless of school
+  requireOrganizationAccess: false, // User can access their own profile regardless of organization
   enableFraudDetection: true, // Monitor profile access patterns
   enableAdvancedAudit: true, // Track profile access
   dataClassification: 'confidential', // Contains personal information
@@ -54,7 +54,7 @@ export const GET = secureApiRoute(async (request, { params, securityContext }) =
   try {
     // Extract user information from security context
     const userId = securityContext.user?.id;
-    const schoolId = securityContext.user?.school_id;
+    const organizationId = securityContext.user?.organization_id;
     const studentId = securityContext.user?.student_id;
     const instructorId = securityContext.user?.instructor_id;
 
@@ -63,7 +63,7 @@ export const GET = secureApiRoute(async (request, { params, securityContext }) =
       message: 'Fetching user profile data',
       auditId: securityContext.auditId,
       userId: userId,
-      hasSchoolId: !!schoolId,
+      hasOrganizationId: !!organizationId,
       hasStudentId: !!studentId,
       hasInstructorId: !!instructorId,
       timestamp: new Date().toISOString()
@@ -94,13 +94,13 @@ export const GET = secureApiRoute(async (request, { params, securityContext }) =
     // Fetch related data in parallel for better performance
     const dataFetches = [];
     
-    // Get school information if available
-    if (schoolId) {
+    // Get organization information if available
+    if (organizationId) {
       dataFetches.push(
-        School.findById(schoolId).lean().then(school => ({ school })).catch(() => ({ school: null }))
+        School.findById(organizationId).lean().then(organization => ({ organization })).catch(() => ({ organization: null }))
       );
     } else {
-      dataFetches.push(Promise.resolve({ school: null }));
+      dataFetches.push(Promise.resolve({ organization: null }));
     }
     
     // Get student information if available
@@ -122,14 +122,14 @@ export const GET = secureApiRoute(async (request, { params, securityContext }) =
     }
 
     // Wait for all data fetches to complete
-    const [schoolData, studentData, instructorData] = await Promise.all(dataFetches);
+    const [organizationData, studentData, instructorData] = await Promise.all(dataFetches);
 
     console.log(JSON.stringify({
       level: 'INFO',
       message: 'Related data fetched successfully',
       auditId: securityContext.auditId,
       userId: userId,
-      hasSchool: !!schoolData.school,
+      hasOrganization: !!organizationData.organization,
       hasStudent: !!studentData.student,
       hasInstructor: !!instructorData.instructor,
       timestamp: new Date().toISOString()
@@ -165,7 +165,7 @@ export const GET = secureApiRoute(async (request, { params, securityContext }) =
       data: {
         user: {
           ...cleanUser,
-          school: schoolData.school || null,
+          organization: organizationData.organization || null,
           student: studentData.student || null,
           instructor: instructorData.instructor || null
         }
