@@ -9,7 +9,6 @@ const SECURITY_CONFIG: SecurityConfig = {
   requireApiKey: true, // API key required
   requireCSRF: true, // CSRF protection for destructive action
   allowedRoles: ['sys_admin', 'school_admin', 'instructor', 'student'], // All authenticated users
-  requireSchoolAccess: false, // User can disable their own MFA
   enableFraudDetection: true, // Monitor MFA disable attempts
   enableAdvancedAudit: true, // Track all MFA security changes
   dataClassification: 'restricted', // MFA changes are highly sensitive
