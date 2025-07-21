@@ -16,7 +16,6 @@ const FLIGHT_INVOICES_SECURITY_CONFIG: SecurityConfig = {
   requireApiKey: true,
   requireCSRF: false, // GET operations don't need CSRF
   allowedRoles: ['sys_admin', 'school_admin', 'instructor'],
-  requireSchoolAccess: true,
   enableFraudDetection: true,
   enableAdvancedAudit: true,
   dataClassification: 'confidential',
@@ -32,7 +31,6 @@ const FLIGHT_INVOICES_CREATE_SECURITY_CONFIG: SecurityConfig = {
   requireApiKey: true,
   requireCSRF: true, // POST operations need CSRF
   allowedRoles: ['sys_admin', 'school_admin', 'instructor'],
-  requireSchoolAccess: true,
   enableFraudDetection: true,
   enableAdvancedAudit: true,
   dataClassification: 'confidential',

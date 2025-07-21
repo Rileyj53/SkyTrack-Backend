@@ -12,7 +12,6 @@ const FLIGHT_INVOICE_SECURITY_CONFIG: SecurityConfig = {
   requireApiKey: true,
   requireCSRF: false, // GET operations don't need CSRF
   allowedRoles: ['sys_admin', 'school_admin', 'instructor'],
-  requireSchoolAccess: true,
   enableFraudDetection: true,
   enableAdvancedAudit: true,
   dataClassification: 'confidential',
@@ -28,7 +27,6 @@ const FLIGHT_INVOICE_MODIFY_SECURITY_CONFIG: SecurityConfig = {
   requireApiKey: true,
   requireCSRF: true, // PUT/DELETE operations need CSRF
   allowedRoles: ['sys_admin', 'school_admin', 'instructor'],
-  requireSchoolAccess: true,
   enableFraudDetection: true,
   enableAdvancedAudit: true,
   dataClassification: 'confidential',
@@ -44,7 +42,6 @@ const FLIGHT_INVOICE_DELETE_SECURITY_CONFIG: SecurityConfig = {
   requireApiKey: true,
   requireCSRF: true,
   allowedRoles: ['sys_admin', 'school_admin'],
-  requireSchoolAccess: true,
   enableFraudDetection: true,
   enableAdvancedAudit: true,
   dataClassification: 'confidential',

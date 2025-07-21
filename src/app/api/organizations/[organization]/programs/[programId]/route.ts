@@ -146,7 +146,7 @@ export const PUT = secureApiRoute(async (
     level: 'INFO',
     message: 'Processing program update request',
     auditId: securityContext.auditId,
-    organizationId: params.organizationId,
+    organizationId: params.organization,
     programId: params.programId,
     userId: securityContext.user?.id,
     userRole: securityContext.user?.role,
@@ -177,13 +177,13 @@ export const PUT = secureApiRoute(async (
   }
 
   // Validate IDs
-  if (!mongoose.Types.ObjectId.isValid(params.organizationId) || 
+  if (!mongoose.Types.ObjectId.isValid(params.organization) || 
       !mongoose.Types.ObjectId.isValid(params.programId)) {
     console.warn(JSON.stringify({
       level: 'WARN',
       message: 'Invalid ID format provided for program update',
       auditId: securityContext.auditId,
-      organizationId: params.organizationId,
+      organizationId: params.organization,
       programId: params.programId,
       timestamp: new Date().toISOString()
     }));
@@ -199,13 +199,13 @@ export const PUT = secureApiRoute(async (
   }
 
   // Find organization by ID (still using School model for now)
-  const organization = await (School as any).findById(params.organizationId);
+  const organization = await (School as any).findById(params.organization);
   if (!organization) {
     console.warn(JSON.stringify({
       level: 'WARN',
       message: 'Organization not found for program update',
       auditId: securityContext.auditId,
-      organizationId: params.organizationId,
+      organizationId: params.organization,
       timestamp: new Date().toISOString()
     }));
     
@@ -222,7 +222,7 @@ export const PUT = secureApiRoute(async (
   // Find program by ID (still using organization_id in database for now)
   const program = await (Program as any).findOne({
     _id: params.programId,
-    organization_id: params.organizationId
+    organization_id: params.organization
   });
 
   if (!program) {
@@ -231,7 +231,7 @@ export const PUT = secureApiRoute(async (
       message: 'Program not found for update',
       auditId: securityContext.auditId,
       programId: params.programId,
-      organizationId: params.organizationId,
+      organizationId: params.organization,
       timestamp: new Date().toISOString()
     }));
     
@@ -413,7 +413,7 @@ export const DELETE = secureApiRoute(async (
     level: 'INFO',
     message: 'Processing program deletion request',
     auditId: securityContext.auditId,
-    organizationId: params.organizationId,
+    organizationId: params.organization,
     programId: params.programId,
     userId: securityContext.user?.id,
     userRole: securityContext.user?.role,
@@ -444,13 +444,13 @@ export const DELETE = secureApiRoute(async (
   }
 
   // Validate IDs
-  if (!mongoose.Types.ObjectId.isValid(params.organizationId) || 
+  if (!mongoose.Types.ObjectId.isValid(params.organization) || 
       !mongoose.Types.ObjectId.isValid(params.programId)) {
     console.warn(JSON.stringify({
       level: 'WARN',
       message: 'Invalid ID format provided for program deletion',
       auditId: securityContext.auditId,
-      organizationId: params.organizationId,
+      organizationId: params.organization,
       programId: params.programId,
       timestamp: new Date().toISOString()
     }));
@@ -466,13 +466,13 @@ export const DELETE = secureApiRoute(async (
   }
 
   // Find organization by ID (still using School model for now)
-  const organization = await (School as any).findById(params.organizationId);
+  const organization = await (School as any).findById(params.organization);
   if (!organization) {
     console.warn(JSON.stringify({
       level: 'WARN',
       message: 'Organization not found for program deletion',
       auditId: securityContext.auditId,
-      organizationId: params.organizationId,
+      organizationId: params.organization,
       timestamp: new Date().toISOString()
     }));
     
@@ -489,7 +489,7 @@ export const DELETE = secureApiRoute(async (
   // Find and delete program (still using organization_id in database for now)
   const program = await (Program as any).findOneAndDelete({
     _id: params.programId,
-    organization_id: params.organizationId
+    organization_id: params.organization
   });
 
   if (!program) {
@@ -498,7 +498,7 @@ export const DELETE = secureApiRoute(async (
       message: 'Program not found for deletion',
       auditId: securityContext.auditId,
       programId: params.programId,
-      organizationId: params.organizationId,
+      organizationId: params.organization,
       timestamp: new Date().toISOString()
     }));
     
@@ -518,7 +518,7 @@ export const DELETE = secureApiRoute(async (
     auditId: securityContext.auditId,
     programId: params.programId,
     programName: program.program_name,
-    organizationId: params.organizationId,
+    organizationId: params.organization,
     deletedBy: securityContext.user?.id,
     processingTime: Date.now() - startTime,
     timestamp: new Date().toISOString()

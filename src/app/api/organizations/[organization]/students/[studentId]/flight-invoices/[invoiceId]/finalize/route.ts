@@ -11,7 +11,6 @@ const FLIGHT_INVOICE_FINALIZE_SECURITY_CONFIG: SecurityConfig = {
   requireApiKey: true,
   requireCSRF: true, // POST operations need CSRF
   allowedRoles: ['sys_admin', 'school_admin'],
-  requireSchoolAccess: true,
   enableFraudDetection: true,
   enableAdvancedAudit: true,
   dataClassification: 'confidential',

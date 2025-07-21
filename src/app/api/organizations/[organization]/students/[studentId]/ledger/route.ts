@@ -16,7 +16,6 @@ const STUDENT_LEDGER_SECURITY_CONFIG: SecurityConfig = {
   requireApiKey: true,
   requireCSRF: false, // GET operations don't need CSRF
   allowedRoles: ['sys_admin', 'school_admin', 'instructor', 'student'],
-  requireSchoolAccess: true,
   enableFraudDetection: true,
   enableAdvancedAudit: true,
   dataClassification: 'confidential',
@@ -32,7 +31,6 @@ const STUDENT_LEDGER_MODIFY_SECURITY_CONFIG: SecurityConfig = {
   requireApiKey: true,
   requireCSRF: true, // POST/PUT operations need CSRF
   allowedRoles: ['sys_admin', 'school_admin'],
-  requireSchoolAccess: true,
   enableFraudDetection: true,
   enableAdvancedAudit: true,
   dataClassification: 'confidential',
@@ -48,7 +46,6 @@ const STUDENT_LEDGER_DELETE_SECURITY_CONFIG: SecurityConfig = {
   requireApiKey: true,
   requireCSRF: true,
   allowedRoles: ['sys_admin'],
-  requireSchoolAccess: true,
   enableFraudDetection: true,
   enableAdvancedAudit: true,
   dataClassification: 'confidential',
