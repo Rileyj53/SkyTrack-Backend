@@ -126,6 +126,7 @@ export const GET = secureApiRoute(async (
   const planeId = url.searchParams.get('plane_id');
   const instructorId = url.searchParams.get('instructor_id');
   const studentId = url.searchParams.get('student_id');
+  const search = url.searchParams.get('search'); // New search parameter
   const sortField = url.searchParams.get('sortField') || 'scheduled_start_time';
   const sortDirection = url.searchParams.get('sortDirection') || 'asc';
   const statusOrder = url.searchParams.get('statusOrder') || 'In-progress,Scheduled,Completed,Canceled';
@@ -174,6 +175,7 @@ export const GET = secureApiRoute(async (
     })
     .populate({
       path: 'instructor_id',
+      select: 'contact_email status flightHours user_id',
       populate: {
         path: 'user_id',
         select: 'first_name last_name email'
@@ -181,6 +183,7 @@ export const GET = secureApiRoute(async (
     })
     .populate({
       path: 'student_id',
+      select: 'contact_email program status enrollmentDate user_id',
       populate: {
         path: 'user_id',
         select: 'first_name last_name email'
@@ -188,8 +191,72 @@ export const GET = secureApiRoute(async (
     })
     .lean();
 
+  // Apply search filter if search parameter is provided
+  let filteredSchedules = allSchedules;
+  if (search && search.trim()) {
+    const searchTerm = search.toLowerCase().trim();
+    
+    filteredSchedules = allSchedules.filter((schedule: any) => {
+      // Search in flight schedule fields
+      const scheduleFields = [
+        schedule.flight_type,
+        schedule.status,
+        schedule.notes
+      ].filter(Boolean).join(' ').toLowerCase();
+      
+      // Search in plane information
+      const planeFields = schedule.plane_id ? [
+        schedule.plane_id.registration,
+        schedule.plane_id.type,
+        schedule.plane_id.aircraftModel,
+        schedule.plane_id.status
+      ].filter(Boolean).join(' ').toLowerCase() : '';
+      
+      // Search in instructor information
+      const instructorFields = schedule.instructor_id ? [
+        schedule.instructor_id.contact_email,
+        schedule.instructor_id.status,
+        schedule.instructor_id.flightHours?.toString(),
+        schedule.instructor_id.user_id?.first_name,
+        schedule.instructor_id.user_id?.last_name,
+        schedule.instructor_id.user_id?.email
+      ].filter(Boolean).join(' ').toLowerCase() : '';
+      
+      // Search in student information
+      const studentFields = schedule.student_id ? [
+        schedule.student_id.contact_email,
+        schedule.student_id.program,
+        schedule.student_id.status,
+        schedule.student_id.enrollmentDate,
+        schedule.student_id.user_id?.first_name,
+        schedule.student_id.user_id?.last_name,
+        schedule.student_id.user_id?.email
+      ].filter(Boolean).join(' ').toLowerCase() : '';
+      
+      // Search in organization information
+      const organizationFields = schedule.organization_id ? [
+        schedule.organization_id.name,
+        schedule.organization_id.address,
+        schedule.organization_id.airport,
+        schedule.organization_id.phone,
+        schedule.organization_id.email
+      ].filter(Boolean).join(' ').toLowerCase() : '';
+      
+      // Combine all searchable fields
+      const allSearchableText = [
+        scheduleFields,
+        planeFields,
+        instructorFields,
+        studentFields,
+        organizationFields
+      ].join(' ');
+      
+      return allSearchableText.includes(searchTerm);
+    });
+  }
+
   // Sort the results according to custom status order and then by time
-  const sortedSchedules = allSchedules.sort((a: any, b: any) => {
+  const sortedSchedules = filteredSchedules.sort((a: any, b: any) => {
     // First sort by status order (case-insensitive)
     const statusOrderA = statusOrderArray.findIndex(status => 
       status.toLowerCase() === a.status.toLowerCase()
@@ -224,8 +291,8 @@ export const GET = secureApiRoute(async (
   // Apply pagination to sorted results
   const schedules = sortedSchedules.slice(skip, skip + limit);
 
-  // Get total count for pagination
-  const total = await FlightSchedule.countDocuments(filter);
+  // Get total count for pagination (after search filtering)
+  const total = filteredSchedules.length;
 
   console.log(JSON.stringify({
     level: 'INFO',
@@ -233,8 +300,10 @@ export const GET = secureApiRoute(async (
     auditId: securityContext.auditId,
     organizationId: params.organization,
     userRole: userRole,
+    searchTerm: search || null,
     schedulesReturned: schedules.length,
     totalSchedules: total,
+    originalTotal: allSchedules.length,
     processingTime: Date.now() - startTime,
     timestamp: new Date().toISOString()
   }));
@@ -249,7 +318,12 @@ export const GET = secureApiRoute(async (
         limit,
         total,
         pages: Math.ceil(total / limit)
-      }
+      },
+      search: search ? {
+        term: search,
+        resultsFound: total,
+        originalTotal: allSchedules.length
+      } : null
     },
     auditId: securityContext.auditId,
     timestamp: new Date().toISOString()
@@ -513,8 +587,10 @@ export const POST = secureApiRoute(async (
     })
     .populate({
       path: 'student_id',
+      model: 'Student', // Explicitly specify model
       populate: {
         path: 'user_id',
+        model: 'User',
         select: 'first_name last_name'
       }
     })
@@ -572,8 +648,10 @@ export const POST = secureApiRoute(async (
       })
       .populate({
         path: 'instructor_id',
+        model: 'Instructor', // Explicitly specify model
         populate: {
           path: 'user_id',
+          model: 'User',
           select: 'first_name last_name'
         }
       })
@@ -653,6 +731,7 @@ export const POST = secureApiRoute(async (
     })
     .populate({
       path: 'instructor_id',
+      select: 'contact_email status flightHours user_id',
       populate: {
         path: 'user_id',
         select: 'first_name last_name email'
@@ -660,6 +739,7 @@ export const POST = secureApiRoute(async (
     })
     .populate({
       path: 'student_id',
+      select: 'contact_email program status enrollmentDate user_id',
       populate: {
         path: 'user_id',
         select: 'first_name last_name email'

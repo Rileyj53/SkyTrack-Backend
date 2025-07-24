@@ -61,11 +61,380 @@ export const GET = secureApiRoute(async (
     }, { status: 400 });
   }
 
-  // Find all instructors for the organization (still using organization_id in database for now)
-  const organizationId = new mongoose.Types.ObjectId(params.organization);
-  const instructors = await (mongoose.model('Instructor') as any).find({
-    organization_id: organizationId
-  }).populate('user_id', 'first_name last_name email role').lean();
+  // Parse query parameters
+  const { searchParams } = new URL(request.url);
+  const page = parseInt(searchParams.get('page') || '1');
+  const limit = parseInt(searchParams.get('limit') || '50');
+  const search = searchParams.get('search') || '';
+  const status = searchParams.get('status') || '';
+  const certification = searchParams.get('certification') || '';
+  const specialty = searchParams.get('specialty') || '';
+  const availability = searchParams.get('availability') || '';
+  const minFlightHours = searchParams.get('minFlightHours') || '';
+  const maxFlightHours = searchParams.get('maxFlightHours') || '';
+  const minTeachingHours = searchParams.get('minTeachingHours') || '';
+  const maxTeachingHours = searchParams.get('maxTeachingHours') || '';
+  const minUtilization = searchParams.get('minUtilization') || '';
+  const maxUtilization = searchParams.get('maxUtilization') || '';
+  const hasEmergencyContact = searchParams.get('has_emergency_contact') || '';
+  const hasNotes = searchParams.get('has_notes') || '';
+  const sortField = searchParams.get('sortField') || 'contact_email';
+  const sortDirection = searchParams.get('sortDirection') || 'asc';
+
+  // Validate pagination parameters
+  if (page < 1 || limit < 1 || limit > 200) {
+    return NextResponse.json({
+      error: {
+        message: 'Invalid pagination parameters. Page must be >= 1 and limit must be between 1 and 200',
+        code: 'INVALID_PAGINATION',
+        requestId: securityContext.auditId,
+        timestamp: new Date().toISOString()
+      }
+    }, { status: 400 });
+  }
+
+  // Build the base query (still using organization_id in database for now)
+  const baseQuery: any = { 
+    organization_id: new mongoose.Types.ObjectId(params.organization) 
+  };
+
+  // Add status filter
+  if (status) {
+    baseQuery.status = status;
+  }
+
+  // Add certification filter
+  if (certification) {
+    baseQuery.certifications = { $in: [certification] };
+  }
+
+  // Add specialty filter
+  if (specialty) {
+    baseQuery.specialties = { $in: [specialty] };
+  }
+
+  // Add availability filter
+  if (availability) {
+    baseQuery.availability = availability;
+  }
+
+  // Add flight hours range filter
+  if (minFlightHours || maxFlightHours) {
+    baseQuery.flightHours = {};
+    if (minFlightHours) {
+      baseQuery.flightHours.$gte = parseInt(minFlightHours);
+    }
+    if (maxFlightHours) {
+      baseQuery.flightHours.$lte = parseInt(maxFlightHours);
+    }
+  }
+
+  // Add teaching hours range filter
+  if (minTeachingHours || maxTeachingHours) {
+    baseQuery.teachingHours = {};
+    if (minTeachingHours) {
+      baseQuery.teachingHours.$gte = parseInt(minTeachingHours);
+    }
+    if (maxTeachingHours) {
+      baseQuery.teachingHours.$lte = parseInt(maxTeachingHours);
+    }
+  }
+
+  // Add utilization range filter
+  if (minUtilization || maxUtilization) {
+    baseQuery.utilization = {};
+    if (minUtilization) {
+      baseQuery.utilization.$gte = parseFloat(minUtilization);
+    }
+    if (maxUtilization) {
+      baseQuery.utilization.$lte = parseFloat(maxUtilization);
+    }
+  }
+
+  // Add emergency contact filter
+  if (hasEmergencyContact === 'true') {
+    baseQuery.emergency_contact = { $exists: true, $ne: null };
+  } else if (hasEmergencyContact === 'false') {
+    baseQuery.emergency_contact = { $exists: false };
+  }
+
+  // Add notes filter
+  if (hasNotes === 'true') {
+    baseQuery.notes = { $exists: true, $ne: null };
+  } else if (hasNotes === 'false') {
+    baseQuery.notes = { $exists: false };
+  }
+
+  // Calculate skip value for pagination
+  const skip = (page - 1) * limit;
+
+  let instructors;
+  let totalCount;
+  let searchConditions: any[] = [];
+
+  if (search) {
+    // Enhanced search functionality with better matching
+    const searchTerm = search.trim();
+    const searchRegex = new RegExp(searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+    
+    // Create more sophisticated search conditions
+    searchConditions = [];
+    
+    // Exact email match (highest priority)
+    searchConditions.push({ contact_email: { $regex: `^${searchTerm}$`, $options: 'i' } });
+    
+    // Partial email match
+    searchConditions.push({ contact_email: searchRegex });
+    
+    // License number search
+    searchConditions.push({ license_number: searchRegex });
+    
+    // Phone search
+    searchConditions.push({ phone: searchRegex });
+    
+    // Status search
+    searchConditions.push({ status: searchRegex });
+    
+    // Availability search
+    searchConditions.push({ availability: searchRegex });
+    
+    // Notes search (only if search term is longer than 2 characters)
+    if (searchTerm.length > 2) {
+      searchConditions.push({ notes: searchRegex });
+    }
+    
+    // Certification search
+    searchConditions.push({ certifications: { $in: [searchRegex] } });
+    
+    // Specialty search
+    searchConditions.push({ specialties: { $in: [searchRegex] } });
+    
+    // Numeric search for hours
+    if (/^\d+$/.test(searchTerm)) {
+      const hours = parseInt(searchTerm);
+      searchConditions.push({ 
+        $or: [
+          { flightHours: hours },
+          { teachingHours: hours },
+          { students: hours }
+        ]
+      });
+    }
+    
+    // User information search (name, email)
+    searchConditions.push({
+      $expr: {
+        $or: [
+          {
+            $regexMatch: {
+              input: { $ifNull: ['$user_info.first_name', ''] },
+              regex: searchTerm,
+              options: 'i'
+            }
+          },
+          {
+            $regexMatch: {
+              input: { $ifNull: ['$user_info.last_name', ''] },
+              regex: searchTerm,
+              options: 'i'
+            }
+          },
+          {
+            $regexMatch: {
+              input: { $ifNull: ['$user_info.email', ''] },
+              regex: searchTerm,
+              options: 'i'
+            }
+          },
+          // Search for concatenated full name
+          {
+            $regexMatch: {
+              input: {
+                $concat: [
+                  { $ifNull: ['$user_info.first_name', ''] },
+                  ' ',
+                  { $ifNull: ['$user_info.last_name', ''] }
+                ]
+              },
+              regex: searchTerm,
+              options: 'i'
+            }
+          }
+        ]
+      }
+    });
+    
+    const pipeline: any[] = [
+      // Match the base query first
+      { $match: baseQuery },
+      
+      // Lookup user information
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'user_id',
+          foreignField: '_id',
+          as: 'user_info'
+        }
+      },
+      
+      // Add enhanced search conditions
+      {
+        $match: {
+          $or: searchConditions
+        }
+      },
+      
+      // Add a score field for better ranking
+      {
+        $addFields: {
+          searchScore: {
+            $sum: [
+              // Exact email match gets highest score
+              { $cond: [{ $regexMatch: { input: '$contact_email', regex: `^${searchTerm}$`, options: 'i' } }, 100, 0] },
+              // Email starts with search term
+              { $cond: [{ $regexMatch: { input: '$contact_email', regex: `^${searchTerm}`, options: 'i' } }, 50, 0] },
+              // Email contains search term
+              { $cond: [{ $regexMatch: { input: '$contact_email', regex: searchTerm, options: 'i' } }, 25, 0] },
+              // License number match
+              { $cond: [{ $regexMatch: { input: '$license_number', regex: searchTerm, options: 'i' } }, 20, 0] },
+              // First name match
+              { $cond: [{ $regexMatch: { input: { $ifNull: ['$user_info.first_name', ''] }, regex: searchTerm, options: 'i' } }, 15, 0] },
+              // Last name match
+              { $cond: [{ $regexMatch: { input: { $ifNull: ['$user_info.last_name', ''] }, regex: searchTerm, options: 'i' } }, 15, 0] },
+              // Status match
+              { $cond: [{ $regexMatch: { input: '$status', regex: searchTerm, options: 'i' } }, 10, 0] },
+              // Availability match
+              { $cond: [{ $regexMatch: { input: '$availability', regex: searchTerm, options: 'i' } }, 5, 0] }
+            ]
+          }
+        }
+      },
+      
+      // Sort by search score first (descending), then by specified field
+      { 
+        $sort: { 
+          searchScore: -1,
+          [sortField]: sortDirection === 'asc' ? 1 : -1 
+        } 
+      },
+      
+      // Remove the search score field from results
+      {
+        $project: {
+          searchScore: 0
+        }
+      },
+      
+      // Add pagination
+      { $skip: skip },
+      { $limit: limit }
+    ];
+
+    // Get total count for pagination info
+    const countPipeline: any[] = [
+      { $match: baseQuery },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'user_id',
+          foreignField: '_id',
+          as: 'user_info'
+        }
+      },
+      {
+        $match: {
+          $or: searchConditions
+        }
+      },
+      { $count: 'total' }
+    ];
+
+    instructors = await mongoose.model('Instructor').aggregate(pipeline);
+    const countResult = await mongoose.model('Instructor').aggregate(countPipeline);
+    totalCount = countResult.length > 0 ? countResult[0].total : 0;
+  } else {
+    // If no search, use regular find with populate
+    const sortObject: any = {};
+    sortObject[sortField] = sortDirection === 'asc' ? 1 : -1;
+    
+    instructors = await (mongoose.model('Instructor') as any)
+      .find(baseQuery)
+      .populate('user_id', 'first_name last_name email role')
+      .sort(sortObject)
+      .skip(skip)
+      .limit(limit)
+      .lean();
+
+    totalCount = await (mongoose.model('Instructor') as any).countDocuments(baseQuery);
+  }
+
+  // Calculate pagination info
+  const totalPages = Math.ceil(totalCount / limit);
+  const hasNextPage = page < totalPages;
+  const hasPrevPage = page > 1;
+
+  // Get unique values for filters
+  const allInstructors = await (mongoose.model('Instructor') as any).find({ 
+    organization_id: new mongoose.Types.ObjectId(params.organization) 
+  }).lean();
+  
+  const uniqueStatuses = Array.from(new Set(allInstructors.map(instructor => instructor.status).filter(Boolean))).sort();
+  const uniqueCertifications = Array.from(new Set(allInstructors.flatMap(instructor => instructor.certifications || []).filter(Boolean))).sort();
+  const uniqueSpecialties = Array.from(new Set(allInstructors.flatMap(instructor => instructor.specialties || []).filter(Boolean))).sort();
+  const uniqueAvailabilities = Array.from(new Set(allInstructors.map(instructor => instructor.availability).filter(Boolean))).sort();
+
+  // Generate search suggestions if search term is provided
+  let searchSuggestions = null;
+  if (search && search.trim().length > 0) {
+    const searchTerm = search.trim().toLowerCase();
+    const suggestions = new Set<string>();
+    
+    // Add matching emails
+    allInstructors.forEach(instructor => {
+      if (instructor.contact_email && instructor.contact_email.toLowerCase().includes(searchTerm)) {
+        suggestions.add(instructor.contact_email);
+      }
+    });
+    
+    // Add matching license numbers
+    allInstructors.forEach(instructor => {
+      if (instructor.license_number && instructor.license_number.toLowerCase().includes(searchTerm)) {
+        suggestions.add(instructor.license_number);
+      }
+    });
+    
+    // Add matching statuses
+    allInstructors.forEach(instructor => {
+      if (instructor.status && instructor.status.toLowerCase().includes(searchTerm)) {
+        suggestions.add(instructor.status);
+      }
+    });
+    
+    // Add matching certifications
+    allInstructors.forEach(instructor => {
+      if (instructor.certifications) {
+        instructor.certifications.forEach((cert: string) => {
+          if (cert.toLowerCase().includes(searchTerm)) {
+            suggestions.add(cert);
+          }
+        });
+      }
+    });
+    
+    // Add matching specialties
+    allInstructors.forEach(instructor => {
+      if (instructor.specialties) {
+        instructor.specialties.forEach((spec: string) => {
+          if (spec.toLowerCase().includes(searchTerm)) {
+            suggestions.add(spec);
+          }
+        });
+      }
+    });
+    
+    searchSuggestions = Array.from(suggestions).slice(0, 10); // Limit to 10 suggestions
+  }
 
   console.log(JSON.stringify({
     level: 'INFO',
@@ -73,6 +442,11 @@ export const GET = secureApiRoute(async (
     auditId: securityContext.auditId,
     organizationId: params.organization,
     instructorsCount: instructors.length,
+    totalCount,
+    searchTerm: search || null,
+    searchConditions: search ? searchConditions?.length || 0 : null,
+    uniqueStatusesCount: uniqueStatuses.length,
+    uniqueCertificationsCount: uniqueCertifications.length,
     processingTime: Date.now() - startTime,
     timestamp: new Date().toISOString()
   }));
@@ -81,7 +455,20 @@ export const GET = secureApiRoute(async (
     success: true,
     message: 'Instructors retrieved successfully',
     data: {
-      instructors
+      instructors,
+      pagination: {
+        currentPage: page,
+        totalPages,
+        totalCount,
+        hasNextPage,
+        hasPrevPage,
+        limit,
+        uniqueStatuses,
+        uniqueCertifications,
+        uniqueSpecialties,
+        uniqueAvailabilities,
+        searchSuggestions: searchSuggestions || null
+      }
     },
     auditId: securityContext.auditId,
     timestamp: new Date().toISOString()

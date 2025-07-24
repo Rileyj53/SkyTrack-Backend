@@ -53,7 +53,7 @@ const STUDENT_DELETE_SECURITY_CONFIG: SecurityConfig = {
 // GET handler to get a specific student
 export const GET = secureApiRoute(async (
   request: NextRequest,
-  { params, securityContext }: { params: { organizationId: string, studentId: string }, securityContext: any }
+  { params, securityContext }: { params: { organization: string, studentId: string }, securityContext: any }
 ) => {
   const startTime = Date.now();
   
@@ -64,7 +64,7 @@ export const GET = secureApiRoute(async (
     level: 'INFO',
     message: 'Processing student details request',
     auditId: securityContext.auditId,
-    organizationId: params.organizationId,
+    organizationId: params.organization,
     studentId: params.studentId,
     userId: securityContext.user.id,
     timestamp: new Date().toISOString()
@@ -85,7 +85,7 @@ export const GET = secureApiRoute(async (
   // Find the student (still using organization_id in database for now)
   const student = await mongoose.model('Student').findOne({
     _id: new mongoose.Types.ObjectId(params.studentId),
-    organization_id: new mongoose.Types.ObjectId(params.organizationId)
+    organization_id: new mongoose.Types.ObjectId(params.organization)
   }).populate('user_id', 'first_name last_name email role').lean();
 
   if (!student) {
@@ -120,7 +120,7 @@ export const GET = secureApiRoute(async (
     level: 'INFO',
     message: 'Student details retrieved successfully',
     auditId: securityContext.auditId,
-    organizationId: params.organizationId,
+    organizationId: params.organization,
     studentId: params.studentId,
     processingTime,
     timestamp: new Date().toISOString()
@@ -138,7 +138,7 @@ export const GET = secureApiRoute(async (
 // PUT handler to update a student
 export const PUT = secureApiRoute(async (
   request: NextRequest,
-  { params, securityContext }: { params: { organizationId: string, studentId: string }, securityContext: any }
+  { params, securityContext }: { params: { organization: string, studentId: string }, securityContext: any }
 ) => {
   const startTime = Date.now();
   
@@ -149,7 +149,7 @@ export const PUT = secureApiRoute(async (
     level: 'INFO',
     message: 'Processing student update request',
     auditId: securityContext.auditId,
-    organizationId: params.organizationId,
+    organizationId: params.organization,
     studentId: params.studentId,
     userId: securityContext.user.id,
     timestamp: new Date().toISOString()
@@ -170,7 +170,7 @@ export const PUT = secureApiRoute(async (
   // Find the student first (still using organization_id in database for now)
   const student = await mongoose.model('Student').findOne({
     _id: new mongoose.Types.ObjectId(params.studentId),
-    organization_id: new mongoose.Types.ObjectId(params.organizationId)
+    organization_id: new mongoose.Types.ObjectId(params.organization)
   });
 
   if (!student) {
@@ -251,7 +251,7 @@ export const PUT = secureApiRoute(async (
     level: 'INFO',
     message: 'Student updated successfully',
     auditId: securityContext.auditId,
-    organizationId: params.organizationId,
+    organizationId: params.organization,
     studentId: params.studentId,
     processingTime,
     timestamp: new Date().toISOString()
@@ -269,7 +269,7 @@ export const PUT = secureApiRoute(async (
 // DELETE handler to delete a student
 export const DELETE = secureApiRoute(async (
   request: NextRequest,
-  { params, securityContext }: { params: { organizationId: string, studentId: string }, securityContext: any }
+  { params, securityContext }: { params: { organization: string, studentId: string }, securityContext: any }
 ) => {
   const startTime = Date.now();
   
@@ -280,7 +280,7 @@ export const DELETE = secureApiRoute(async (
     level: 'INFO',
     message: 'Processing student deletion request',
     auditId: securityContext.auditId,
-    organizationId: params.organizationId,
+    organizationId: params.organization,
     studentId: params.studentId,
     userId: securityContext.user.id,
     timestamp: new Date().toISOString()
@@ -301,7 +301,7 @@ export const DELETE = secureApiRoute(async (
   // Find and delete the student (still using organization_id in database for now)
   const student = await mongoose.model('Student').findOne({
     _id: new mongoose.Types.ObjectId(params.studentId),
-    organization_id: new mongoose.Types.ObjectId(params.organizationId)
+    organization_id: new mongoose.Types.ObjectId(params.organization)
   });
 
   if (!student) {
@@ -323,7 +323,7 @@ export const DELETE = secureApiRoute(async (
     level: 'INFO',
     message: 'Student deleted successfully',
     auditId: securityContext.auditId,
-    organizationId: params.organizationId,
+    organizationId: params.organization,
     studentId: params.studentId,
     processingTime,
     timestamp: new Date().toISOString()

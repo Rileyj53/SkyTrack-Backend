@@ -616,175 +616,1188 @@
         {
             "name": "Organizations",
             "item": [{
-                "name": "Flight Schedules",
-                "item": [{
-                        "name": "Get Flight Schedule",
-                        "request": {
-                            "method": "GET",
-                            "header": [{
-                                    "key": "Authorization",
-                                    "value": "Bearer {{jwt_token}}",
-                                    "type": "text"
-                                },
-                                {
-                                    "key": "X-API-Key",
-                                    "value": "{{api_key}}",
-                                    "type": "text"
-                                },
-                                {
-                                    "key": "X-CSRF-Token",
-                                    "value": "{{csrf_token}}",
-                                    "type": "text"
-                                }
-                            ],
-                            "url": {
-                                "raw": "{{base_url}}/api/organizations/:organizationId/flight_schedule/:scheduleId",
-                                "host": ["{{base_url}}"],
-                                "path": ["api", "organizations", ":organizationId", "flight_schedule", ":scheduleId"],
-                                "variable": [{
-                                        "key": "organizationId",
-                                        "value": "organization-id-here"
+                    "name": "Flight Schedules",
+                    "item": [{
+                            "name": "List Flight Schedules",
+                            "request": {
+                                "method": "GET",
+                                "header": [{
+                                        "key": "Authorization",
+                                        "value": "Bearer {{jwt_token}}",
+                                        "type": "text"
                                     },
                                     {
-                                        "key": "scheduleId",
-                                        "value": "schedule-id-here"
+                                        "key": "X-API-Key",
+                                        "value": "{{api_key}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "X-CSRF-Token",
+                                        "value": "{{csrf_token}}",
+                                        "type": "text"
                                     }
-                                ]
+                                ],
+                                "url": {
+                                    "raw": "{{base_url}}/api/organizations/:organizationId/flight_schedule?search=Training&page=1&limit=20&status=scheduled",
+                                    "host": ["{{base_url}}"],
+                                    "path": ["api", "organizations", ":organizationId", "flight_schedule"],
+                                    "query": [{
+                                            "key": "search",
+                                            "value": "Training",
+                                            "description": "Search across plane, student, and instructor information"
+                                        },
+                                        {
+                                            "key": "page",
+                                            "value": "1",
+                                            "description": "Page number for pagination"
+                                        },
+                                        {
+                                            "key": "limit",
+                                            "value": "20",
+                                            "description": "Number of records per page (max 100)"
+                                        },
+                                        {
+                                            "key": "status",
+                                            "value": "scheduled",
+                                            "description": "Filter by flight status"
+                                        }
+                                    ],
+                                    "variable": [{
+                                        "key": "organizationId",
+                                        "value": "687c208d97e9217fc09e7c40"
+                                    }]
+                                },
+                                "description": "List all flight schedules for an organization with comprehensive search and filtering capabilities"
                             },
-                            "description": "Get details of a specific flight schedule"
+                            "event": [{
+                                "listen": "test",
+                                "script": {
+                                    "exec": [
+                                        "pm.test('Status code is 200', function () {",
+                                        "    pm.response.to.have.status(200);",
+                                        "});",
+                                        "",
+                                        "pm.test('Flight schedules returned', function () {",
+                                        "    const jsonData = pm.response.json();",
+                                        "    pm.expect(jsonData.success).to.be.true;",
+                                        "    pm.expect(jsonData.data.schedules).to.be.an('array');",
+                                        "});",
+                                        "",
+                                        "pm.test('Pagination info present', function () {",
+                                        "    const jsonData = pm.response.json();",
+                                        "    pm.expect(jsonData.data.pagination).to.be.an('object');",
+                                        "    pm.expect(jsonData.data.pagination.total).to.be.a('number');",
+                                        "});"
+                                    ]
+                                }
+                            }]
                         },
-                        "event": [{
-                            "listen": "test",
-                            "script": {
-                                "exec": [
-                                    "pm.test('Status code is 200', function () {",
-                                    "    pm.response.to.have.status(200);",
-                                    "});",
-                                    "",
-                                    "pm.test('Flight schedule returned', function () {",
-                                    "    const jsonData = pm.response.json();",
-                                    "    pm.expect(jsonData.data.schedule).to.be.an('object');",
-                                    "});"
-                                ]
+                        {
+                            "name": "List Flight Schedules - Filter by Student",
+                            "request": {
+                                "method": "GET",
+                                "header": [{
+                                        "key": "Authorization",
+                                        "value": "Bearer {{jwt_token}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "X-API-Key",
+                                        "value": "{{api_key}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "X-CSRF-Token",
+                                        "value": "{{csrf_token}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{base_url}}/api/organizations/:organizationId/flight_schedule?student_id=687c4f0c071a9fe822d33620&status=scheduled",
+                                    "host": ["{{base_url}}"],
+                                    "path": ["api", "organizations", ":organizationId", "flight_schedule"],
+                                    "query": [{
+                                            "key": "student_id",
+                                            "value": "687c4f0c071a9fe822d33620",
+                                            "description": "Filter by specific student ID"
+                                        },
+                                        {
+                                            "key": "status",
+                                            "value": "scheduled",
+                                            "description": "Filter by flight status"
+                                        }
+                                    ],
+                                    "variable": [{
+                                        "key": "organizationId",
+                                        "value": "687c208d97e9217fc09e7c40"
+                                    }]
+                                },
+                                "description": "List flight schedules filtered by specific student ID"
+                            },
+                            "event": [{
+                                "listen": "test",
+                                "script": {
+                                    "exec": [
+                                        "pm.test('Status code is 200', function () {",
+                                        "    pm.response.to.have.status(200);",
+                                        "});",
+                                        "",
+                                        "pm.test('All schedules belong to specified student', function () {",
+                                        "    const jsonData = pm.response.json();",
+                                        "    const schedules = jsonData.data.schedules;",
+                                        "    schedules.forEach(schedule => {",
+                                        "        pm.expect(schedule.student_id._id).to.equal('687c4f0c071a9fe822d33620');",
+                                        "    });",
+                                        "});"
+                                    ]
+                                }
+                            }]
+                        },
+                        {
+                            "name": "List Flight Schedules - Filter by Instructor",
+                            "request": {
+                                "method": "GET",
+                                "header": [{
+                                        "key": "Authorization",
+                                        "value": "Bearer {{jwt_token}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "X-API-Key",
+                                        "value": "{{api_key}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "X-CSRF-Token",
+                                        "value": "{{csrf_token}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{base_url}}/api/organizations/:organizationId/flight_schedule?instructor_id=687c55f3071a9fe822d337b0&start_date=2025-07-21&end_date=2025-07-22",
+                                    "host": ["{{base_url}}"],
+                                    "path": ["api", "organizations", ":organizationId", "flight_schedule"],
+                                    "query": [{
+                                            "key": "instructor_id",
+                                            "value": "687c55f3071a9fe822d337b0",
+                                            "description": "Filter by specific instructor ID"
+                                        },
+                                        {
+                                            "key": "start_date",
+                                            "value": "2025-07-21",
+                                            "description": "Filter flights starting from this date"
+                                        },
+                                        {
+                                            "key": "end_date",
+                                            "value": "2025-07-22",
+                                            "description": "Filter flights ending before this date"
+                                        }
+                                    ],
+                                    "variable": [{
+                                        "key": "organizationId",
+                                        "value": "687c208d97e9217fc09e7c40"
+                                    }]
+                                },
+                                "description": "List flight schedules filtered by specific instructor ID and date range"
+                            },
+                            "event": [{
+                                "listen": "test",
+                                "script": {
+                                    "exec": [
+                                        "pm.test('Status code is 200', function () {",
+                                        "    pm.response.to.have.status(200);",
+                                        "});",
+                                        "",
+                                        "pm.test('All schedules belong to specified instructor', function () {",
+                                        "    const jsonData = pm.response.json();",
+                                        "    const schedules = jsonData.data.schedules;",
+                                        "    schedules.forEach(schedule => {",
+                                        "        if (schedule.instructor_id) {",
+                                        "            pm.expect(schedule.instructor_id._id).to.equal('687c55f3071a9fe822d337b0');",
+                                        "        }",
+                                        "    });",
+                                        "});"
+                                    ]
+                                }
+                            }]
+                        },
+                        {
+                            "name": "Get Flight Schedule",
+                            "request": {
+                                "method": "GET",
+                                "header": [{
+                                        "key": "Authorization",
+                                        "value": "Bearer {{jwt_token}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "X-API-Key",
+                                        "value": "{{api_key}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "X-CSRF-Token",
+                                        "value": "{{csrf_token}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{base_url}}/api/organizations/:organizationId/flight_schedule/:scheduleId",
+                                    "host": ["{{base_url}}"],
+                                    "path": ["api", "organizations", ":organizationId", "flight_schedule", ":scheduleId"],
+                                    "variable": [{
+                                            "key": "organizationId",
+                                            "value": "organization-id-here"
+                                        },
+                                        {
+                                            "key": "scheduleId",
+                                            "value": "schedule-id-here"
+                                        }
+                                    ]
+                                },
+                                "description": "Get details of a specific flight schedule"
+                            },
+                            "event": [{
+                                "listen": "test",
+                                "script": {
+                                    "exec": [
+                                        "pm.test('Status code is 200', function () {",
+                                        "    pm.response.to.have.status(200);",
+                                        "});",
+                                        "",
+                                        "pm.test('Flight schedule returned', function () {",
+                                        "    const jsonData = pm.response.json();",
+                                        "    pm.expect(jsonData.data.schedule).to.be.an('object');",
+                                        "});"
+                                    ]
+                                }
+                            }]
+                        },
+                        {
+                            "name": "Update Flight Schedule",
+                            "request": {
+                                "method": "PUT",
+                                "header": [{
+                                        "key": "Authorization",
+                                        "value": "Bearer {{jwt_token}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "X-API-Key",
+                                        "value": "{{api_key}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "X-CSRF-Token",
+                                        "value": "{{csrf_token}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json",
+                                        "type": "text"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n  \"scheduled_start_time\": \"2024-01-15T10:00:00.000Z\",\n  \"scheduled_end_time\": \"2024-01-15T12:00:00.000Z\",\n  \"flight_type\": \"training\",\n  \"status\": \"scheduled\"\n}"
+                                },
+                                "url": {
+                                    "raw": "{{base_url}}/api/organizations/:organizationId/flight_schedule/:scheduleId",
+                                    "host": ["{{base_url}}"],
+                                    "path": ["api", "organizations", ":organizationId", "flight_schedule", ":scheduleId"],
+                                    "variable": [{
+                                            "key": "organizationId",
+                                            "value": "organization-id-here"
+                                        },
+                                        {
+                                            "key": "scheduleId",
+                                            "value": "schedule-id-here"
+                                        }
+                                    ]
+                                },
+                                "description": "Update a specific flight schedule"
+                            },
+                            "event": [{
+                                "listen": "test",
+                                "script": {
+                                    "exec": [
+                                        "pm.test('Status code is 200', function () {",
+                                        "    pm.response.to.have.status(200);",
+                                        "});",
+                                        "",
+                                        "pm.test('Flight schedule updated', function () {",
+                                        "    const jsonData = pm.response.json();",
+                                        "    pm.expect(jsonData.success).to.be.true;",
+                                        "    pm.expect(jsonData.data.schedule).to.be.an('object');",
+                                        "});"
+                                    ]
+                                }
+                            }]
+                        },
+                        {
+                            "name": "Delete Flight Schedule",
+                            "request": {
+                                "method": "DELETE",
+                                "header": [{
+                                        "key": "Authorization",
+                                        "value": "Bearer {{jwt_token}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "X-API-Key",
+                                        "value": "{{api_key}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "X-CSRF-Token",
+                                        "value": "{{csrf_token}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{base_url}}/api/organizations/:organizationId/flight_schedule/:scheduleId",
+                                    "host": ["{{base_url}}"],
+                                    "path": ["api", "organizations", ":organizationId", "flight_schedule", ":scheduleId"],
+                                    "variable": [{
+                                            "key": "organizationId",
+                                            "value": "organization-id-here"
+                                        },
+                                        {
+                                            "key": "scheduleId",
+                                            "value": "schedule-id-here"
+                                        }
+                                    ]
+                                },
+                                "description": "Delete a specific flight schedule"
+                            },
+                            "event": [{
+                                "listen": "test",
+                                "script": {
+                                    "exec": [
+                                        "pm.test('Status code is 200', function () {",
+                                        "    pm.response.to.have.status(200);",
+                                        "});",
+                                        "",
+                                        "pm.test('Flight schedule deleted', function () {",
+                                        "    const jsonData = pm.response.json();",
+                                        "    pm.expect(jsonData.success).to.be.true;",
+                                        "});"
+                                    ]
+                                }
+                            }]
+                        }
+                    ]
+                },
+                {
+                    "name": "Planes",
+                    "item": [{
+                            "name": "List Planes",
+                            "request": {
+                                "method": "GET",
+                                "header": [{
+                                        "key": "Authorization",
+                                        "value": "Bearer {{jwt_token}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "X-API-Key",
+                                        "value": "{{api_key}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{base_url}}/api/organizations/:organizationId/planes?search=Cessna&status=Active&page=1&limit=20",
+                                    "host": ["{{base_url}}"],
+                                    "path": ["api", "organizations", ":organizationId", "planes"],
+                                    "query": [{
+                                            "key": "search",
+                                            "value": "Cessna",
+                                            "description": "Search across registration, type, model, location, notes, status"
+                                        },
+                                        {
+                                            "key": "status",
+                                            "value": "Active",
+                                            "description": "Filter by plane status"
+                                        },
+                                        {
+                                            "key": "page",
+                                            "value": "1",
+                                            "description": "Page number for pagination"
+                                        },
+                                        {
+                                            "key": "limit",
+                                            "value": "20",
+                                            "description": "Number of records per page (max 200)"
+                                        }
+                                    ],
+                                    "variable": [{
+                                        "key": "organizationId",
+                                        "value": "687c208d97e9217fc09e7c40"
+                                    }]
+                                },
+                                "description": "List all planes for an organization with comprehensive search and filtering capabilities"
+                            },
+                            "event": [{
+                                "listen": "test",
+                                "script": {
+                                    "exec": [
+                                        "pm.test('Status code is 200', function () {",
+                                        "    pm.response.to.have.status(200);",
+                                        "});",
+                                        "",
+                                        "pm.test('Planes returned', function () {",
+                                        "    const jsonData = pm.response.json();",
+                                        "    pm.expect(jsonData.success).to.be.true;",
+                                        "    pm.expect(jsonData.data.planes).to.be.an('array');",
+                                        "});",
+                                        "",
+                                        "pm.test('Pagination info present', function () {",
+                                        "    const jsonData = pm.response.json();",
+                                        "    pm.expect(jsonData.data.pagination).to.be.an('object');",
+                                        "    pm.expect(jsonData.data.pagination.total).to.be.a('number');",
+                                        "});",
+                                        "",
+                                        "pm.test('Unique locations and types present', function () {",
+                                        "    const jsonData = pm.response.json();",
+                                        "    pm.expect(jsonData.data.pagination.uniqueLocations).to.be.an('array');",
+                                        "    pm.expect(jsonData.data.pagination.uniqueTypes).to.be.an('array');",
+                                        "});"
+                                    ]
+                                }
+                            }]
+                        },
+                        {
+                            "name": "List Planes - Filter by Type and Engine Hours",
+                            "request": {
+                                "method": "GET",
+                                "header": [{
+                                        "key": "Authorization",
+                                        "value": "Bearer {{jwt_token}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "X-API-Key",
+                                        "value": "{{api_key}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{base_url}}/api/organizations/:organizationId/planes?type=Cessna&minEngineHours=1000&maxEngineHours=3000&sortField=engineHours&sortDirection=asc",
+                                    "host": ["{{base_url}}"],
+                                    "path": ["api", "organizations", ":organizationId", "planes"],
+                                    "query": [{
+                                            "key": "type",
+                                            "value": "Cessna",
+                                            "description": "Filter by aircraft type"
+                                        },
+                                        {
+                                            "key": "minEngineHours",
+                                            "value": "1000",
+                                            "description": "Minimum engine hours"
+                                        },
+                                        {
+                                            "key": "maxEngineHours",
+                                            "value": "3000",
+                                            "description": "Maximum engine hours"
+                                        },
+                                        {
+                                            "key": "sortField",
+                                            "value": "engineHours",
+                                            "description": "Sort by engine hours"
+                                        },
+                                        {
+                                            "key": "sortDirection",
+                                            "value": "asc",
+                                            "description": "Sort in ascending order"
+                                        }
+                                    ],
+                                    "variable": [{
+                                        "key": "organizationId",
+                                        "value": "687c208d97e9217fc09e7c40"
+                                    }]
+                                },
+                                "description": "List planes filtered by type and engine hours range, sorted by engine hours"
+                            },
+                            "event": [{
+                                "listen": "test",
+                                "script": {
+                                    "exec": [
+                                        "pm.test('Status code is 200', function () {",
+                                        "    pm.response.to.have.status(200);",
+                                        "});",
+                                        "",
+                                        "pm.test('All planes are Cessna type', function () {",
+                                        "    const jsonData = pm.response.json();",
+                                        "    const planes = jsonData.data.planes;",
+                                        "    planes.forEach(plane => {",
+                                        "        pm.expect(plane.type.toLowerCase()).to.include('cessna');",
+                                        "    });",
+                                        "});"
+                                    ]
+                                }
+                            }]
+                        },
+                        {
+                            "name": "List Planes - Filter by Year and Location",
+                            "request": {
+                                "method": "GET",
+                                "header": [{
+                                        "key": "Authorization",
+                                        "value": "Bearer {{jwt_token}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "X-API-Key",
+                                        "value": "{{api_key}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{base_url}}/api/organizations/:organizationId/planes?year=2020&location=Hangar&has_notes=true&sortField=registration&sortDirection=asc",
+                                    "host": ["{{base_url}}"],
+                                    "path": ["api", "organizations", ":organizationId", "planes"],
+                                    "query": [{
+                                            "key": "year",
+                                            "value": "2020",
+                                            "description": "Filter by plane year"
+                                        },
+                                        {
+                                            "key": "location",
+                                            "value": "Hangar",
+                                            "description": "Filter by location (partial match)"
+                                        },
+                                        {
+                                            "key": "has_notes",
+                                            "value": "true",
+                                            "description": "Filter planes with notes"
+                                        },
+                                        {
+                                            "key": "sortField",
+                                            "value": "registration",
+                                            "description": "Sort by registration"
+                                        },
+                                        {
+                                            "key": "sortDirection",
+                                            "value": "asc",
+                                            "description": "Sort in ascending order"
+                                        }
+                                    ],
+                                    "variable": [{
+                                        "key": "organizationId",
+                                        "value": "687c208d97e9217fc09e7c40"
+                                    }]
+                                },
+                                "description": "List planes from 2020 in hangar locations with notes, sorted by registration"
+                            },
+                            "event": [{
+                                "listen": "test",
+                                "script": {
+                                    "exec": [
+                                        "pm.test('Status code is 200', function () {",
+                                        "    pm.response.to.have.status(200);",
+                                        "});",
+                                        "",
+                                        "pm.test('All planes are from 2020', function () {",
+                                        "    const jsonData = pm.response.json();",
+                                        "    const planes = jsonData.data.planes;",
+                                        "    planes.forEach(plane => {",
+                                        "        pm.expect(plane.year).to.equal(2020);",
+                                        "    });",
+                                        "});"
+                                    ]
+                                }
+                            }]
+                        },
+                        {
+                            "name": "Get Plane Statistics",
+                            "request": {
+                                "method": "GET",
+                                "header": [{
+                                        "key": "X-API-Key",
+                                        "value": "{{api_key}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{jwt_token}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{base_url}}/api/organizations/:organizationId/planes/stats?range=30&include_financials=true&include_maintenance=true",
+                                    "host": ["{{base_url}}"],
+                                    "path": ["api", "organizations", ":organizationId", "planes", "stats"],
+                                    "query": [{
+                                            "key": "range",
+                                            "value": "30"
+                                        },
+                                        {
+                                            "key": "include_financials",
+                                            "value": "true"
+                                        },
+                                        {
+                                            "key": "include_maintenance",
+                                            "value": "true"
+                                        }
+                                    ],
+                                    "variable": [{
+                                        "key": "organizationId",
+                                        "value": "your-organization-id"
+                                    }]
+                                },
+                                "description": "Retrieve comprehensive statistics for all planes in an organization"
+                            },
+                            "event": [{
+                                "listen": "test",
+                                "script": {
+                                    "exec": [
+                                        "pm.test('Status code is 200', function () {",
+                                        "    pm.response.to.have.status(200);",
+                                        "});",
+                                        "",
+                                        "pm.test('Response has planes data', function () {",
+                                        "    const jsonData = pm.response.json();",
+                                        "    pm.expect(jsonData.success).to.be.true;",
+                                        "    pm.expect(jsonData.data.planes).to.be.an('array');",
+                                        "});"
+                                    ]
+                                }
+                            }]
+                        },
+                        {
+                            "name": "Get Detailed Plane Statistics",
+                            "request": {
+                                "method": "POST",
+                                "header": [{
+                                        "key": "X-API-Key",
+                                        "value": "{{api_key}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{jwt_token}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "X-CSRF-Token",
+                                        "value": "{{csrf_token}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json",
+                                        "type": "text"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n    \"planeIds\": [\"60a7c3d4e5f6789012345678\", \"60b8d4e5f6789012345678a9\"],\n    \"timeRange\": 60,\n    \"includeInactive\": false\n}"
+                                },
+                                "url": {
+                                    "raw": "{{base_url}}/api/organizations/:organizationId/planes/stats",
+                                    "host": ["{{base_url}}"],
+                                    "path": ["api", "organizations", ":organizationId", "planes", "stats"],
+                                    "variable": [{
+                                        "key": "organizationId",
+                                        "value": "your-organization-id"
+                                    }]
+                                },
+                                "description": "Retrieve detailed statistics for specific planes in an organization"
+                            },
+                            "event": [{
+                                "listen": "test",
+                                "script": {
+                                    "exec": [
+                                        "pm.test('Status code is 200', function () {",
+                                        "    pm.response.to.have.status(200);",
+                                        "});",
+                                        "",
+                                        "pm.test('Response has planes data', function () {",
+                                        "    const jsonData = pm.response.json();",
+                                        "    pm.expect(jsonData.success).to.be.true;",
+                                        "    pm.expect(jsonData.data.planes).to.be.an('array');",
+                                        "});"
+                                    ]
+                                }
+                            }]
+                        }
+                    ]
+                },
+                {
+                    "name": "Instructors",
+                    "item": [{
+                            "name": "List Instructors",
+                            "request": {
+                                "method": "GET",
+                                "header": [{
+                                        "key": "Authorization",
+                                        "value": "Bearer {{jwt_token}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "X-API-Key",
+                                        "value": "{{api_key}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{base_url}}/api/organizations/:organizationId/instructors?search=john.doe@example.com&status=Active&page=1&limit=20",
+                                    "host": ["{{base_url}}"],
+                                    "path": ["api", "organizations", ":organizationId", "instructors"],
+                                    "query": [{
+                                            "key": "search",
+                                            "value": "john.doe@example.com",
+                                            "description": "Search across email, license number, name, status, certifications, specialties"
+                                        },
+                                        {
+                                            "key": "status",
+                                            "value": "Active",
+                                            "description": "Filter by instructor status"
+                                        },
+                                        {
+                                            "key": "page",
+                                            "value": "1",
+                                            "description": "Page number for pagination"
+                                        },
+                                        {
+                                            "key": "limit",
+                                            "value": "20",
+                                            "description": "Number of records per page (max 200)"
+                                        }
+                                    ],
+                                    "variable": [{
+                                        "key": "organizationId",
+                                        "value": "687c208d97e9217fc09e7c40"
+                                    }]
+                                },
+                                "description": "List all instructors for an organization with comprehensive search and filtering capabilities"
+                            },
+                            "event": [{
+                                "listen": "test",
+                                "script": {
+                                    "exec": [
+                                        "pm.test('Status code is 200', function () {",
+                                        "    pm.response.to.have.status(200);",
+                                        "});",
+                                        "",
+                                        "pm.test('Instructors returned', function () {",
+                                        "    const jsonData = pm.response.json();",
+                                        "    pm.expect(jsonData.success).to.be.true;",
+                                        "    pm.expect(jsonData.data.instructors).to.be.an('array');",
+                                        "});",
+                                        "",
+                                        "pm.test('Pagination info present', function () {",
+                                        "    const jsonData = pm.response.json();",
+                                        "    pm.expect(jsonData.data.pagination).to.be.an('object');",
+                                        "    pm.expect(jsonData.data.pagination.totalCount).to.be.a('number');",
+                                        "});",
+                                        "",
+                                        "pm.test('Unique values present', function () {",
+                                        "    const jsonData = pm.response.json();",
+                                        "    pm.expect(jsonData.data.pagination.uniqueStatuses).to.be.an('array');",
+                                        "    pm.expect(jsonData.data.pagination.uniqueCertifications).to.be.an('array');",
+                                        "    pm.expect(jsonData.data.pagination.uniqueSpecialties).to.be.an('array');",
+                                        "    pm.expect(jsonData.data.pagination.uniqueAvailabilities).to.be.an('array');",
+                                        "});"
+                                    ]
+                                }
+                            }]
+                        },
+                        {
+                            "name": "List Instructors - Filter by Certification and Flight Hours",
+                            "request": {
+                                "method": "GET",
+                                "header": [{
+                                        "key": "Authorization",
+                                        "value": "Bearer {{jwt_token}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "X-API-Key",
+                                        "value": "{{api_key}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{base_url}}/api/organizations/:organizationId/instructors?certification=CFI&minFlightHours=1000&maxFlightHours=5000&sortField=flightHours&sortDirection=desc",
+                                    "host": ["{{base_url}}"],
+                                    "path": ["api", "organizations", ":organizationId", "instructors"],
+                                    "query": [{
+                                            "key": "certification",
+                                            "value": "CFI",
+                                            "description": "Filter by specific certification"
+                                        },
+                                        {
+                                            "key": "minFlightHours",
+                                            "value": "1000",
+                                            "description": "Minimum flight hours"
+                                        },
+                                        {
+                                            "key": "maxFlightHours",
+                                            "value": "5000",
+                                            "description": "Maximum flight hours"
+                                        },
+                                        {
+                                            "key": "sortField",
+                                            "value": "flightHours",
+                                            "description": "Field to sort by"
+                                        },
+                                        {
+                                            "key": "sortDirection",
+                                            "value": "desc",
+                                            "description": "Sort direction (asc/desc)"
+                                        }
+                                    ],
+                                    "variable": [{
+                                        "key": "organizationId",
+                                        "value": "687c208d97e9217fc09e7c40"
+                                    }]
+                                },
+                                "description": "Filter instructors by certification and flight hours range with sorting"
+                            },
+                            "event": [{
+                                "listen": "test",
+                                "script": {
+                                    "exec": [
+                                        "pm.test('Status code is 200', function () {",
+                                        "    pm.response.to.have.status(200);",
+                                        "});",
+                                        "",
+                                        "pm.test('Instructors returned', function () {",
+                                        "    const jsonData = pm.response.json();",
+                                        "    pm.expect(jsonData.success).to.be.true;",
+                                        "    pm.expect(jsonData.data.instructors).to.be.an('array');",
+                                        "});",
+                                        "",
+                                        "pm.test('All instructors have CFI certification', function () {",
+                                        "    const jsonData = pm.response.json();",
+                                        "    const instructors = jsonData.data.instructors;",
+                                        "    instructors.forEach(instructor => {",
+                                        "        pm.expect(instructor.certifications).to.include('CFI');",
+                                        "    });",
+                                        "});",
+                                        "",
+                                        "pm.test('Flight hours are within range', function () {",
+                                        "    const jsonData = pm.response.json();",
+                                        "    const instructors = jsonData.data.instructors;",
+                                        "    instructors.forEach(instructor => {",
+                                        "        pm.expect(instructor.flightHours).to.be.at.least(1000);",
+                                        "        pm.expect(instructor.flightHours).to.be.at.most(5000);",
+                                        "    });",
+                                        "});"
+                                    ]
+                                }
+                            }]
+                        },
+                        {
+                            "name": "List Instructors - Filter by Availability and Utilization",
+                            "request": {
+                                "method": "GET",
+                                "header": [{
+                                        "key": "Authorization",
+                                        "value": "Bearer {{jwt_token}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "X-API-Key",
+                                        "value": "{{api_key}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{base_url}}/api/organizations/:organizationId/instructors?availability=Full-time&minUtilization=80&has_emergency_contact=true&sortField=utilization&sortDirection=desc",
+                                    "host": ["{{base_url}}"],
+                                    "path": ["api", "organizations", ":organizationId", "instructors"],
+                                    "query": [{
+                                            "key": "availability",
+                                            "value": "Full-time",
+                                            "description": "Filter by availability type"
+                                        },
+                                        {
+                                            "key": "minUtilization",
+                                            "value": "80",
+                                            "description": "Minimum utilization percentage"
+                                        },
+                                        {
+                                            "key": "has_emergency_contact",
+                                            "value": "true",
+                                            "description": "Filter by presence of emergency contact"
+                                        },
+                                        {
+                                            "key": "sortField",
+                                            "value": "utilization",
+                                            "description": "Field to sort by"
+                                        },
+                                        {
+                                            "key": "sortDirection",
+                                            "value": "desc",
+                                            "description": "Sort direction (asc/desc)"
+                                        }
+                                    ],
+                                    "variable": [{
+                                        "key": "organizationId",
+                                        "value": "687c208d97e9217fc09e7c40"
+                                    }]
+                                },
+                                "description": "Filter instructors by availability, utilization, and emergency contact presence"
+                            },
+                            "event": [{
+                                "listen": "test",
+                                "script": {
+                                    "exec": [
+                                        "pm.test('Status code is 200', function () {",
+                                        "    pm.response.to.have.status(200);",
+                                        "});",
+                                        "",
+                                        "pm.test('Instructors returned', function () {",
+                                        "    const jsonData = pm.response.json();",
+                                        "    pm.expect(jsonData.success).to.be.true;",
+                                        "    pm.expect(jsonData.data.instructors).to.be.an('array');",
+                                        "});",
+                                        "",
+                                        "pm.test('All instructors are full-time', function () {",
+                                        "    const jsonData = pm.response.json();",
+                                        "    const instructors = jsonData.data.instructors;",
+                                        "    instructors.forEach(instructor => {",
+                                        "        pm.expect(instructor.availability).to.equal('Full-time');",
+                                        "    });",
+                                        "});",
+                                        "",
+                                        "pm.test('All instructors have high utilization', function () {",
+                                        "    const jsonData = pm.response.json();",
+                                        "    const instructors = jsonData.data.instructors;",
+                                        "    instructors.forEach(instructor => {",
+                                        "        pm.expect(instructor.utilization).to.be.at.least(80);",
+                                        "    });",
+                                        "});",
+                                        "",
+                                        "pm.test('All instructors have emergency contacts', function () {",
+                                        "    const jsonData = pm.response.json();",
+                                        "    const instructors = jsonData.data.instructors;",
+                                        "    instructors.forEach(instructor => {",
+                                        "        pm.expect(instructor.emergency_contact).to.be.an('object');",
+                                        "        pm.expect(instructor.emergency_contact.name).to.be.a('string');",
+                                        "    });",
+                                        "});"
+                                    ]
+                                }
+                            }]
+                        }
+                    ]
+                },
+                {
+                    "name": "Student Statistics",
+                    "request": {
+                        "method": "GET",
+                        "header": [{
+                                "key": "Authorization",
+                                "value": "Bearer {{jwt_token}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-API-Key",
+                                "value": "{{api_key}}",
+                                "type": "text"
                             }
-                        }]
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/organizations/:organizationId/students/stats?include_financials=true&include_progress=true&range=30",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "organizations", ":organizationId", "students", "stats"],
+                            "query": [{
+                                    "key": "include_financials",
+                                    "value": "true",
+                                    "description": "Include financial metrics"
+                                },
+                                {
+                                    "key": "include_progress",
+                                    "value": "true",
+                                    "description": "Include detailed progress tracking"
+                                },
+                                {
+                                    "key": "range",
+                                    "value": "30",
+                                    "description": "Time range in days for statistics"
+                                }
+                            ],
+                            "variable": [{
+                                "key": "organizationId",
+                                "value": "687c208d97e9217fc09e7c40"
+                            }]
+                        },
+                        "description": "Get comprehensive student statistics including enrollment trends, progress tracking, performance metrics, and financial data"
                     },
-                    {
-                        "name": "Update Flight Schedule",
-                        "request": {
-                            "method": "PUT",
-                            "header": [{
-                                    "key": "Authorization",
-                                    "value": "Bearer {{jwt_token}}",
-                                    "type": "text"
+                    "event": [{
+                        "listen": "test",
+                        "script": {
+                            "exec": [
+                                "pm.test('Status code is 200', function () {",
+                                "    pm.response.to.have.status(200);",
+                                "});",
+                                "",
+                                "pm.test('Student stats returned', function () {",
+                                "    const jsonData = pm.response.json();",
+                                "    pm.expect(jsonData.success).to.be.true;",
+                                "    pm.expect(jsonData.data.stats).to.be.an('object');",
+                                "});",
+                                "",
+                                "pm.test('Overview metrics present', function () {",
+                                "    const jsonData = pm.response.json();",
+                                "    pm.expect(jsonData.data.stats.overview).to.be.an('object');",
+                                "    pm.expect(jsonData.data.stats.overview.total_students).to.be.a('number');",
+                                "    pm.expect(jsonData.data.stats.overview.active_students).to.be.a('number');",
+                                "});",
+                                "",
+                                "pm.test('Status breakdown present', function () {",
+                                "    const jsonData = pm.response.json();",
+                                "    pm.expect(jsonData.data.stats.status_breakdown).to.be.an('array');",
+                                "});",
+                                "",
+                                "pm.test('Program breakdown present', function () {",
+                                "    const jsonData = pm.response.json();",
+                                "    pm.expect(jsonData.data.stats.program_breakdown).to.be.an('array');",
+                                "});",
+                                "",
+                                "pm.test('Flight activity present', function () {",
+                                "    const jsonData = pm.response.json();",
+                                "    pm.expect(jsonData.data.stats.flight_activity).to.be.an('object');",
+                                "    pm.expect(jsonData.data.stats.flight_activity.by_status).to.be.an('array');",
+                                "});",
+                                "",
+                                "pm.test('Financial metrics present', function () {",
+                                "    const jsonData = pm.response.json();",
+                                "    pm.expect(jsonData.data.stats.financial_metrics).to.be.an('object');",
+                                "});",
+                                "",
+                                "pm.test('Progress tracking present', function () {",
+                                "    const jsonData = pm.response.json();",
+                                "    pm.expect(jsonData.data.stats.progress_tracking).to.be.an('object');",
+                                "});",
+                                "",
+                                "pm.test('Metadata present', function () {",
+                                "    const jsonData = pm.response.json();",
+                                "    pm.expect(jsonData.data.metadata).to.be.an('object');",
+                                "    pm.expect(jsonData.data.metadata.organization_id).to.be.a('string');",
+                                "    pm.expect(jsonData.data.metadata.time_range_days).to.be.a('number');",
+                                "});"
+                            ]
+                        }
+                    }]
+                },
+                {
+                    "name": "Instructor Statistics",
+                    "request": {
+                        "method": "GET",
+                        "header": [{
+                                "key": "Authorization",
+                                "value": "Bearer {{jwt_token}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-API-Key",
+                                "value": "{{api_key}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/organizations/:organizationId/instructors/stats?include_financials=true&include_workload=true&range=30",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "organizations", ":organizationId", "instructors", "stats"],
+                            "query": [{
+                                    "key": "include_financials",
+                                    "value": "true",
+                                    "description": "Include financial metrics"
                                 },
                                 {
-                                    "key": "X-API-Key",
-                                    "value": "{{api_key}}",
-                                    "type": "text"
+                                    "key": "include_workload",
+                                    "value": "true",
+                                    "description": "Include detailed workload analysis"
                                 },
                                 {
-                                    "key": "X-CSRF-Token",
-                                    "value": "{{csrf_token}}",
-                                    "type": "text"
-                                },
-                                {
-                                    "key": "Content-Type",
-                                    "value": "application/json",
-                                    "type": "text"
+                                    "key": "range",
+                                    "value": "30",
+                                    "description": "Time range in days for statistics"
                                 }
                             ],
-                            "body": {
-                                "mode": "raw",
-                                "raw": "{\n  \"scheduled_start_time\": \"2024-01-15T10:00:00.000Z\",\n  \"scheduled_end_time\": \"2024-01-15T12:00:00.000Z\",\n  \"flight_type\": \"training\",\n  \"status\": \"scheduled\"\n}"
-                            },
-                            "url": {
-                                "raw": "{{base_url}}/api/organizations/:organizationId/flight_schedule/:scheduleId",
-                                "host": ["{{base_url}}"],
-                                "path": ["api", "organizations", ":organizationId", "flight_schedule", ":scheduleId"],
-                                "variable": [{
-                                        "key": "organizationId",
-                                        "value": "organization-id-here"
-                                    },
-                                    {
-                                        "key": "scheduleId",
-                                        "value": "schedule-id-here"
-                                    }
-                                ]
-                            },
-                            "description": "Update a specific flight schedule"
+                            "variable": [{
+                                "key": "organizationId",
+                                "value": "687c208d97e9217fc09e7c40"
+                            }]
                         },
-                        "event": [{
-                            "listen": "test",
-                            "script": {
-                                "exec": [
-                                    "pm.test('Status code is 200', function () {",
-                                    "    pm.response.to.have.status(200);",
-                                    "});",
-                                    "",
-                                    "pm.test('Flight schedule updated', function () {",
-                                    "    const jsonData = pm.response.json();",
-                                    "    pm.expect(jsonData.success).to.be.true;",
-                                    "    pm.expect(jsonData.data.schedule).to.be.an('object');",
-                                    "});"
-                                ]
-                            }
-                        }]
+                        "description": "Get comprehensive instructor statistics including workload analysis, performance metrics, student assignments, and efficiency tracking"
                     },
-                    {
-                        "name": "Delete Flight Schedule",
-                        "request": {
-                            "method": "DELETE",
-                            "header": [{
-                                    "key": "Authorization",
-                                    "value": "Bearer {{jwt_token}}",
-                                    "type": "text"
-                                },
-                                {
-                                    "key": "X-API-Key",
-                                    "value": "{{api_key}}",
-                                    "type": "text"
-                                },
-                                {
-                                    "key": "X-CSRF-Token",
-                                    "value": "{{csrf_token}}",
-                                    "type": "text"
-                                }
-                            ],
-                            "url": {
-                                "raw": "{{base_url}}/api/organizations/:organizationId/flight_schedule/:scheduleId",
-                                "host": ["{{base_url}}"],
-                                "path": ["api", "organizations", ":organizationId", "flight_schedule", ":scheduleId"],
-                                "variable": [{
-                                        "key": "organizationId",
-                                        "value": "organization-id-here"
-                                    },
-                                    {
-                                        "key": "scheduleId",
-                                        "value": "schedule-id-here"
-                                    }
-                                ]
-                            },
-                            "description": "Delete a specific flight schedule"
-                        },
-                        "event": [{
-                            "listen": "test",
-                            "script": {
-                                "exec": [
-                                    "pm.test('Status code is 200', function () {",
-                                    "    pm.response.to.have.status(200);",
-                                    "});",
-                                    "",
-                                    "pm.test('Flight schedule deleted', function () {",
-                                    "    const jsonData = pm.response.json();",
-                                    "    pm.expect(jsonData.success).to.be.true;",
-                                    "});"
-                                ]
-                            }
-                        }]
-                    }
-                ]
-            }]
+                    "event": [{
+                        "listen": "test",
+                        "script": {
+                            "exec": [
+                                "pm.test('Status code is 200', function () {",
+                                "    pm.response.to.have.status(200);",
+                                "});",
+                                "",
+                                "pm.test('Instructor stats returned', function () {",
+                                "    const jsonData = pm.response.json();",
+                                "    pm.expect(jsonData.success).to.be.true;",
+                                "    pm.expect(jsonData.data.stats).to.be.an('object');",
+                                "});",
+                                "",
+                                "pm.test('Overview metrics present', function () {",
+                                "    const jsonData = pm.response.json();",
+                                "    pm.expect(jsonData.data.stats.overview).to.be.an('object');",
+                                "    pm.expect(jsonData.data.stats.overview.total_instructors).to.be.a('number');",
+                                "    pm.expect(jsonData.data.stats.overview.active_instructors).to.be.a('number');",
+                                "});",
+                                "",
+                                "pm.test('Status breakdown present', function () {",
+                                "    const jsonData = pm.response.json();",
+                                "    pm.expect(jsonData.data.stats.status_breakdown).to.be.an('array');",
+                                "});",
+                                "",
+                                "pm.test('Certification breakdown present', function () {",
+                                "    const jsonData = pm.response.json();",
+                                "    pm.expect(jsonData.data.stats.certification_breakdown).to.be.an('object');",
+                                "});",
+                                "",
+                                "pm.test('Flight activity present', function () {",
+                                "    const jsonData = pm.response.json();",
+                                "    pm.expect(jsonData.data.stats.flight_activity).to.be.an('object');",
+                                "    pm.expect(jsonData.data.stats.flight_activity.by_status).to.be.an('array');",
+                                "});",
+                                "",
+                                "pm.test('Student assignments present', function () {",
+                                "    const jsonData = pm.response.json();",
+                                "    pm.expect(jsonData.data.stats.student_assignments).to.be.an('object');",
+                                "    pm.expect(jsonData.data.stats.student_assignments.assignments).to.be.an('array');",
+                                "});",
+                                "",
+                                "pm.test('Efficiency metrics present', function () {",
+                                "    const jsonData = pm.response.json();",
+                                "    pm.expect(jsonData.data.stats.efficiency_metrics).to.be.an('object');",
+                                "    pm.expect(jsonData.data.stats.efficiency_metrics.top_performers).to.be.an('array');",
+                                "});",
+                                "",
+                                "pm.test('Workload analysis present', function () {",
+                                "    const jsonData = pm.response.json();",
+                                "    pm.expect(jsonData.data.stats.workload_analysis).to.be.an('object');",
+                                "    pm.expect(jsonData.data.stats.workload_analysis.by_instructor).to.be.an('array');",
+                                "});",
+                                "",
+                                "pm.test('Financial metrics present', function () {",
+                                "    const jsonData = pm.response.json();",
+                                "    pm.expect(jsonData.data.stats.financial_metrics).to.be.an('object');",
+                                "});",
+                                "",
+                                "pm.test('Metadata present', function () {",
+                                "    const jsonData = pm.response.json();",
+                                "    pm.expect(jsonData.data.metadata).to.be.an('object');",
+                                "    pm.expect(jsonData.data.metadata.organization_id).to.be.a('string');",
+                                "    pm.expect(jsonData.data.metadata.time_range_days).to.be.a('number');",
+                                "});"
+                            ]
+                        }
+                    }]
+                }
+            ]
         }
     ]
 }

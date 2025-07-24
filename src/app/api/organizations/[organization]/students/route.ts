@@ -79,6 +79,14 @@ export const GET = secureApiRoute(async (
   const certification = searchParams.get('certification') || '';
   const enrollmentStartDate = searchParams.get('enrollment_start_date') || '';
   const enrollmentEndDate = searchParams.get('enrollment_end_date') || '';
+  const stage = searchParams.get('stage') || '';
+  const milestone = searchParams.get('milestone') || '';
+  const licenseNumber = searchParams.get('license_number') || '';
+  const phone = searchParams.get('phone') || '';
+  const sortField = searchParams.get('sortField') || 'enrollmentDate';
+  const sortDirection = searchParams.get('sortDirection') || 'desc';
+  const hasEmergencyContact = searchParams.get('has_emergency_contact') || '';
+  const hasNotes = searchParams.get('has_notes') || '';
 
   // Validate pagination parameters
   if (page < 1 || limit < 1 || limit > 200) {
@@ -121,6 +129,40 @@ export const GET = secureApiRoute(async (
     if (enrollmentEndDate) {
       baseQuery.enrollmentDate.$lte = new Date(enrollmentEndDate);
     }
+  }
+
+  // Add stage filter
+  if (stage) {
+    baseQuery.stage = { $regex: stage, $options: 'i' };
+  }
+
+  // Add milestone filter
+  if (milestone) {
+    baseQuery.nextMilestone = { $regex: milestone, $options: 'i' };
+  }
+
+  // Add license number filter
+  if (licenseNumber) {
+    baseQuery.license_number = { $regex: licenseNumber, $options: 'i' };
+  }
+
+  // Add phone filter
+  if (phone) {
+    baseQuery.phone = { $regex: phone, $options: 'i' };
+  }
+
+  // Add emergency contact filter
+  if (hasEmergencyContact === 'true') {
+    baseQuery.emergency_contact = { $exists: true, $ne: null };
+  } else if (hasEmergencyContact === 'false') {
+    baseQuery.emergency_contact = { $exists: false };
+  }
+
+  // Add notes filter (simplified)
+  if (hasNotes === 'true') {
+    baseQuery.notes = { $exists: true, $ne: null };
+  } else if (hasNotes === 'false') {
+    baseQuery.notes = { $exists: false };
   }
 
   // Calculate skip value for pagination
@@ -196,8 +238,8 @@ export const GET = secureApiRoute(async (
         $unset: 'user_info'
       },
       
-      // Sort by enrollment date (most recent first)
-      { $sort: { enrollmentDate: -1 } },
+      // Sort by specified field and direction
+      { $sort: { [sortField]: sortDirection === 'asc' ? 1 : -1 } },
       
       // Add pagination
       { $skip: skip },
@@ -257,10 +299,13 @@ export const GET = secureApiRoute(async (
     totalCount = countResult.length > 0 ? countResult[0].total : 0;
   } else {
     // If no search, use regular find with populate
+    const sortObject: any = {};
+    sortObject[sortField] = sortDirection === 'asc' ? 1 : -1;
+    
     students = await mongoose.model('Student')
       .find(baseQuery)
       .populate('user_id', 'first_name last_name email role')
-      .sort({ enrollmentDate: -1 })
+      .sort(sortObject)
       .skip(skip)
       .limit(limit)
       .lean();

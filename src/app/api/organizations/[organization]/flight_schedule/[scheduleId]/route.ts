@@ -78,25 +78,21 @@ export const GET = secureApiRoute(async (
     })
     .populate({
       path: 'instructor_id',
-      model: 'Instructor', // Explicitly specify model
-      select: 'contact_email status flightHours',
+      select: 'contact_email status flightHours user_id',
       populate: {
         path: 'user_id',
-        model: 'User',
         select: 'first_name last_name email'
       }
     })
     .populate({
       path: 'student_id',
-      model: 'Student', // Explicitly specify model
-      select: 'contact_email program status enrollmentDate',
+      select: 'contact_email program status enrollmentDate user_id',
       populate: {
         path: 'user_id',
-        model: 'User',
         select: 'first_name last_name email'
       }
     })
-        .lean();
+    .lean();
 
   if (!schedule) {
     console.error(JSON.stringify({
@@ -454,8 +450,10 @@ export const PUT = secureApiRoute(async (
       })
       .populate({
         path: 'student_id',
+        model: 'Student', // Explicitly specify model
         populate: {
           path: 'user_id',
+          model: 'User',
           select: 'first_name last_name'
         }
       })
@@ -514,8 +512,10 @@ export const PUT = secureApiRoute(async (
         })
         .populate({
           path: 'instructor_id',
+          model: 'Instructor', // Explicitly specify model
           populate: {
             path: 'user_id',
+            model: 'User',
             select: 'first_name last_name'
           }
         })
@@ -605,6 +605,7 @@ export const PUT = secureApiRoute(async (
   })
   .populate({
     path: 'instructor_id',
+    select: 'contact_email status flightHours user_id',
     populate: {
       path: 'user_id',
       select: 'first_name last_name email'
@@ -612,6 +613,7 @@ export const PUT = secureApiRoute(async (
   })
   .populate({
     path: 'student_id',
+    select: 'contact_email program status enrollmentDate user_id',
     populate: {
       path: 'user_id',
       select: 'first_name last_name email'
