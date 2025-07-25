@@ -9,7 +9,7 @@ const FLIGHT_SCHEDULE_ITEM_SECURITY_CONFIG: SecurityConfig = {
   requireAuth: true,
   requireApiKey: true,
   requireCSRF: true, // Required for PUT/DELETE operations
-  allowedRoles: ['sys_admin', 'school_admin', 'instructor', 'student'],
+  allowedRoles: ['sys_admin', 'school_admin', 'instructor', 'student', 'mechanic', 'member'],
   enableFraudDetection: true,
   enableAdvancedAudit: true,
   dataClassification: 'confidential',

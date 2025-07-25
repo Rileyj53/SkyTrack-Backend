@@ -31,6 +31,7 @@ Retrieves a list of flight schedules for the specified organization with compreh
 - `plane_id` (string, optional): Filter by specific plane ID
 - `instructor_id` (string, optional): Filter by specific instructor ID
 - `student_id` (string, optional): Filter by specific student ID
+- `user_id` (string, optional): **NEW** - Filter by user ID to get all schedules where the user is either the student or instructor
 - `search` (string, optional): **NEW** - Search across all flight schedule data including plane, student, and instructor information
 - `sortField` (string, optional): Field to sort by (default: "scheduled_start_time")
 - `sortDirection` (string, optional): Sort direction - "asc" or "desc" (default: "asc")
@@ -199,6 +200,39 @@ GET /api/organizations/687c208d97e9217fc09e7c40/flight_schedule?search=instructo
 GET /api/organizations/687c208d97e9217fc09e7c40/flight_schedule?search=Solo
 ```
 
+## 👤 User ID Filter Functionality
+
+The `user_id` parameter allows you to filter flight schedules by a specific user, regardless of whether they are the student or instructor. This is particularly useful when you have a user ID but need to find all flight schedules associated with that user.
+
+### **How It Works:**
+1. **Student Lookup**: First checks if the user ID corresponds to a student record
+2. **Instructor Lookup**: Then checks if the user ID corresponds to an instructor record
+3. **Combined Results**: Returns all schedules where the user is either the student OR the instructor
+4. **Empty Results**: If the user is neither a student nor instructor, returns empty results
+
+### **Use Cases:**
+- **User Dashboard**: Show all flight schedules for a logged-in user
+- **Audit Trails**: Find all flight activity for a specific user
+- **Cross-Role Access**: Users who are both students and instructors can see all their schedules
+- **Administrative Views**: Admins can quickly view all schedules for any user
+
+### **User ID Filter Examples:**
+```bash
+# Get all flight schedules for a specific user (as student or instructor)
+GET /api/organizations/687c208d97e9217fc09e7c40/flight_schedule?user_id=687c4f0c071a9fe822d33620
+
+# Combine user_id filter with other filters
+GET /api/organizations/687c208d97e9217fc09e7c40/flight_schedule?user_id=687c4f0c071a9fe822d33620&status=scheduled
+
+# User ID filter with date range
+GET /api/organizations/687c208d97e9217fc09e7c40/flight_schedule?user_id=687c4f0c071a9fe822d33620&start_date=2025-07-21&end_date=2025-07-31
+```
+
+### **Response Behavior:**
+- **User Found**: Returns all schedules where the user is student or instructor
+- **User Not Found**: Returns empty results with success message
+- **Invalid User ID**: Returns 400 error for invalid ObjectId format
+
 ### **Filtering Examples:**
 ```bash
 # Filter by specific student ID
@@ -238,6 +272,14 @@ curl -X GET "https://api.skytrack.com/api/organizations/687c208d97e9217fc09e7c40
 ### Request with Date Filtering
 ```bash
 curl -X GET "https://api.skytrack.com/api/organizations/687c208d97e9217fc09e7c40/flight_schedule?start_date=2025-07-21&end_date=2025-07-22&status=scheduled" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
+  -H "X-API-Key: your-api-key" \
+  -H "X-CSRF-Token: csrf-token"
+```
+
+### Request with User ID Filter
+```bash
+curl -X GET "https://api.skytrack.com/api/organizations/687c208d97e9217fc09e7c40/flight_schedule?user_id=687c4f0c071a9fe822d33620&status=scheduled" \
   -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
   -H "X-API-Key: your-api-key" \
   -H "X-CSRF-Token: csrf-token"

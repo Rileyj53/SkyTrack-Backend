@@ -596,7 +596,7 @@
                     "    ",
                     "    pm.test('User role is valid', function () {",
                     "        const response = pm.response.json();",
-                    "        const validRoles = ['sys_admin', 'school_admin', 'instructor', 'student'];",
+                    "        const validRoles = ['sys_admin', 'school_admin', 'instructor', 'student', 'mechanic', 'member'];",
                     "        pm.expect(validRoles).to.include(response.data.user.role);",
                     "    });",
                     "}",

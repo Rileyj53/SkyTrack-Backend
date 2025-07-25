@@ -10,7 +10,7 @@ const SECURITY_CONFIG: SecurityConfig = {
   requireAuth: true, // Authentication required for MFA login step
   requireApiKey: true, // API key required
   requireCSRF: false, // Special case for login flow - CSRF comes after
-  allowedRoles: ['sys_admin', 'school_admin', 'instructor', 'student'], // All authenticated users
+  allowedRoles: ['sys_admin', 'school_admin', 'instructor', 'student', 'mechanic', 'member'], // All authenticated users
   enableFraudDetection: true, // Monitor MFA login attempts
   enableAdvancedAudit: true, // Track all MFA login completions
   dataClassification: 'restricted', // MFA login is highly sensitive

@@ -8,7 +8,7 @@ const SECURITY_CONFIG: SecurityConfig = {
   requireAuth: true, // Authentication required
   requireApiKey: true, // API key required
   requireCSRF: true, // CSRF protection required
-  allowedRoles: ['sys_admin', 'school_admin', 'instructor', 'student'], // All authenticated users
+  allowedRoles: ['sys_admin', 'school_admin', 'instructor', 'student', 'mechanic', 'member'], // All authenticated users
   requireOrganizationAccess: false, // User can access their own profile regardless of organization
   enableFraudDetection: true, // Monitor profile access patterns
   enableAdvancedAudit: true, // Track profile access

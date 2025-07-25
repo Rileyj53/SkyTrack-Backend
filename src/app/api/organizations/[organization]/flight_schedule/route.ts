@@ -11,7 +11,7 @@ const FLIGHT_SCHEDULE_SECURITY_CONFIG: SecurityConfig = {
   requireAuth: true,
   requireApiKey: true,
   requireCSRF: true, // Required for POST operations
-  allowedRoles: ['sys_admin', 'school_admin', 'instructor', 'student'],
+  allowedRoles: ['sys_admin', 'school_admin', 'instructor', 'student', 'mechanic', 'member'],
   enableFraudDetection: true,
   enableAdvancedAudit: true,
   dataClassification: 'confidential',
@@ -126,6 +126,7 @@ export const GET = secureApiRoute(async (
   const planeId = url.searchParams.get('plane_id');
   const instructorId = url.searchParams.get('instructor_id');
   const studentId = url.searchParams.get('student_id');
+  const filterUserId = url.searchParams.get('user_id'); // New user_id filter parameter
   const search = url.searchParams.get('search'); // New search parameter
   const sortField = url.searchParams.get('sortField') || 'scheduled_start_time';
   const sortDirection = url.searchParams.get('sortDirection') || 'asc';
@@ -141,6 +142,61 @@ export const GET = secureApiRoute(async (
   if (planeId && mongoose.Types.ObjectId.isValid(planeId)) filter.plane_id = planeId;
   if (instructorId && mongoose.Types.ObjectId.isValid(instructorId)) filter.instructor_id = instructorId;
   if (studentId && mongoose.Types.ObjectId.isValid(studentId)) filter.student_id = studentId;
+  
+  // Handle user_id filter - find schedules where user is either student or instructor
+  if (filterUserId && mongoose.Types.ObjectId.isValid(filterUserId)) {
+    // First, find the student and instructor records for this user
+    const studentRecord = await (Student as any).findOne({ user_id: filterUserId }).lean();
+    const instructorRecord = await (Instructor as any).findOne({ user_id: filterUserId }).lean();
+    
+    // Build OR condition for user_id filter
+    const userFilterConditions = [];
+    
+    if (studentRecord) {
+      userFilterConditions.push({ student_id: studentRecord._id });
+    }
+    
+    if (instructorRecord) {
+      userFilterConditions.push({ instructor_id: instructorRecord._id });
+    }
+    
+    // If we found either student or instructor records, apply the filter
+    if (userFilterConditions.length > 0) {
+      if (userFilterConditions.length === 1) {
+        // Single condition
+        Object.assign(filter, userFilterConditions[0]);
+      } else {
+        // Multiple conditions - use $or
+        filter.$or = userFilterConditions;
+      }
+    } else {
+      // User not found as student or instructor - return empty results
+      console.warn(JSON.stringify({
+        level: 'WARN',
+        message: 'User not found as student or instructor for user_id filter',
+        auditId: securityContext.auditId,
+        userId: filterUserId,
+        timestamp: new Date().toISOString()
+      }));
+      
+      return NextResponse.json({
+        success: true,
+        message: 'No flight schedules found for this user',
+        data: {
+          schedules: [],
+          pagination: {
+            page,
+            limit,
+            total: 0,
+            pages: 0
+          },
+          search: null
+        },
+        auditId: securityContext.auditId,
+        timestamp: new Date().toISOString()
+      });
+    }
+  }
   
   if (startDate || endDate) {
     filter.scheduled_start_time = {};
@@ -301,6 +357,7 @@ export const GET = secureApiRoute(async (
     organizationId: params.organization,
     userRole: userRole,
     searchTerm: search || null,
+    filterUserId: filterUserId || null,
     schedulesReturned: schedules.length,
     totalSchedules: total,
     originalTotal: allSchedules.length,

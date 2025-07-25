@@ -8,7 +8,7 @@ const SECURITY_CONFIG: SecurityConfig = {
   requireAuth: true, // Authentication required
   requireApiKey: true, // API key required
   requireCSRF: true, // CSRF protection for verification
-  allowedRoles: ['sys_admin', 'school_admin', 'instructor', 'student'], // All authenticated users
+  allowedRoles: ['sys_admin', 'school_admin', 'instructor', 'student', 'mechanic', 'member'], // All authenticated users
   enableFraudDetection: true, // Monitor MFA verification attempts
   enableAdvancedAudit: true, // Track all MFA verifications
   dataClassification: 'restricted', // MFA verification is highly sensitive

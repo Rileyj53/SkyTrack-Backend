@@ -150,7 +150,7 @@ export const POST = secureApiRoute(async (request, { params, securityContext }) 
   }
 
   // Validate role
-  const validRoles = ['sys_admin', 'school_admin', 'instructor', 'student'];
+  const validRoles = ['sys_admin', 'school_admin', 'instructor', 'student', 'mechanic', 'member'];
   if (!validRoles.includes(role)) {
     validationErrors.push('Invalid role specified');
   }

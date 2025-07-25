@@ -4,34 +4,35 @@ import { connectDB } from '@/lib/db';
 import mongoose from 'mongoose';
 import { User } from '@/models/User';
 
-// Security configuration for user operations
-const USER_SECURITY_CONFIG: SecurityConfig = {
+// GET security configuration
+const USER_GET_SECURITY_CONFIG: SecurityConfig = {
   requireAuth: true,
   requireApiKey: true,
-  requireCSRF: false, // GET operations don't need CSRF
-  allowedRoles: ['sys_admin', 'school_admin', 'instructor', 'student'],
+  requireCSRF: false, // GET request, CSRF not required
+  allowedRoles: ['sys_admin', 'school_admin', 'instructor', 'student', 'mechanic', 'member'],
+  requireOrganizationAccess: true,
   enableFraudDetection: true,
   enableAdvancedAudit: true,
   dataClassification: 'confidential',
   rateLimiting: {
     maxRequests: 100,
-    windowMs: 60000,
-    slidingWindow: true
+    windowMs: 60000
   }
 };
 
+// PUT security configuration (higher security for user modification)
 const USER_MODIFY_SECURITY_CONFIG: SecurityConfig = {
   requireAuth: true,
   requireApiKey: true,
-  requireCSRF: true, // PUT operations need CSRF
-  allowedRoles: ['sys_admin', 'school_admin', 'instructor', 'student'],
+  requireCSRF: true,
+  allowedRoles: ['sys_admin', 'school_admin', 'instructor', 'student', 'mechanic', 'member'],
+  requireOrganizationAccess: true,
   enableFraudDetection: true,
   enableAdvancedAudit: true,
   dataClassification: 'confidential',
   rateLimiting: {
     maxRequests: 50,
-    windowMs: 60000,
-    slidingWindow: true
+    windowMs: 60000
   }
 };
 
@@ -132,7 +133,7 @@ export const GET = secureApiRoute(async (request, { params, securityContext }) =
     auditId: securityContext.auditId,
     timestamp: new Date().toISOString()
   });
-}, USER_SECURITY_CONFIG);
+}, USER_GET_SECURITY_CONFIG);
 
 // PUT /api/users/[userId] - Update user information
 export const PUT = secureApiRoute(async (request, { params, securityContext }) => {
@@ -262,7 +263,7 @@ export const PUT = secureApiRoute(async (request, { params, securityContext }) =
 
   // Validate role if being updated
   if (updates.role) {
-    const validRoles = ['sys_admin', 'school_admin', 'instructor', 'student'];
+    const validRoles = ['sys_admin', 'school_admin', 'instructor', 'student', 'mechanic', 'member'];
     if (!validRoles.includes(updates.role)) {
       return NextResponse.json({
         error: {

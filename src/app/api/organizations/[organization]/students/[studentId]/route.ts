@@ -4,34 +4,35 @@ import { connectDB } from '@/lib/db';
 import mongoose from 'mongoose';
 import Student from '@/models/Student';
 
-// Security configuration for individual student operations
-const STUDENT_SECURITY_CONFIG: SecurityConfig = {
+// GET security configuration
+const STUDENT_GET_SECURITY_CONFIG: SecurityConfig = {
   requireAuth: true,
   requireApiKey: true,
-  requireCSRF: false, // GET operations don't need CSRF
-  allowedRoles: ['sys_admin', 'school_admin', 'instructor', 'student'],
+  requireCSRF: false, // GET request, CSRF not required
+  allowedRoles: ['sys_admin', 'school_admin', 'instructor', 'student', 'mechanic', 'member'],
+  requireOrganizationAccess: true,
   enableFraudDetection: true,
-  enableAdvancedAudit: true,
+  enableAdvancedAudit: false,
   dataClassification: 'confidential',
   rateLimiting: {
     maxRequests: 100,
-    windowMs: 60000,
-    slidingWindow: true
+    windowMs: 60000
   }
 };
 
+// PUT security configuration (higher security for student modification)
 const STUDENT_MODIFY_SECURITY_CONFIG: SecurityConfig = {
   requireAuth: true,
   requireApiKey: true,
-  requireCSRF: true, // PUT/DELETE operations need CSRF
-  allowedRoles: ['sys_admin', 'school_admin', 'instructor', 'student'],
+  requireCSRF: true,
+  allowedRoles: ['sys_admin', 'school_admin', 'instructor', 'student', 'mechanic', 'member'],
+  requireOrganizationAccess: true,
   enableFraudDetection: true,
   enableAdvancedAudit: true,
   dataClassification: 'confidential',
   rateLimiting: {
     maxRequests: 50,
-    windowMs: 60000,
-    slidingWindow: true
+    windowMs: 60000
   }
 };
 
@@ -70,31 +71,85 @@ export const GET = secureApiRoute(async (
     timestamp: new Date().toISOString()
   }));
 
-  // Validate student ID
+  // Validate that the provided ID is a valid ObjectId
   if (!mongoose.Types.ObjectId.isValid(params.studentId)) {
     return NextResponse.json({
       error: {
-        message: 'Invalid student ID format',
-        code: 'INVALID_STUDENT_ID',
+        message: 'Invalid ID format - must be a valid ObjectId',
+        code: 'INVALID_ID_FORMAT',
         requestId: securityContext.auditId,
         timestamp: new Date().toISOString()
       }
     }, { status: 400 });
   }
 
-  // Find the student (still using organization_id in database for now)
-  const student = await mongoose.model('Student').findOne({
-    _id: new mongoose.Types.ObjectId(params.studentId),
-    organization_id: new mongoose.Types.ObjectId(params.organization)
-  }).populate('user_id', 'first_name last_name email role').lean();
+  let student: any = null;
+  let searchType = '';
 
+  // First, try to find the student by student ID
+  try {
+    student = await mongoose.model('Student').findOne({
+      _id: new mongoose.Types.ObjectId(params.studentId),
+      organization_id: new mongoose.Types.ObjectId(params.organization)
+    }).populate('user_id', 'first_name last_name email role').lean();
+    
+    if (student) {
+      searchType = 'student_id';
+    }
+  } catch (error) {
+    console.warn(JSON.stringify({
+      level: 'WARN',
+      message: 'Error searching by student ID',
+      auditId: securityContext.auditId,
+      error: error.message,
+      timestamp: new Date().toISOString()
+    }));
+  }
+
+  // If not found by student ID, try to find by user ID
   if (!student) {
+    try {
+      student = await mongoose.model('Student').findOne({
+        user_id: new mongoose.Types.ObjectId(params.studentId),
+        organization_id: new mongoose.Types.ObjectId(params.organization)
+      }).populate('user_id', 'first_name last_name email role').lean();
+      
+      if (student) {
+        searchType = 'user_id';
+      }
+    } catch (error) {
+      console.warn(JSON.stringify({
+        level: 'WARN',
+        message: 'Error searching by user ID',
+        auditId: securityContext.auditId,
+        error: error.message,
+        timestamp: new Date().toISOString()
+      }));
+    }
+  }
+
+  // If still not found, return error
+  if (!student) {
+    console.warn(JSON.stringify({
+      level: 'WARN',
+      message: 'Student not found by student ID or user ID',
+      auditId: securityContext.auditId,
+      organizationId: params.organization,
+      providedId: params.studentId,
+      timestamp: new Date().toISOString()
+    }));
+
     return NextResponse.json({
       error: {
-        message: 'Student not found',
+        message: 'Student not found in this organization. The provided ID was not found as either a student ID or user ID.',
         code: 'STUDENT_NOT_FOUND',
         requestId: securityContext.auditId,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        details: {
+          providedId: params.studentId,
+          searchedBy: ['student_id', 'user_id'],
+          organizationId: params.organization
+        }
       }
     }, { status: 404 });
   }
@@ -121,7 +176,10 @@ export const GET = secureApiRoute(async (
     message: 'Student details retrieved successfully',
     auditId: securityContext.auditId,
     organizationId: params.organization,
-    studentId: params.studentId,
+    studentId: student._id.toString(),
+    userId: student.user_id?._id?.toString(),
+    searchType: searchType,
+    providedId: params.studentId,
     processingTime,
     timestamp: new Date().toISOString()
   }));
@@ -131,9 +189,15 @@ export const GET = secureApiRoute(async (
     message: 'Student retrieved successfully',
     data: student,
     auditId: securityContext.auditId,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    searchInfo: {
+      providedId: params.studentId,
+      foundBy: searchType,
+      studentId: student._id.toString(),
+      userId: student.user_id?._id?.toString()
+    }
   });
-}, STUDENT_SECURITY_CONFIG);
+}, STUDENT_GET_SECURITY_CONFIG);
 
 // PUT handler to update a student
 export const PUT = secureApiRoute(async (
@@ -155,31 +219,85 @@ export const PUT = secureApiRoute(async (
     timestamp: new Date().toISOString()
   }));
 
-  // Validate student ID
+  // Validate that the provided ID is a valid ObjectId
   if (!mongoose.Types.ObjectId.isValid(params.studentId)) {
     return NextResponse.json({
       error: {
-        message: 'Invalid student ID format',
-        code: 'INVALID_STUDENT_ID',
+        message: 'Invalid ID format - must be a valid ObjectId',
+        code: 'INVALID_ID_FORMAT',
         requestId: securityContext.auditId,
         timestamp: new Date().toISOString()
       }
     }, { status: 400 });
   }
 
-  // Find the student first (still using organization_id in database for now)
-  const student = await mongoose.model('Student').findOne({
-    _id: new mongoose.Types.ObjectId(params.studentId),
-    organization_id: new mongoose.Types.ObjectId(params.organization)
-  });
+  let student: any = null;
+  let searchType = '';
 
+  // First, try to find the student by student ID
+  try {
+    student = await mongoose.model('Student').findOne({
+      _id: new mongoose.Types.ObjectId(params.studentId),
+      organization_id: new mongoose.Types.ObjectId(params.organization)
+    });
+    
+    if (student) {
+      searchType = 'student_id';
+    }
+  } catch (error) {
+    console.warn(JSON.stringify({
+      level: 'WARN',
+      message: 'Error searching by student ID for update',
+      auditId: securityContext.auditId,
+      error: error.message,
+      timestamp: new Date().toISOString()
+    }));
+  }
+
+  // If not found by student ID, try to find by user ID
   if (!student) {
+    try {
+      student = await mongoose.model('Student').findOne({
+        user_id: new mongoose.Types.ObjectId(params.studentId),
+        organization_id: new mongoose.Types.ObjectId(params.organization)
+      });
+      
+      if (student) {
+        searchType = 'user_id';
+      }
+    } catch (error) {
+      console.warn(JSON.stringify({
+        level: 'WARN',
+        message: 'Error searching by user ID for update',
+        auditId: securityContext.auditId,
+        error: error.message,
+        timestamp: new Date().toISOString()
+      }));
+    }
+  }
+
+  // If still not found, return error
+  if (!student) {
+    console.warn(JSON.stringify({
+      level: 'WARN',
+      message: 'Student not found for update by student ID or user ID',
+      auditId: securityContext.auditId,
+      organizationId: params.organization,
+      providedId: params.studentId,
+      timestamp: new Date().toISOString()
+    }));
+
     return NextResponse.json({
       error: {
-        message: 'Student not found',
+        message: 'Student not found in this organization. The provided ID was not found as either a student ID or user ID.',
         code: 'STUDENT_NOT_FOUND',
         requestId: securityContext.auditId,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        details: {
+          providedId: params.studentId,
+          searchedBy: ['student_id', 'user_id'],
+          organizationId: params.organization
+        }
       }
     }, { status: 404 });
   }
@@ -252,7 +370,10 @@ export const PUT = secureApiRoute(async (
     message: 'Student updated successfully',
     auditId: securityContext.auditId,
     organizationId: params.organization,
-    studentId: params.studentId,
+    studentId: student._id.toString(),
+    userId: student.user_id?.toString(),
+    searchType: searchType,
+    providedId: params.studentId,
     processingTime,
     timestamp: new Date().toISOString()
   }));
@@ -262,7 +383,13 @@ export const PUT = secureApiRoute(async (
     message: 'Student updated successfully',
     data: { student: student.toObject() },
     auditId: securityContext.auditId,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    searchInfo: {
+      providedId: params.studentId,
+      foundBy: searchType,
+      studentId: student._id.toString(),
+      userId: student.user_id?.toString()
+    }
   });
 }, STUDENT_MODIFY_SECURITY_CONFIG);
 
@@ -286,34 +413,92 @@ export const DELETE = secureApiRoute(async (
     timestamp: new Date().toISOString()
   }));
 
-  // Validate student ID
+  // Validate that the provided ID is a valid ObjectId
   if (!mongoose.Types.ObjectId.isValid(params.studentId)) {
     return NextResponse.json({
       error: {
-        message: 'Invalid student ID format',
-        code: 'INVALID_STUDENT_ID',
+        message: 'Invalid ID format - must be a valid ObjectId',
+        code: 'INVALID_ID_FORMAT',
         requestId: securityContext.auditId,
         timestamp: new Date().toISOString()
       }
     }, { status: 400 });
   }
 
-  // Find and delete the student (still using organization_id in database for now)
-  const student = await mongoose.model('Student').findOne({
-    _id: new mongoose.Types.ObjectId(params.studentId),
-    organization_id: new mongoose.Types.ObjectId(params.organization)
-  });
+  let student: any = null;
+  let searchType = '';
 
+  // First, try to find the student by student ID
+  try {
+    student = await mongoose.model('Student').findOne({
+      _id: new mongoose.Types.ObjectId(params.studentId),
+      organization_id: new mongoose.Types.ObjectId(params.organization)
+    });
+    
+    if (student) {
+      searchType = 'student_id';
+    }
+  } catch (error) {
+    console.warn(JSON.stringify({
+      level: 'WARN',
+      message: 'Error searching by student ID for deletion',
+      auditId: securityContext.auditId,
+      error: error.message,
+      timestamp: new Date().toISOString()
+    }));
+  }
+
+  // If not found by student ID, try to find by user ID
   if (!student) {
+    try {
+      student = await mongoose.model('Student').findOne({
+        user_id: new mongoose.Types.ObjectId(params.studentId),
+        organization_id: new mongoose.Types.ObjectId(params.organization)
+      });
+      
+      if (student) {
+        searchType = 'user_id';
+      }
+    } catch (error) {
+      console.warn(JSON.stringify({
+        level: 'WARN',
+        message: 'Error searching by user ID for deletion',
+        auditId: securityContext.auditId,
+        error: error.message,
+        timestamp: new Date().toISOString()
+      }));
+    }
+  }
+
+  // If still not found, return error
+  if (!student) {
+    console.warn(JSON.stringify({
+      level: 'WARN',
+      message: 'Student not found for deletion by student ID or user ID',
+      auditId: securityContext.auditId,
+      organizationId: params.organization,
+      providedId: params.studentId,
+      timestamp: new Date().toISOString()
+    }));
+
     return NextResponse.json({
       error: {
-        message: 'Student not found',
+        message: 'Student not found in this organization. The provided ID was not found as either a student ID or user ID.',
         code: 'STUDENT_NOT_FOUND',
         requestId: securityContext.auditId,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        details: {
+          providedId: params.studentId,
+          searchedBy: ['student_id', 'user_id'],
+          organizationId: params.organization
+        }
       }
     }, { status: 404 });
   }
+
+  // Store student info before deletion for logging
+  const studentIdToDelete = student._id.toString();
+  const userIdToDelete = student.user_id?.toString();
 
   await student.deleteOne();
 
@@ -324,7 +509,10 @@ export const DELETE = secureApiRoute(async (
     message: 'Student deleted successfully',
     auditId: securityContext.auditId,
     organizationId: params.organization,
-    studentId: params.studentId,
+    studentId: studentIdToDelete,
+    userId: userIdToDelete,
+    searchType: searchType,
+    providedId: params.studentId,
     processingTime,
     timestamp: new Date().toISOString()
   }));
@@ -332,8 +520,14 @@ export const DELETE = secureApiRoute(async (
   return NextResponse.json({
     success: true,
     message: 'Student deleted successfully',
-    data: { student_id: params.studentId },
+    data: { student_id: studentIdToDelete },
     auditId: securityContext.auditId,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    searchInfo: {
+      providedId: params.studentId,
+      foundBy: searchType,
+      studentId: studentIdToDelete,
+      userId: userIdToDelete
+    }
   });
 }, STUDENT_DELETE_SECURITY_CONFIG); 

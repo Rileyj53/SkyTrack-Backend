@@ -8,7 +8,7 @@ import mongoose from 'mongoose';
 const AIRCRAFT_TRACKING_CONFIG: SecurityConfig = {
   requireAuth: true,
   requireApiKey: true,
-  allowedRoles: ['sys_admin', 'school_admin', 'instructor'],
+  allowedRoles: ['sys_admin', 'school_admin', 'student', 'member', 'mechanic'],
   enableFraudDetection: true,
   enableAdvancedAudit: true,
   dataClassification: 'internal',
