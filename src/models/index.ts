@@ -6,6 +6,7 @@ import Instructor from './Instructor';
 import Plane from './Plane';
 import Program from './Program';
 import FlightSchedule from './FlightSchedule';
+import FlightScheduleRequest from './FlightScheduleRequest';
 import { WaitlistEntry } from './WaitlistEntry';
 
 // Export all models
@@ -17,6 +18,7 @@ export {
   Plane,
   Program,
   FlightSchedule,
+  FlightScheduleRequest,
   WaitlistEntry
 };
 

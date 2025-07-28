@@ -10,34 +10,48 @@ import Instructor from '@/models/Instructor';
 import { School } from '@/models/School';
 import mongoose from 'mongoose';
 
-// Security configuration for flight invoices
-const FLIGHT_INVOICES_SECURITY_CONFIG: SecurityConfig = {
+// GET security configuration
+const INVOICE_GET_SECURITY_CONFIG: SecurityConfig = {
   requireAuth: true,
   requireApiKey: true,
-  requireCSRF: false, // GET operations don't need CSRF
-  allowedRoles: ['sys_admin', 'school_admin', 'instructor'],
+  requireCSRF: false, // GET request, CSRF not required
+  allowedRoles: ['sys_admin', 'school_admin', 'club_admin', 'instructor'],
   enableFraudDetection: true,
   enableAdvancedAudit: true,
   dataClassification: 'confidential',
   rateLimiting: {
     maxRequests: 100,
-    windowMs: 60000,
-    slidingWindow: true
+    windowMs: 60000
   }
 };
 
-const FLIGHT_INVOICES_CREATE_SECURITY_CONFIG: SecurityConfig = {
+// POST security configuration (higher security for invoice creation)
+const INVOICE_CREATE_SECURITY_CONFIG: SecurityConfig = {
   requireAuth: true,
   requireApiKey: true,
-  requireCSRF: true, // POST operations need CSRF
-  allowedRoles: ['sys_admin', 'school_admin', 'instructor'],
+  requireCSRF: true,
+  allowedRoles: ['sys_admin', 'school_admin', 'club_admin', 'instructor'],
   enableFraudDetection: true,
   enableAdvancedAudit: true,
   dataClassification: 'confidential',
   rateLimiting: {
     maxRequests: 50,
-    windowMs: 60000,
-    slidingWindow: true
+    windowMs: 60000
+  }
+};
+
+// DELETE security configuration (highest security for invoice deletion)
+const INVOICE_DELETE_SECURITY_CONFIG: SecurityConfig = {
+  requireAuth: true,
+  requireApiKey: true,
+  requireCSRF: true,
+  allowedRoles: ['sys_admin', 'school_admin', 'club_admin'],
+  enableFraudDetection: true,
+  enableAdvancedAudit: true,
+  dataClassification: 'confidential',
+  rateLimiting: {
+    maxRequests: 10,
+    windowMs: 60000
   }
 };
 
@@ -220,7 +234,7 @@ export const GET = secureApiRoute(async (
     auditId: securityContext.auditId,
     timestamp: new Date().toISOString()
   });
-}, FLIGHT_INVOICES_SECURITY_CONFIG);
+}, INVOICE_GET_SECURITY_CONFIG);
 
 // POST /api/organizations/[organizationId]/students/[studentId]/flight-invoices - Create a new flight invoice
 export const POST = secureApiRoute(async (
@@ -473,7 +487,7 @@ export const POST = secureApiRoute(async (
     auditId: securityContext.auditId,
     timestamp: new Date().toISOString()
   }, { status: 201 });
-}, FLIGHT_INVOICES_CREATE_SECURITY_CONFIG);
+}, INVOICE_CREATE_SECURITY_CONFIG);
 
 /**
  * Generate default line items based on flight schedule and plane rates

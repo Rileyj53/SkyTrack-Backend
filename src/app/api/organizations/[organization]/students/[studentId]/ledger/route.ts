@@ -10,27 +10,27 @@ import FlightInvoice from '@/models/FlightInvoice';
 // Import FlightInvoice to ensure the model is registered
 import '@/models/FlightInvoice';
 
-// Security configuration for student ledger operations
-const STUDENT_LEDGER_SECURITY_CONFIG: SecurityConfig = {
+// GET security configuration
+const LEDGER_GET_SECURITY_CONFIG: SecurityConfig = {
   requireAuth: true,
   requireApiKey: true,
-  requireCSRF: false, // GET operations don't need CSRF
-  allowedRoles: ['sys_admin', 'school_admin', 'instructor', 'student', 'mechanic', 'member'],
+  requireCSRF: false, // GET request, CSRF not required
+  allowedRoles: ['sys_admin', 'school_admin', 'club_admin', 'instructor', 'student', 'mechanic', 'member'],
   enableFraudDetection: true,
   enableAdvancedAudit: true,
   dataClassification: 'confidential',
   rateLimiting: {
     maxRequests: 100,
-    windowMs: 60000,
-    slidingWindow: true
+    windowMs: 60000
   }
 };
 
-const STUDENT_LEDGER_MODIFY_SECURITY_CONFIG: SecurityConfig = {
+// POST security configuration (higher security for ledger operations)
+const LEDGER_MODIFY_SECURITY_CONFIG: SecurityConfig = {
   requireAuth: true,
   requireApiKey: true,
-  requireCSRF: true, // POST/PUT operations need CSRF
-  allowedRoles: ['sys_admin', 'school_admin'],
+  requireCSRF: true,
+  allowedRoles: ['sys_admin', 'school_admin', 'club_admin'],
   enableFraudDetection: true,
   enableAdvancedAudit: true,
   dataClassification: 'confidential',
@@ -254,7 +254,7 @@ export const GET = secureApiRoute(async (
     auditId: securityContext.auditId,
     timestamp: new Date().toISOString()
   });
-}, STUDENT_LEDGER_SECURITY_CONFIG);
+}, LEDGER_GET_SECURITY_CONFIG);
 
 // POST /api/organizations/[organizationId]/students/[studentId]/ledger - Create student ledger
 export const POST = secureApiRoute(async (
@@ -441,7 +441,7 @@ export const POST = secureApiRoute(async (
     auditId: securityContext.auditId,
     timestamp: new Date().toISOString()
   }, { status: 201 });
-}, STUDENT_LEDGER_MODIFY_SECURITY_CONFIG);
+}, LEDGER_MODIFY_SECURITY_CONFIG);
 
 // PUT /api/organizations/[organizationId]/students/[studentId]/ledger - Update student ledger
 export const PUT = secureApiRoute(async (
@@ -614,7 +614,7 @@ export const PUT = secureApiRoute(async (
     auditId: securityContext.auditId,
     timestamp: new Date().toISOString()
   });
-}, STUDENT_LEDGER_MODIFY_SECURITY_CONFIG);
+}, LEDGER_MODIFY_SECURITY_CONFIG);
 
 // DELETE /api/organizations/[organizationId]/students/[studentId]/ledger - Delete student ledger
 export const DELETE = secureApiRoute(async (

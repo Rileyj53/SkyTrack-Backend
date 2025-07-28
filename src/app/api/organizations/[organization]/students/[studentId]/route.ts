@@ -9,10 +9,9 @@ const STUDENT_GET_SECURITY_CONFIG: SecurityConfig = {
   requireAuth: true,
   requireApiKey: true,
   requireCSRF: false, // GET request, CSRF not required
-  allowedRoles: ['sys_admin', 'school_admin', 'instructor', 'student', 'mechanic', 'member'],
-  requireOrganizationAccess: true,
+  allowedRoles: ['sys_admin', 'school_admin', 'club_admin', 'instructor', 'student', 'mechanic', 'member'],
   enableFraudDetection: true,
-  enableAdvancedAudit: false,
+  enableAdvancedAudit: true,
   dataClassification: 'confidential',
   rateLimiting: {
     maxRequests: 100,
@@ -25,8 +24,7 @@ const STUDENT_MODIFY_SECURITY_CONFIG: SecurityConfig = {
   requireAuth: true,
   requireApiKey: true,
   requireCSRF: true,
-  allowedRoles: ['sys_admin', 'school_admin', 'instructor', 'student', 'mechanic', 'member'],
-  requireOrganizationAccess: true,
+  allowedRoles: ['sys_admin', 'school_admin', 'club_admin', 'instructor', 'student', 'mechanic', 'member'],
   enableFraudDetection: true,
   enableAdvancedAudit: true,
   dataClassification: 'confidential',
@@ -36,18 +34,18 @@ const STUDENT_MODIFY_SECURITY_CONFIG: SecurityConfig = {
   }
 };
 
+// DELETE security configuration (highest security for student deletion)
 const STUDENT_DELETE_SECURITY_CONFIG: SecurityConfig = {
   requireAuth: true,
   requireApiKey: true,
   requireCSRF: true,
-  allowedRoles: ['sys_admin', 'school_admin'],
+  allowedRoles: ['sys_admin', 'school_admin', 'club_admin'],
   enableFraudDetection: true,
   enableAdvancedAudit: true,
   dataClassification: 'confidential',
   rateLimiting: {
-    maxRequests: 20,
-    windowMs: 60000,
-    slidingWindow: true
+    maxRequests: 10,
+    windowMs: 60000
   }
 };
 

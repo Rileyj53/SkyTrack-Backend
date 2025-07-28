@@ -1,129 +1,152 @@
-# GET /api/organizations/{organizationId}/students
+# POST /api/organizations/{organizationId}/students
 
 ## 🎯 Overview
-Retrieves a list of students for the specified organization with comprehensive filtering, search, and pagination capabilities.
+Creates a new student or member record for the specified organization. This endpoint supports both flight schools (with programs) and flight clubs (with members). For flight schools, a program is required to track student progress. For flight clubs, members can be created without a program.
 
 ## 🔐 Security
 - **Requires Auth**: ✅ (JWT Bearer token)
 - **Requires API Key**: ✅ (X-API-Key header)
-- **Requires CSRF Token**: ❌ (GET operations don't need CSRF)
-- **Allowed Roles**: `['sys_admin', 'school_admin', 'instructor']`
+- **Requires CSRF Token**: ✅ (X-CSRF-Token header)
+- **Allowed Roles**: `['sys_admin', 'school_admin']`
 - **Organization Access Required**: ✅ (must have access to specified organization)
 - **Fraud Detection**: ✅ Enabled
 - **Risk Scoring**: ✅ Enabled
 - **Data Classification**: `confidential`
-- **Rate Limiting**: 100 requests per minute
+- **Rate Limiting**: 50 requests per minute
 
 ## 📥 Request
 
-**Method**: `GET`  
+**Method**: `POST`  
 **Path**: `/api/organizations/{organizationId}/students`
 
 ### Path Parameters
 - `organizationId` (string, required): The unique identifier of the organization
 
-### Query Parameters
-- `page` (number, optional): Page number for pagination (default: 1)
-- `limit` (number, optional): Number of records per page (default: 50, max: 200)
-- `search` (string, optional): Search across student information including name, email, phone, etc.
-- `status` (string, optional): Filter by student status (e.g., "Active", "Inactive", "Graduated")
-- `program` (string, optional): Filter by program name (case-insensitive partial match)
-- `certification` (string, optional): Filter by certification type (e.g., "private", "instrument")
-- `enrollment_start_date` (string, optional): Filter students enrolled from this date (YYYY-MM-DD format)
-- `enrollment_end_date` (string, optional): Filter students enrolled before this date (YYYY-MM-DD format)
-- `stage` (string, optional): Filter by current training stage (case-insensitive partial match)
-- `milestone` (string, optional): Filter by next milestone (case-insensitive partial match)
-- `license_number` (string, optional): Filter by license number (case-insensitive partial match)
-- `phone` (string, optional): Filter by phone number (case-insensitive partial match)
-- `has_emergency_contact` (string, optional): Filter by emergency contact presence ("true" or "false")
-- `has_notes` (string, optional): Filter by notes presence ("true" or "false")
-- `sortField` (string, optional): Field to sort by (default: "enrollmentDate")
-- `sortDirection` (string, optional): Sort direction - "asc" or "desc" (default: "desc")
-
 ### Headers
 - `Authorization: Bearer <token>` (required): JWT authentication token
 - `X-API-Key: <key>` (required): Valid API key
+- `X-CSRF-Token: <token>` (required): CSRF protection token
+- `Content-Type: application/json` (required)
+
+### Body Schema
+```json
+{
+  "contact_email": "string (required, valid email format)",
+  "phone": "string (optional, format: 555-555-1234)",
+  "certifications": ["string (optional, enum: private, instrument, commercial, multi-engine, cfi, cfii, mei, atp)"],
+  "license_number": "string (optional)",
+  "emergency_contact": {
+    "name": "string (required if emergency_contact provided)",
+    "relationship": "string (required if emergency_contact provided)",
+    "phone": "string (required if emergency_contact provided, format: 555-555-1234)"
+  },
+  "enrollmentDate": "string (optional, ISO date format, defaults to current date)",
+  "program": "string (optional, required for flight schools, not needed for flight clubs)",
+  "status": "string (optional, enum: Active, Inactive, Graduated, On Hold, Discontinued, defaults to Active)",
+  "stage": "string (optional)",
+  "nextMilestone": "string (optional)",
+  "notes": "string (optional)",
+  "studentNotes": [
+    {
+      "author_id": "string (required)",
+      "author_name": "string (required)",
+      "type": "string (required, enum: flight, ground, medical, other)",
+      "title": "string (required)",
+      "content": "string (required)",
+      "tags": ["string (optional)"],
+      "is_private": "boolean (optional, defaults to false)",
+      "attachments": [
+        {
+          "name": "string (required)",
+          "url": "string (required)",
+          "type": "string (optional)"
+        }
+      ]
+    }
+  ]
+}
+```
 
 ## 📤 Response
 
-### Success Response (200)
+### Success Response (201)
 ```json
 {
   "success": true,
-  "message": "Students retrieved successfully",
+  "message": "Student created successfully" | "Member created successfully",
   "data": {
-    "students": [
-      {
-        "_id": "string",
-        "organization_id": "string",
-        "user_id": {
+    "student": {
+      "_id": "string",
+      "organization_id": "string",
+      "user_id": "string (optional)",
+      "contact_email": "string",
+      "phone": "string (optional)",
+      "certifications": ["string"],
+      "license_number": "string (optional)",
+      "emergency_contact": {
+        "name": "string",
+        "relationship": "string",
+        "phone": "string"
+      },
+      "enrollmentDate": "string (ISO date)",
+      "program": "string (optional)",
+      "status": "string",
+      "stage": "string (optional)",
+      "nextMilestone": "string (optional)",
+      "notes": "string (optional)",
+      "progress": {
+        "requirements": [
+          {
+            "name": "string",
+            "total_hours": "number",
+            "completed_hours": "number",
+            "type": "string"
+          }
+        ],
+        "milestones": [
+          {
+            "name": "string",
+            "description": "string",
+            "order": "number",
+            "completed": "boolean",
+            "completedDate": "string (optional, ISO date)"
+          }
+        ],
+        "stages": [
+          {
+            "name": "string",
+            "description": "string",
+            "order": "number",
+            "completed": "boolean",
+            "completedDate": "string (optional, ISO date)"
+          }
+        ],
+        "lastUpdated": "string (ISO date)"
+      },
+      "studentNotes": [
+        {
           "_id": "string",
-          "first_name": "string",
-          "last_name": "string",
-          "email": "string",
-          "role": "string"
-        },
-        "contact_email": "string",
-        "phone": "string",
-        "certifications": ["string"],
-        "license_number": "string",
-        "emergency_contact": {
-          "name": "string",
-          "relationship": "string",
-          "phone": "string"
-        },
-        "enrollmentDate": "string (ISO date)",
-        "program": "string",
-        "status": "string",
-        "stage": "string",
-        "nextMilestone": "string",
-        "notes": "string",
-        "progress": {
-          "requirements": [
+          "student_id": "string",
+          "author_id": "string",
+          "author_name": "string",
+          "type": "string",
+          "title": "string",
+          "content": "string",
+          "tags": ["string"],
+          "is_private": "boolean",
+          "attachments": [
             {
               "name": "string",
-              "total_hours": "number",
-              "completed_hours": "number",
+              "url": "string",
               "type": "string"
             }
           ],
-          "milestones": [
-            {
-              "name": "string",
-              "description": "string",
-              "order": "number",
-              "completed": "boolean"
-            }
-          ],
-          "stages": [
-            {
-              "name": "string",
-              "description": "string",
-              "order": "number",
-              "completed": "boolean"
-            }
-          ],
-          "lastUpdated": "string (ISO date)"
-        },
-        "studentNotes": [
-          {
-            "note": "string",
-            "type": "string",
-            "created_at": "string (ISO date)",
-            "updated_at": "string (ISO date)"
-          }
-        ],
-        "createdAt": "string (ISO date)",
-        "updatedAt": "string (ISO date)"
-      }
-    ],
-    "pagination": {
-      "currentPage": "number",
-      "totalPages": "number",
-      "totalCount": "number",
-      "hasNextPage": "boolean",
-      "hasPrevPage": "boolean",
-      "limit": "number"
+          "created_at": "string (ISO date)",
+          "updated_at": "string (ISO date)"
+        }
+      ],
+      "created_at": "string (ISO date)",
+      "updated_at": "string (ISO date)"
     }
   },
   "auditId": "string",
@@ -137,20 +160,30 @@ Retrieves a list of students for the specified organization with comprehensive f
 ```json
 {
   "error": {
-    "message": "Invalid organization ID format",
-    "code": "INVALID_ORGANIZATION_ID",
+    "message": "Missing required field: contact_email is required",
+    "code": "MISSING_REQUIRED_FIELDS",
     "requestId": "string",
     "timestamp": "string (ISO date)"
   }
 }
 ```
 
-#### 400 - Invalid Pagination
 ```json
 {
   "error": {
-    "message": "Invalid pagination parameters. Page must be >= 1 and limit must be between 1 and 200",
-    "code": "INVALID_PAGINATION",
+    "message": "Invalid email format",
+    "code": "INVALID_EMAIL_FORMAT",
+    "requestId": "string",
+    "timestamp": "string (ISO date)"
+  }
+}
+```
+
+```json
+{
+  "error": {
+    "message": "Invalid organization ID format",
+    "code": "INVALID_ORGANIZATION_ID",
     "requestId": "string",
     "timestamp": "string (ISO date)"
   }
@@ -177,142 +210,133 @@ Retrieves a list of students for the specified organization with comprehensive f
     "code": "ACCESS_DENIED",
     "requestId": "string",
     "timestamp": "string (ISO date)"
+  },
+  "securityContext": {
+    "riskScore": 85,
+    "fraudFlags": ["suspicious_location", "velocity_check"]
   }
 }
 ```
 
-## 🔍 Search Functionality
-
-The `search` parameter performs a comprehensive text search across all student data:
-
-### **Searchable Fields:**
-- **User Information**: `first_name`, `last_name`, `email`
-- **Student Information**: `contact_email`, `phone`, `license_number`, `program`, `status`, `stage`, `nextMilestone`, `notes`
-- **Emergency Contact**: `emergency_contact.name`, `emergency_contact.phone`
-- **Full Name**: Searches for concatenated first and last names
-
-### **Search Examples:**
-```bash
-# Search for students by name
-GET /api/organizations/687c208d97e9217fc09e7c40/students?search=David Brown
-
-# Search for students by email
-GET /api/organizations/687c208d97e9217fc09e7c40/students?search=student1@albatrossflight.com
-
-# Search for students by phone number
-GET /api/organizations/687c208d97e9217fc09e7c40/students?search=555-123-4567
-
-# Search for students by program
-GET /api/organizations/687c208d97e9217fc09e7c40/students?search=Private Pilot
+#### 404 - Not Found
+```json
+{
+  "error": {
+    "message": "Program not found for this organization",
+    "code": "PROGRAM_NOT_FOUND",
+    "requestId": "string",
+    "timestamp": "string (ISO date)"
+  }
+}
 ```
 
-## 🔍 Filtering Examples
-
-### **Basic Filtering:**
-```bash
-# Filter by status
-GET /api/organizations/687c208d97e9217fc09e7c40/students?status=Active
-
-# Filter by program
-GET /api/organizations/687c208d97e9217fc09e7c40/students?program=Instrument Rating
-
-# Filter by certification
-GET /api/organizations/687c208d97e9217fc09e7c40/students?certification=private
+#### 409 - Conflict
+```json
+{
+  "error": {
+    "message": "A student with this email already exists in this organization",
+    "code": "DUPLICATE_STUDENT_EMAIL",
+    "requestId": "string",
+    "timestamp": "string (ISO date)"
+  }
+}
 ```
 
-### **Date Filtering:**
-```bash
-# Filter by enrollment date range
-GET /api/organizations/687c208d97e9217fc09e7c40/students?enrollment_start_date=2023-01-01&enrollment_end_date=2023-12-31
-
-# Filter students enrolled in 2023
-GET /api/organizations/687c208d97e9217fc09e7c40/students?enrollment_start_date=2023-01-01&enrollment_end_date=2023-12-31
-```
-
-### **Advanced Filtering:**
-```bash
-# Filter by training stage
-GET /api/organizations/687c208d97e9217fc09e7c40/students?stage=Pre-Solo
-
-# Filter by next milestone
-GET /api/organizations/687c208d97e9217fc09e7c40/students?milestone=First Solo
-
-# Filter by license number
-GET /api/organizations/687c208d97e9217fc09e7c40/students?license_number=STU001
-
-# Filter by phone number
-GET /api/organizations/687c208d97e9217fc09e7c40/students?phone=555-123
-```
-
-### **Boolean Filtering:**
-```bash
-# Filter students with emergency contact
-GET /api/organizations/687c208d97e9217fc09e7c40/students?has_emergency_contact=true
-
-# Filter students without emergency contact
-GET /api/organizations/687c208d97e9217fc09e7c40/students?has_emergency_contact=false
-
-# Filter students with notes
-GET /api/organizations/687c208d97e9217fc09e7c40/students?has_notes=true
-
-# Filter students without notes
-GET /api/organizations/687c208d97e9217fc09e7c40/students?has_notes=false
-```
-
-### **Combined Filtering:**
-```bash
-# Active students in Private Pilot program with emergency contact
-GET /api/organizations/687c208d97e9217fc09e7c40/students?status=Active&program=Private Pilot&has_emergency_contact=true
-
-# Students in Pre-Solo stage with notes, sorted by enrollment date
-GET /api/organizations/687c208d97e9217fc09e7c40/students?stage=Pre-Solo&has_notes=true&sortField=enrollmentDate&sortDirection=desc
+#### 429 - Too Many Requests
+```json
+{
+  "error": {
+    "message": "Rate limit exceeded",
+    "code": "RATE_LIMIT_EXCEEDED",
+    "requestId": "string",
+    "timestamp": "string (ISO date)",
+    "retryAfter": 60
+  }
+}
 ```
 
 ## 🔍 Example Requests
 
-### Basic Request
+### Flight School Student (with program)
 ```bash
-curl -X GET "https://api.skytrack.com/api/organizations/687c208d97e9217fc09e7c40/students" \
+curl -X POST "https://api.skytrack.com/api/organizations/64abc123def456/students" \
   -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
-  -H "X-API-Key: your-api-key"
+  -H "X-API-Key: your-api-key" \
+  -H "X-CSRF-Token: csrf-token" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "contact_email": "john.doe@example.com",
+    "phone": "555-123-4567",
+    "certifications": ["private"],
+    "license_number": "123456789",
+    "emergency_contact": {
+      "name": "Jane Doe",
+      "relationship": "Spouse",
+      "phone": "555-987-6543"
+    },
+    "program": "Private Pilot Training",
+    "status": "Active",
+    "notes": "New student starting private pilot training"
+  }'
 ```
 
-### Request with Search and Filtering
+### Flight Club Member (without program)
 ```bash
-curl -X GET "https://api.skytrack.com/api/organizations/687c208d97e9217fc09e7c40/students?search=David&status=Active&program=Private Pilot&page=1&limit=20" \
+curl -X POST "https://api.skytrack.com/api/organizations/64abc123def456/students" \
   -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
-  -H "X-API-Key: your-api-key"
-```
-
-### Request with Date Filtering
-```bash
-curl -X GET "https://api.skytrack.com/api/organizations/687c208d97e9217fc09e7c40/students?enrollment_start_date=2023-01-01&enrollment_end_date=2023-12-31&sortField=enrollmentDate&sortDirection=asc" \
-  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
-  -H "X-API-Key: your-api-key"
+  -H "X-API-Key: your-api-key" \
+  -H "X-CSRF-Token: csrf-token" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "contact_email": "member@example.com",
+    "phone": "555-456-7890",
+    "certifications": ["private", "instrument"],
+    "license_number": "987654321",
+    "emergency_contact": {
+      "name": "John Smith",
+      "relationship": "Emergency Contact",
+      "phone": "555-111-2222"
+    },
+    "status": "Active",
+    "notes": "New club member"
+  }'
 ```
 
 ## 🚨 Error Codes Reference
-- `INVALID_ORGANIZATION_ID`: Invalid organization ID format
-- `INVALID_PAGINATION`: Invalid pagination parameters
+- `MISSING_REQUIRED_FIELDS`: Required field is missing
+- `INVALID_EMAIL_FORMAT`: Email format is invalid
+- `INVALID_ORGANIZATION_ID`: Organization ID format is invalid
 - `AUTHENTICATION_FAILED`: Invalid or expired token
 - `ACCESS_DENIED`: Insufficient permissions or blocked by security policy
+- `PROGRAM_NOT_FOUND`: Specified program does not exist in the organization
+- `DUPLICATE_STUDENT_EMAIL`: Email already exists in organization
 - `RATE_LIMIT_EXCEEDED`: Too many requests
 - `HIGH_RISK_BLOCKED`: Request blocked due to high risk score
 
-## 📋 Role-Based Access Control
+## 📋 Usage Notes
 
-- **Instructors**: Can view students in their organization
-- **School Admins**: Can view all students in their organization
-- **System Admins**: Can view all students across all organizations
+### Flight Schools vs Flight Clubs
+- **Flight Schools**: Provide a `program` field to track student progress through structured training programs
+- **Flight Clubs**: Omit the `program` field to create members without structured training requirements
 
-## 📊 Available Sort Fields
+### Progress Tracking
+- When a `program` is provided, the system automatically initializes progress tracking with:
+  - Program requirements (hours, milestones, stages)
+  - Initial stage and milestone from the program
+  - Progress tracking structure
+- When no `program` is provided, no progress tracking is initialized
 
-- `enrollmentDate` (default): Sort by enrollment date
-- `contact_email`: Sort by contact email
-- `program`: Sort by program name
-- `status`: Sort by student status
-- `stage`: Sort by current training stage
-- `nextMilestone`: Sort by next milestone
-- `license_number`: Sort by license number
-- `createdAt`: Sort by creation date
-- `updatedAt`: Sort by last update date 
+### Email Uniqueness
+- Email addresses must be unique within each organization
+- The system automatically converts emails to lowercase for consistency
+
+### Phone Number Format
+- All phone numbers must follow the format: `555-555-1234`
+- This applies to both the main phone and emergency contact phone
+
+### Status Options
+- `Active`: Currently enrolled/active member
+- `Inactive`: Temporarily inactive
+- `Graduated`: Completed program
+- `On Hold`: Temporarily suspended
+- `Discontinued`: Permanently left the organization 

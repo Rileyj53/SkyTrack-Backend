@@ -11,7 +11,7 @@ const FLIGHT_SCHEDULE_SECURITY_CONFIG: SecurityConfig = {
   requireAuth: true,
   requireApiKey: true,
   requireCSRF: true, // Required for POST operations
-  allowedRoles: ['sys_admin', 'school_admin', 'instructor', 'student', 'mechanic', 'member'],
+  allowedRoles: ['sys_admin', 'school_admin', 'club_admin', 'instructor', 'student', 'mechanic', 'member'],
   enableFraudDetection: true,
   enableAdvancedAudit: true,
   dataClassification: 'confidential',
@@ -245,14 +245,29 @@ export const GET = secureApiRoute(async (
         select: 'first_name last_name email'
       }
     })
+    .populate({
+      path: 'request_id',
+      select: 'status request_notes admin_notes created_at'
+    })
     .lean();
 
+  // Manually populate approved_by field if it exists in the schema
+  // This avoids the strictPopulateError when the field might not exist in all documents
+  const schedulesWithApprovedBy = allSchedules.map((schedule: any) => {
+    if (schedule.approved_by) {
+      // If approved_by exists, we'll handle it separately to avoid populate errors
+      // For now, we'll just keep the ObjectId reference
+      return schedule;
+    }
+    return schedule;
+  });
+
   // Apply search filter if search parameter is provided
-  let filteredSchedules = allSchedules;
+  let filteredSchedules = schedulesWithApprovedBy;
   if (search && search.trim()) {
     const searchTerm = search.toLowerCase().trim();
     
-    filteredSchedules = allSchedules.filter((schedule: any) => {
+    filteredSchedules = filteredSchedules.filter((schedule: any) => {
       // Search in flight schedule fields
       const scheduleFields = [
         schedule.flight_type,
@@ -427,7 +442,7 @@ export const POST = secureApiRoute(async (
     }, { status: 400 });
   }
 
-  // Role-based access control - only admins and instructors can create schedules
+  // Role-based access control - only admins and instructors can create schedules directly
   const userRole = securityContext.user?.role;
   if (!['sys_admin', 'school_admin', 'instructor'].includes(userRole)) {
     console.warn(JSON.stringify({
@@ -440,9 +455,13 @@ export const POST = secureApiRoute(async (
       timestamp: new Date().toISOString()
     }));
     
+    const message = userRole === 'student' 
+      ? 'Students must use the flight schedule request system. Please create a request at /flight_schedule/requests instead.'
+      : 'Insufficient permissions to create flight schedules directly';
+    
     return NextResponse.json({
       error: {
-        message: 'Insufficient permissions to create flight schedules',
+        message: message,
         code: 'INSUFFICIENT_PERMISSIONS',
         requestId: securityContext.auditId,
         timestamp: new Date().toISOString()
@@ -458,8 +477,7 @@ export const POST = secureApiRoute(async (
     'plane_id': 'Aircraft selection is required',
     'student_id': 'Student selection is required', 
     'scheduled_start_time': 'Scheduled start time is required',
-    'scheduled_end_time': 'Scheduled end time is required',
-    'flight_type': 'Flight type is required (e.g., Training, Solo, Commercial Training)'
+    'scheduled_end_time': 'Scheduled end time is required'
   };
   
   for (const [field, message] of Object.entries(requiredFieldMessages)) {
@@ -758,7 +776,7 @@ export const POST = secureApiRoute(async (
   }
 
   // Create new flight schedule (still using organization_id in database for now)
-  const flightSchedule = new FlightSchedule({
+  const flightScheduleData: any = {
     organization_id: params.organization,
     plane_id: body.plane_id,
     instructor_id: body.instructor_id || undefined, // Only set if provided
@@ -767,11 +785,17 @@ export const POST = secureApiRoute(async (
     scheduled_end_time: scheduledEndTime,
     actual_start_time: actualStartTime || null,
     actual_end_time: actualEndTime || null,
-    flight_type: body.flight_type,
     status: body.status || 'scheduled',
     notes: body.notes
     // scheduled_duration and actual_duration will be calculated automatically by the pre-save middleware
-  });
+  };
+
+  // Only add flight_type if it's provided
+  if (body.flight_type) {
+    flightScheduleData.flight_type = body.flight_type;
+  }
+
+  const flightSchedule = new FlightSchedule(flightScheduleData);
 
   await flightSchedule.save();
 
@@ -801,6 +825,14 @@ export const POST = secureApiRoute(async (
         path: 'user_id',
         select: 'first_name last_name email'
       }
+    })
+    .populate({
+      path: 'approved_by',
+      select: 'first_name last_name email'
+    })
+    .populate({
+      path: 'request_id',
+      select: 'status request_notes admin_notes created_at'
     })
     .lean();
 

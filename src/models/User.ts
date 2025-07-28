@@ -146,7 +146,7 @@ const UserSchema = new Schema<UserDocument>(
     role: {
       type: String,
       required: [true, 'Role is required'],
-      enum: ['sys_admin', 'school_admin', 'instructor', 'student', 'mechanic', 'member'],
+      enum: ['sys_admin', 'school_admin', 'club_admin', 'instructor', 'student', 'mechanic', 'member'],
       default: 'student',
     },
     organization_id: {

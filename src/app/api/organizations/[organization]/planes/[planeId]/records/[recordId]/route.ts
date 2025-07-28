@@ -10,7 +10,7 @@ const PLANE_RECORD_DETAIL_SECURITY_CONFIG: SecurityConfig = {
   requireAuth: true,
   requireApiKey: true,
   requireCSRF: true, // Required for PUT/DELETE operations
-  allowedRoles: ['sys_admin', 'school_admin', 'instructor'],
+  allowedRoles: ['sys_admin', 'school_admin', 'club_admin', 'instructor'],
   enableFraudDetection: true,
   enableAdvancedAudit: true,
   dataClassification: 'confidential',

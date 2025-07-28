@@ -10,7 +10,7 @@ const PROFILE_UPDATE_SECURITY_CONFIG: SecurityConfig = {
   requireAuth: true, // Authentication required
   requireApiKey: true, // API key required
   requireCSRF: true, // CSRF protection for profile updates
-  allowedRoles: ['sys_admin', 'school_admin', 'instructor', 'student', 'mechanic', 'member'], // All authenticated users
+  allowedRoles: ['sys_admin', 'school_admin', 'club_admin', 'instructor', 'student', 'mechanic', 'member'], // All authenticated users
   enableFraudDetection: true, // Monitor profile update patterns
   enableAdvancedAudit: true, // Track profile changes
   dataClassification: 'confidential', // Contains personal information

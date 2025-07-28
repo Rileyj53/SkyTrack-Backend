@@ -32,6 +32,11 @@
             "key": "jwt_token",
             "value": "jwt-token-here",
             "type": "string"
+        },
+        {
+            "key": "request_id",
+            "value": "request-id-will-be-set-by-create-request",
+            "type": "string"
         }
     ],
     "item": [{
@@ -980,6 +985,432 @@
                                         "});",
                                         "",
                                         "pm.test('Flight schedule deleted', function () {",
+                                        "    const jsonData = pm.response.json();",
+                                        "    pm.expect(jsonData.success).to.be.true;",
+                                        "});"
+                                    ]
+                                }
+                            }]
+                        },
+                        {
+                            "name": "Create Flight Schedule (Admin/Instructor Only)",
+                            "request": {
+                                "method": "POST",
+                                "header": [{
+                                        "key": "Authorization",
+                                        "value": "Bearer {{jwt_token}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "X-API-Key",
+                                        "value": "{{api_key}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "X-CSRF-Token",
+                                        "value": "{{csrf_token}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json",
+                                        "type": "text"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n  \"plane_id\": \"687efa9e3d4c554ecf7ee538\",\n  \"student_id\": \"687c4f0c071a9fe822d33620\",\n  \"instructor_id\": \"687c55f3071a9fe822d337b0\",\n  \"scheduled_start_time\": \"2024-01-15T10:00:00.000Z\",\n  \"scheduled_end_time\": \"2024-01-15T12:00:00.000Z\",\n  \"flight_type\": \"Training Flight\",\n  \"status\": \"scheduled\",\n  \"notes\": \"Focus on crosswind landing techniques\"\n}"
+                                },
+                                "url": {
+                                    "raw": "{{base_url}}/api/organizations/:organizationId/flight_schedule",
+                                    "host": ["{{base_url}}"],
+                                    "path": ["api", "organizations", ":organizationId", "flight_schedule"],
+                                    "variable": [{
+                                        "key": "organizationId",
+                                        "value": "687c208d97e9217fc09e7c40"
+                                    }]
+                                },
+                                "description": "Create a confirmed flight schedule directly (admins and instructors only). Students must use the request system instead."
+                            },
+                            "event": [{
+                                "listen": "test",
+                                "script": {
+                                    "exec": [
+                                        "pm.test('Status code is 201', function () {",
+                                        "    pm.response.to.have.status(201);",
+                                        "});",
+                                        "",
+                                        "pm.test('Flight schedule created', function () {",
+                                        "    const jsonData = pm.response.json();",
+                                        "    pm.expect(jsonData.success).to.be.true;",
+                                        "    pm.expect(jsonData.data.schedule).to.be.an('object');",
+                                        "});"
+                                    ]
+                                }
+                            }]
+                        }
+                    ]
+                },
+                {
+                    "name": "Flight Schedule Requests",
+                    "item": [{
+                            "name": "List Flight Schedule Requests",
+                            "request": {
+                                "method": "GET",
+                                "header": [{
+                                        "key": "Authorization",
+                                        "value": "Bearer {{jwt_token}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "X-API-Key",
+                                        "value": "{{api_key}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "X-CSRF-Token",
+                                        "value": "{{csrf_token}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{base_url}}/api/organizations/:organizationId/flight_schedule/requests?status=pending&page=1&limit=20",
+                                    "host": ["{{base_url}}"],
+                                    "path": ["api", "organizations", ":organizationId", "flight_schedule", "requests"],
+                                    "query": [{
+                                            "key": "status",
+                                            "value": "pending",
+                                            "description": "Filter by request status (pending, approved, rejected)"
+                                        },
+                                        {
+                                            "key": "page",
+                                            "value": "1",
+                                            "description": "Page number for pagination"
+                                        },
+                                        {
+                                            "key": "limit",
+                                            "value": "20",
+                                            "description": "Number of records per page (max 100)"
+                                        }
+                                    ],
+                                    "variable": [{
+                                        "key": "organizationId",
+                                        "value": "687c208d97e9217fc09e7c40"
+                                    }]
+                                },
+                                "description": "List flight schedule requests with filtering and pagination. Students see only their requests, admins see all."
+                            },
+                            "event": [{
+                                "listen": "test",
+                                "script": {
+                                    "exec": [
+                                        "pm.test('Status code is 200', function () {",
+                                        "    pm.response.to.have.status(200);",
+                                        "});",
+                                        "",
+                                        "pm.test('Flight schedule requests returned', function () {",
+                                        "    const jsonData = pm.response.json();",
+                                        "    pm.expect(jsonData.success).to.be.true;",
+                                        "    pm.expect(jsonData.data.requests).to.be.an('array');",
+                                        "});",
+                                        "",
+                                        "pm.test('Pagination info present', function () {",
+                                        "    const jsonData = pm.response.json();",
+                                        "    pm.expect(jsonData.data.pagination).to.be.an('object');",
+                                        "    pm.expect(jsonData.data.pagination.total).to.be.a('number');",
+                                        "});"
+                                    ]
+                                }
+                            }]
+                        },
+                        {
+                            "name": "Create Flight Schedule Request (Student)",
+                            "request": {
+                                "method": "POST",
+                                "header": [{
+                                        "key": "Authorization",
+                                        "value": "Bearer {{jwt_token}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "X-API-Key",
+                                        "value": "{{api_key}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "X-CSRF-Token",
+                                        "value": "{{csrf_token}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json",
+                                        "type": "text"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n  \"plane_id\": \"687efa9e3d4c554ecf7ee538\",\n  \"student_id\": \"687c4f0c071a9fe822d33620\",\n  \"instructor_id\": \"687c55f3071a9fe822d337b0\",\n  \"scheduled_start_time\": \"2024-01-15T10:00:00.000Z\",\n  \"scheduled_end_time\": \"2024-01-15T12:00:00.000Z\",\n  \"flight_type\": \"Training Flight\",\n  \"request_notes\": \"Need to practice crosswind landings\"\n}"
+                                },
+                                "url": {
+                                    "raw": "{{base_url}}/api/organizations/:organizationId/flight_schedule/requests",
+                                    "host": ["{{base_url}}"],
+                                    "path": ["api", "organizations", ":organizationId", "flight_schedule", "requests"],
+                                    "variable": [{
+                                        "key": "organizationId",
+                                        "value": "687c208d97e9217fc09e7c40"
+                                    }]
+                                },
+                                "description": "Create a flight schedule request that requires admin approval. Students can only request for themselves."
+                            },
+                            "event": [{
+                                "listen": "test",
+                                "script": {
+                                    "exec": [
+                                        "pm.test('Status code is 201', function () {",
+                                        "    pm.response.to.have.status(201);",
+                                        "});",
+                                        "",
+                                        "pm.test('Flight schedule request created', function () {",
+                                        "    const jsonData = pm.response.json();",
+                                        "    pm.expect(jsonData.success).to.be.true;",
+                                        "    pm.expect(jsonData.data.request).to.be.an('object');",
+                                        "    pm.expect(jsonData.data.request.status).to.equal('pending');",
+                                        "});",
+                                        "",
+                                        "pm.test('Save request ID for approval test', function () {",
+                                        "    const jsonData = pm.response.json();",
+                                        "    pm.collectionVariables.set('request_id', jsonData.data.request._id);",
+                                        "});"
+                                    ]
+                                }
+                            }]
+                        },
+                        {
+                            "name": "Get Flight Schedule Request Details",
+                            "request": {
+                                "method": "GET",
+                                "header": [{
+                                        "key": "Authorization",
+                                        "value": "Bearer {{jwt_token}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "X-API-Key",
+                                        "value": "{{api_key}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "X-CSRF-Token",
+                                        "value": "{{csrf_token}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{base_url}}/api/organizations/:organizationId/flight_schedule/requests/:requestId",
+                                    "host": ["{{base_url}}"],
+                                    "path": ["api", "organizations", ":organizationId", "flight_schedule", "requests", ":requestId"],
+                                    "variable": [{
+                                            "key": "organizationId",
+                                            "value": "687c208d97e9217fc09e7c40"
+                                        },
+                                        {
+                                            "key": "requestId",
+                                            "value": "{{request_id}}"
+                                        }
+                                    ]
+                                },
+                                "description": "Get details of a specific flight schedule request"
+                            },
+                            "event": [{
+                                "listen": "test",
+                                "script": {
+                                    "exec": [
+                                        "pm.test('Status code is 200', function () {",
+                                        "    pm.response.to.have.status(200);",
+                                        "});",
+                                        "",
+                                        "pm.test('Flight schedule request returned', function () {",
+                                        "    const jsonData = pm.response.json();",
+                                        "    pm.expect(jsonData.success).to.be.true;",
+                                        "    pm.expect(jsonData.data.request).to.be.an('object');",
+                                        "});"
+                                    ]
+                                }
+                            }]
+                        },
+                        {
+                            "name": "Approve Flight Schedule Request (Admin)",
+                            "request": {
+                                "method": "PUT",
+                                "header": [{
+                                        "key": "Authorization",
+                                        "value": "Bearer {{jwt_token}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "X-API-Key",
+                                        "value": "{{api_key}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "X-CSRF-Token",
+                                        "value": "{{csrf_token}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json",
+                                        "type": "text"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n  \"status\": \"approved\",\n  \"admin_notes\": \"Approved - weather conditions look good for crosswind practice\"\n}"
+                                },
+                                "url": {
+                                    "raw": "{{base_url}}/api/organizations/:organizationId/flight_schedule/requests/:requestId",
+                                    "host": ["{{base_url}}"],
+                                    "path": ["api", "organizations", ":organizationId", "flight_schedule", "requests", ":requestId"],
+                                    "variable": [{
+                                            "key": "organizationId",
+                                            "value": "687c208d97e9217fc09e7c40"
+                                        },
+                                        {
+                                            "key": "requestId",
+                                            "value": "{{request_id}}"
+                                        }
+                                    ]
+                                },
+                                "description": "Approve a flight schedule request (admin/instructor only). This creates the actual flight schedule."
+                            },
+                            "event": [{
+                                "listen": "test",
+                                "script": {
+                                    "exec": [
+                                        "pm.test('Status code is 200', function () {",
+                                        "    pm.response.to.have.status(200);",
+                                        "});",
+                                        "",
+                                        "pm.test('Flight schedule request approved', function () {",
+                                        "    const jsonData = pm.response.json();",
+                                        "    pm.expect(jsonData.success).to.be.true;",
+                                        "    pm.expect(jsonData.data.request.status).to.equal('approved');",
+                                        "    pm.expect(jsonData.data.request.admin_notes).to.be.a('string');",
+                                        "    pm.expect(jsonData.data.request.approved_by).to.be.an('object');",
+                                        "});"
+                                    ]
+                                }
+                            }]
+                        },
+                        {
+                            "name": "Reject Flight Schedule Request (Admin)",
+                            "request": {
+                                "method": "PUT",
+                                "header": [{
+                                        "key": "Authorization",
+                                        "value": "Bearer {{jwt_token}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "X-API-Key",
+                                        "value": "{{api_key}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "X-CSRF-Token",
+                                        "value": "{{csrf_token}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json",
+                                        "type": "text"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n  \"status\": \"rejected\",\n  \"admin_notes\": \"Rejected - aircraft maintenance scheduled during requested time\"\n}"
+                                },
+                                "url": {
+                                    "raw": "{{base_url}}/api/organizations/:organizationId/flight_schedule/requests/:requestId",
+                                    "host": ["{{base_url}}"],
+                                    "path": ["api", "organizations", ":organizationId", "flight_schedule", "requests", ":requestId"],
+                                    "variable": [{
+                                            "key": "organizationId",
+                                            "value": "687c208d97e9217fc09e7c40"
+                                        },
+                                        {
+                                            "key": "requestId",
+                                            "value": "request-id-here"
+                                        }
+                                    ]
+                                },
+                                "description": "Reject a flight schedule request (admin/instructor only)."
+                            },
+                            "event": [{
+                                "listen": "test",
+                                "script": {
+                                    "exec": [
+                                        "pm.test('Status code is 200', function () {",
+                                        "    pm.response.to.have.status(200);",
+                                        "});",
+                                        "",
+                                        "pm.test('Flight schedule request rejected', function () {",
+                                        "    const jsonData = pm.response.json();",
+                                        "    pm.expect(jsonData.success).to.be.true;",
+                                        "    pm.expect(jsonData.data.request.status).to.equal('rejected');",
+                                        "    pm.expect(jsonData.data.request.admin_notes).to.be.a('string');",
+                                        "});"
+                                    ]
+                                }
+                            }]
+                        },
+                        {
+                            "name": "Delete Flight Schedule Request",
+                            "request": {
+                                "method": "DELETE",
+                                "header": [{
+                                        "key": "Authorization",
+                                        "value": "Bearer {{jwt_token}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "X-API-Key",
+                                        "value": "{{api_key}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "X-CSRF-Token",
+                                        "value": "{{csrf_token}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{base_url}}/api/organizations/:organizationId/flight_schedule/requests/:requestId",
+                                    "host": ["{{base_url}}"],
+                                    "path": ["api", "organizations", ":organizationId", "flight_schedule", "requests", ":requestId"],
+                                    "variable": [{
+                                            "key": "organizationId",
+                                            "value": "687c208d97e9217fc09e7c40"
+                                        },
+                                        {
+                                            "key": "requestId",
+                                            "value": "request-id-here"
+                                        }
+                                    ]
+                                },
+                                "description": "Delete a flight schedule request. Students can delete their own pending requests, admins can delete any."
+                            },
+                            "event": [{
+                                "listen": "test",
+                                "script": {
+                                    "exec": [
+                                        "pm.test('Status code is 200', function () {",
+                                        "    pm.response.to.have.status(200);",
+                                        "});",
+                                        "",
+                                        "pm.test('Flight schedule request deleted', function () {",
                                         "    const jsonData = pm.response.json();",
                                         "    pm.expect(jsonData.success).to.be.true;",
                                         "});"

@@ -11,9 +11,14 @@ export interface IFlightSchedule extends Document {
   actual_start_time?: Date; // Optional, null by default
   actual_end_time?: Date; // Optional, null by default
   actual_duration?: number; // Optional, null by default, calculated from actual times (in hours)
-  flight_type: string;
+  flight_type?: string;
   status: 'scheduled' | 'confirmed' | 'in-progress' | 'completed' | 'canceled' | 'no-show';
   notes?: string;
+  // Optional approval tracking fields (for schedules created from requests)
+  request_id?: mongoose.Types.ObjectId; // Reference to the original FlightScheduleRequest
+  approved_by?: mongoose.Types.ObjectId; // User ID of admin who approved the request
+  approved_at?: Date; // When the request was approved
+  request_notes?: string; // Original request notes from student
   created_at: Date;
   updated_at: Date;
 }
@@ -75,7 +80,7 @@ const FlightScheduleSchema = new Schema<IFlightSchedule>({
   },
   flight_type: {
     type: String,
-    required: [true, 'Flight type is required'],
+    required: false, // Made optional
     trim: true
   },
   status: {
@@ -87,6 +92,27 @@ const FlightScheduleSchema = new Schema<IFlightSchedule>({
   notes: {
     type: String,
     trim: true
+  },
+  // Optional approval tracking fields (for schedules created from requests)
+  request_id: {
+    type: Schema.Types.ObjectId,
+    ref: 'FlightScheduleRequest',
+    required: false,
+    index: true
+  },
+  approved_by: {
+    type: Schema.Types.ObjectId,
+    ref: 'User',
+    required: false
+  },
+  approved_at: {
+    type: Date,
+    required: false
+  },
+  request_notes: {
+    type: String,
+    trim: true,
+    maxLength: [1000, 'Request notes cannot exceed 1000 characters']
   }
 }, {
   timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }
@@ -153,6 +179,7 @@ FlightScheduleSchema.index({ organization_id: 1, scheduled_start_time: 1 });
 FlightScheduleSchema.index({ plane_id: 1, scheduled_start_time: 1 });
 FlightScheduleSchema.index({ instructor_id: 1, scheduled_start_time: 1 });
 FlightScheduleSchema.index({ student_id: 1, scheduled_start_time: 1 });
+FlightScheduleSchema.index({ request_id: 1 }); // For finding schedules created from requests
 
 const FlightSchedule = mongoose.models.FlightSchedule || mongoose.model<IFlightSchedule>('FlightSchedule', FlightScheduleSchema);
 

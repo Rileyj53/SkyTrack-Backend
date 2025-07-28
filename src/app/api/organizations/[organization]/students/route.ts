@@ -12,7 +12,7 @@ const STUDENTS_SECURITY_CONFIG: SecurityConfig = {
   requireAuth: true,
   requireApiKey: true,
   requireCSRF: false, // GET operations don't need CSRF
-  allowedRoles: ['sys_admin', 'school_admin', 'instructor'],
+  allowedRoles: ['sys_admin', 'school_admin', 'club_admin', 'instructor'],
   enableFraudDetection: true,
   enableAdvancedAudit: true,
   dataClassification: 'confidential',
@@ -27,7 +27,7 @@ const STUDENTS_CREATE_SECURITY_CONFIG: SecurityConfig = {
   requireAuth: true,
   requireApiKey: true,
   requireCSRF: true, // POST operations need CSRF
-  allowedRoles: ['sys_admin', 'school_admin'],
+  allowedRoles: ['sys_admin', 'school_admin', 'club_admin'],
   enableFraudDetection: true,
   enableAdvancedAudit: true,
   dataClassification: 'confidential',
@@ -399,10 +399,10 @@ export const POST = secureApiRoute(async (
   } = body;
 
   // Validate required fields
-  if (!contact_email || !program) {
+  if (!contact_email) {
     return NextResponse.json({
       error: {
-        message: 'Missing required fields: contact_email and program are required',
+        message: 'Missing required field: contact_email is required',
         code: 'MISSING_REQUIRED_FIELDS',
         requestId: securityContext.auditId,
         timestamp: new Date().toISOString()
@@ -440,48 +440,60 @@ export const POST = secureApiRoute(async (
     }, { status: 409 });
   }
 
-  // Find the program to get requirements (still using organization_id in database for now)
-  const programDoc = await (Program as any).findOne({
-    organization_id: params.organization,
-    program_name: program
-  }).lean() as IProgram | null;
+  // Initialize progress and program validation
+  let progress = null;
+  let initialStage = undefined;
+  let initialMilestone = undefined;
 
-  if (!programDoc) {
-    return NextResponse.json({
-      error: {
-        message: 'Program not found for this organization',
-        code: 'PROGRAM_NOT_FOUND',
-        requestId: securityContext.auditId,
-        timestamp: new Date().toISOString()
-      }
-    }, { status: 404 });
+  // If program is provided, validate it and initialize progress
+  if (program) {
+    // Find the program to get requirements (still using organization_id in database for now)
+    const programDoc = await (Program as any).findOne({
+      organization_id: params.organization,
+      program_name: program
+    }).lean() as IProgram | null;
+
+    if (!programDoc) {
+      return NextResponse.json({
+        error: {
+          message: 'Program not found for this organization',
+          code: 'PROGRAM_NOT_FOUND',
+          requestId: securityContext.auditId,
+          timestamp: new Date().toISOString()
+        }
+      }, { status: 404 });
+    }
+
+    // Initialize progress with program requirements
+    progress = {
+      requirements: programDoc.requirements.map(req => ({
+        name: req.name,
+        total_hours: req.hours,
+        completed_hours: 0,
+        type: req.type
+      })),
+      milestones: programDoc.milestones.map(milestone => ({
+        name: milestone.name,
+        description: milestone.description,
+        order: milestone.order,
+        completed: false
+      })),
+      stages: programDoc.stages.map(stage => ({
+        name: stage.name,
+        description: stage.description,
+        order: stage.order,
+        completed: false
+      })),
+      lastUpdated: new Date()
+    };
+
+    // Set initial stage and milestone if available
+    initialStage = programDoc.stages?.[0]?.name;
+    initialMilestone = programDoc.milestones?.[0]?.name;
   }
 
-  // Initialize progress with program requirements
-  const progress = {
-    requirements: programDoc.requirements.map(req => ({
-      name: req.name,
-      total_hours: req.hours,
-      completed_hours: 0,
-      type: req.type
-    })),
-    milestones: programDoc.milestones.map(milestone => ({
-      name: milestone.name,
-      description: milestone.description,
-      order: milestone.order,
-      completed: false
-    })),
-    stages: programDoc.stages.map(stage => ({
-      name: stage.name,
-      description: stage.description,
-      order: stage.order,
-      completed: false
-    })),
-    lastUpdated: new Date()
-  };
-
   // Create new student without studentNotes first (still using organization_id in database for now)
-  const student = new Student({
+  const studentData: any = {
     organization_id: params.organization,
     user_id: body.user_id, // Optional field
     contact_email: contact_email.toLowerCase(),
@@ -490,13 +502,19 @@ export const POST = secureApiRoute(async (
     license_number,
     emergency_contact,
     enrollmentDate: enrollmentDate ? new Date(enrollmentDate) : new Date(),
-    program,
     status,
-    stage: programDoc.stages?.[0]?.name, // Set initial stage if available
-    nextMilestone: programDoc.milestones?.[0]?.name, // Set initial milestone if available
+    stage: initialStage, // Set initial stage if available
+    nextMilestone: initialMilestone, // Set initial milestone if available
     notes,
     progress
-  });
+  };
+
+  // Only add program if it has a value
+  if (program) {
+    studentData.program = program;
+  }
+
+  const student = new Student(studentData);
 
   // Save the student first to get the ID
   await student.save();
@@ -524,14 +542,14 @@ export const POST = secureApiRoute(async (
     auditId: securityContext.auditId,
     organizationId: params.organization,
     studentId: student._id,
-    program,
+    hasProgram: !!program,
     processingTime,
     timestamp: new Date().toISOString()
   }));
 
   return NextResponse.json({
     success: true,
-    message: 'Student created successfully',
+    message: program ? 'Student created successfully' : 'Member created successfully',
     data: { student },
     auditId: securityContext.auditId,
     timestamp: new Date().toISOString()

@@ -9,7 +9,7 @@ const FLIGHT_SCHEDULE_ITEM_SECURITY_CONFIG: SecurityConfig = {
   requireAuth: true,
   requireApiKey: true,
   requireCSRF: true, // Required for PUT/DELETE operations
-  allowedRoles: ['sys_admin', 'school_admin', 'instructor', 'student', 'mechanic', 'member'],
+  allowedRoles: ['sys_admin', 'school_admin', 'club_admin', 'instructor', 'student', 'mechanic', 'member'],
   enableFraudDetection: true,
   enableAdvancedAudit: true,
   dataClassification: 'confidential',
@@ -91,6 +91,10 @@ export const GET = secureApiRoute(async (
         path: 'user_id',
         select: 'first_name last_name email'
       }
+    })
+    .populate({
+      path: 'request_id',
+      select: 'status request_notes admin_notes created_at'
     })
     .lean();
 

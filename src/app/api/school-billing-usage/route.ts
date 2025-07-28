@@ -9,7 +9,7 @@ const BILLING_CONFIG: SecurityConfig = {
   requireAuth: true,
   requireApiKey: true,
   requireCSRF: true,
-  allowedRoles: ['school_admin', 'sys_admin'],
+  allowedRoles: ['school_admin', 'sys_admin', 'club_admin'],
   enableFraudDetection: true,
   enableAdvancedAudit: true,
   dataClassification: 'confidential',

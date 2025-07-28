@@ -9,7 +9,7 @@ const USER_GET_SECURITY_CONFIG: SecurityConfig = {
   requireAuth: true,
   requireApiKey: true,
   requireCSRF: false, // GET request, CSRF not required
-  allowedRoles: ['sys_admin', 'school_admin', 'instructor', 'student', 'mechanic', 'member'],
+  allowedRoles: ['sys_admin', 'school_admin', 'club_admin', 'instructor', 'student', 'mechanic', 'member'],
   requireOrganizationAccess: true,
   enableFraudDetection: true,
   enableAdvancedAudit: true,
@@ -25,7 +25,7 @@ const USER_MODIFY_SECURITY_CONFIG: SecurityConfig = {
   requireAuth: true,
   requireApiKey: true,
   requireCSRF: true,
-  allowedRoles: ['sys_admin', 'school_admin', 'instructor', 'student', 'mechanic', 'member'],
+  allowedRoles: ['sys_admin', 'school_admin', 'club_admin', 'instructor', 'student', 'mechanic', 'member'],
   requireOrganizationAccess: true,
   enableFraudDetection: true,
   enableAdvancedAudit: true,
@@ -84,6 +84,7 @@ export const GET = secureApiRoute(async (request, { params, securityContext }) =
     securityContext.user.id === params.userId || // Own profile
     securityContext.user.role === 'sys_admin' || // System admin can view all
     (securityContext.user.role === 'school_admin' && user.organization_id?.toString() === securityContext.organizationId) || // School admin can view users in their organization
+    (securityContext.user.role === 'club_admin' && user.organization_id?.toString() === securityContext.organizationId) || // Club admin can view users in their organization
     (securityContext.user.role === 'instructor' && user.organization_id?.toString() === securityContext.organizationId); // Instructor can view users in their organization
 
   if (!canViewUser) {
@@ -182,7 +183,8 @@ export const PUT = secureApiRoute(async (request, { params, securityContext }) =
   const canUpdateUser = 
     securityContext.user.id === params.userId || // Own profile
     securityContext.user.role === 'sys_admin' || // System admin can update all
-    (securityContext.user.role === 'school_admin' && user.organization_id?.toString() === securityContext.organizationId); // School admin can update users in their organization
+    (securityContext.user.role === 'school_admin' && user.organization_id?.toString() === securityContext.organizationId) || // School admin can update users in their organization
+    (securityContext.user.role === 'club_admin' && user.organization_id?.toString() === securityContext.organizationId); // Club admin can update users in their organization
 
   if (!canUpdateUser) {
     return NextResponse.json({
@@ -263,7 +265,7 @@ export const PUT = secureApiRoute(async (request, { params, securityContext }) =
 
   // Validate role if being updated
   if (updates.role) {
-    const validRoles = ['sys_admin', 'school_admin', 'instructor', 'student', 'mechanic', 'member'];
+    const validRoles = ['sys_admin', 'school_admin', 'club_admin', 'instructor', 'student', 'mechanic', 'member'];
     if (!validRoles.includes(updates.role)) {
       return NextResponse.json({
         error: {

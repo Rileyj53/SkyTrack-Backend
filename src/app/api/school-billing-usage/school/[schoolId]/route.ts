@@ -8,7 +8,7 @@ import { secureApiRoute, SecurityConfig } from '@/middleware/security';
 const BILLING_CONFIG: SecurityConfig = {
   requireAuth: true,
   requireApiKey: true,
-  allowedRoles: ['school_admin', 'sys_admin'],
+  allowedRoles: ['school_admin', 'sys_admin', 'club_admin'],
   requireOrganizationAccess: true,
   enableFraudDetection: true,
   enableAdvancedAudit: true,

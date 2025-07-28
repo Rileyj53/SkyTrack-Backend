@@ -8,7 +8,7 @@ import mongoose from 'mongoose';
 const AIRCRAFT_TRACKING_CONFIG: SecurityConfig = {
   requireAuth: true,
   requireApiKey: true,
-  allowedRoles: ['sys_admin', 'school_admin', 'student', 'member', 'mechanic'],
+  allowedRoles: ['sys_admin', 'school_admin', 'club_admin', 'student', 'member', 'mechanic'],
   enableFraudDetection: true,
   enableAdvancedAudit: true,
   dataClassification: 'internal',
@@ -71,8 +71,28 @@ export const GET = secureApiRoute(async (
       }
     }
 
-    // Find all planes for this organization (still using organization_id in database for now)
-    const planes = await (Plane as any).find({ organization_id: params.organization }).lean();
+    // Determine which planes to fetch based on user role
+    let planes;
+    let searchScope;
+    
+    if (securityContext.user?.role === 'sys_admin') {
+      // sys_admin can see ALL aircraft across ALL organizations
+      planes = await (Plane as any).find({}).populate('organization_id', 'name address airport').lean();
+      searchScope = 'all_organizations';
+      
+      console.log(JSON.stringify({
+        level: 'INFO',
+        message: 'sys_admin accessing all aircraft tracking data',
+        auditId: securityContext.auditId,
+        userId: securityContext.user?._id,
+        totalPlanesFound: planes?.length || 0,
+        timestamp: new Date().toISOString()
+      }));
+    } else {
+      // All other roles see only planes from the specified organization
+      planes = await (Plane as any).find({ organization_id: params.organization }).lean();
+      searchScope = 'single_organization';
+    }
 
     if (!planes || planes.length === 0) {
       console.log(JSON.stringify({

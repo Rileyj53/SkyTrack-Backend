@@ -11,7 +11,7 @@ const INSTRUCTOR_INVITE_SECURITY_CONFIG: SecurityConfig = {
   requireAuth: true,
   requireApiKey: true,
   requireCSRF: true, // Required for POST operations
-  allowedRoles: ['sys_admin', 'school_admin'],
+  allowedRoles: ['sys_admin', 'school_admin', 'club_admin'],
   enableFraudDetection: true,
   enableAdvancedAudit: true,
   dataClassification: 'confidential',

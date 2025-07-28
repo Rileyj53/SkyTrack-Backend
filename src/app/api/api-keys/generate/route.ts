@@ -12,7 +12,7 @@ const SECURITY_CONFIG: SecurityConfig = {
   requireCSRF: false,
   requireHttpsOnly: false,
   requireRequestSigning: false, // Disabled for easier testing and development
-  allowedRoles: ['sys_admin', 'school_admin'], // Temporarily allow school_admin for testing
+  allowedRoles: ['sys_admin', 'school_admin', 'club_admin'], // Temporarily allow school_admin for testing
   enableFraudDetection: true,
   enableAdvancedAudit: true,
   dataClassification: 'restricted',

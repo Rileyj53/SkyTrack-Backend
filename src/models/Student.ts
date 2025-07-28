@@ -52,7 +52,7 @@ export interface StudentDocument extends Document {
   user_id?: mongoose.Types.ObjectId;
   contact_email: string;
   phone?: string;
-  certifications: string[];
+  certifications?: string[];
   license_number?: string;
   emergency_contact?: {
     name: string;
@@ -60,7 +60,7 @@ export interface StudentDocument extends Document {
     phone: string;
   };
   enrollmentDate: Date;
-  program: string;
+  program?: string;
   status: string;
   stage?: string;
   nextMilestone?: string;
@@ -117,7 +117,8 @@ const StudentSchema = new Schema<StudentDocument>(
         'cfii',
         'mei',
         'atp'
-      ]
+      ],
+      default: []
     }],
     license_number: {
       type: String,
@@ -139,7 +140,7 @@ const StudentSchema = new Schema<StudentDocument>(
     },
     program: {
       type: String,
-      required: true,
+      required: false,
       trim: true
     },
     status: {

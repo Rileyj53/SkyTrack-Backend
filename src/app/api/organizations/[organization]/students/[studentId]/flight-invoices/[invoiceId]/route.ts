@@ -6,49 +6,48 @@ import FlightSchedule from '@/models/FlightSchedule';
 import Student from '@/models/Student';
 import mongoose from 'mongoose';
 
-// Security configuration for individual flight invoice operations
-const FLIGHT_INVOICE_SECURITY_CONFIG: SecurityConfig = {
+// GET security configuration
+const INVOICE_GET_SECURITY_CONFIG: SecurityConfig = {
   requireAuth: true,
   requireApiKey: true,
-  requireCSRF: false, // GET operations don't need CSRF
-  allowedRoles: ['sys_admin', 'school_admin', 'instructor'],
+  requireCSRF: false, // GET request, CSRF not required
+  allowedRoles: ['sys_admin', 'school_admin', 'club_admin', 'instructor'],
   enableFraudDetection: true,
   enableAdvancedAudit: true,
   dataClassification: 'confidential',
   rateLimiting: {
     maxRequests: 100,
-    windowMs: 60000,
-    slidingWindow: true
+    windowMs: 60000
   }
 };
 
-const FLIGHT_INVOICE_MODIFY_SECURITY_CONFIG: SecurityConfig = {
+// PUT security configuration (higher security for invoice modification)
+const INVOICE_MODIFY_SECURITY_CONFIG: SecurityConfig = {
   requireAuth: true,
   requireApiKey: true,
-  requireCSRF: true, // PUT/DELETE operations need CSRF
-  allowedRoles: ['sys_admin', 'school_admin', 'instructor'],
+  requireCSRF: true,
+  allowedRoles: ['sys_admin', 'school_admin', 'club_admin', 'instructor'],
   enableFraudDetection: true,
   enableAdvancedAudit: true,
   dataClassification: 'confidential',
   rateLimiting: {
     maxRequests: 50,
-    windowMs: 60000,
-    slidingWindow: true
+    windowMs: 60000
   }
 };
 
-const FLIGHT_INVOICE_DELETE_SECURITY_CONFIG: SecurityConfig = {
+// DELETE security configuration (highest security for invoice deletion)
+const INVOICE_DELETE_SECURITY_CONFIG: SecurityConfig = {
   requireAuth: true,
   requireApiKey: true,
   requireCSRF: true,
-  allowedRoles: ['sys_admin', 'school_admin'],
+  allowedRoles: ['sys_admin', 'school_admin', 'club_admin'],
   enableFraudDetection: true,
   enableAdvancedAudit: true,
   dataClassification: 'confidential',
   rateLimiting: {
-    maxRequests: 20,
-    windowMs: 60000,
-    slidingWindow: true
+    maxRequests: 10,
+    windowMs: 60000
   }
 };
 
@@ -161,7 +160,7 @@ export const GET = secureApiRoute(async (
     auditId: securityContext.auditId,
     timestamp: new Date().toISOString()
   });
-}, FLIGHT_INVOICE_SECURITY_CONFIG);
+}, INVOICE_GET_SECURITY_CONFIG);
 
 // PUT /api/organizations/[organizationId]/students/[studentId]/flight-invoices/[invoiceId] - Update a flight invoice
 export const PUT = secureApiRoute(async (
@@ -448,7 +447,7 @@ export const PUT = secureApiRoute(async (
     auditId: securityContext.auditId,
     timestamp: new Date().toISOString()
   });
-}, FLIGHT_INVOICE_MODIFY_SECURITY_CONFIG);
+}, INVOICE_MODIFY_SECURITY_CONFIG);
 
 // DELETE /api/organizations/[organizationId]/students/[studentId]/flight-invoices/[invoiceId] - Delete a flight invoice
 export const DELETE = secureApiRoute(async (
@@ -550,4 +549,4 @@ export const DELETE = secureApiRoute(async (
     auditId: securityContext.auditId,
     timestamp: new Date().toISOString()
   });
-}, FLIGHT_INVOICE_DELETE_SECURITY_CONFIG); 
+}, INVOICE_DELETE_SECURITY_CONFIG); 

@@ -14,7 +14,7 @@ const STUDENT_INVITE_SECURITY_CONFIG: SecurityConfig = {
   requireAuth: true,
   requireApiKey: true,
   requireCSRF: true, // POST operations need CSRF
-  allowedRoles: ['sys_admin', 'school_admin'],
+  allowedRoles: ['sys_admin', 'school_admin', 'club_admin'],
   enableFraudDetection: true,
   enableAdvancedAudit: true,
   dataClassification: 'confidential',
