@@ -90,10 +90,52 @@ List flight schedules with filtering and pagination.
 - `instructor_id` - Filter by instructor
 - `student_id` - Filter by student
 - `aircraft_id` - Filter by aircraft
-- `date_from` - Start date filter
-- `date_to` - End date filter
+- `start_date` - Start date filter (YYYY-MM-DD format)
+- `end_date` - End date filter (YYYY-MM-DD format)
 - `page` - Page number for pagination
 - `limit` - Items per page
+- `user_id` - Filter by user (student or instructor)
+- `search` - Search term across multiple fields
+- `sortField` - Field to sort by (default: scheduled_start_time)
+- `sortDirection` - Sort direction: 'asc' or 'desc' (default: asc)
+- `statusOrder` - Custom status order for sorting (comma-separated)
+
+**Response Format:**
+```json
+{
+  "success": true,
+  "message": "Flight schedules retrieved successfully",
+  "data": {
+    "schedules": [...],
+    "pagination": {
+      "page": 1,
+      "limit": 50,
+      "total": 150,
+      "pages": 3,
+      "statusCounts": {
+        "current": 5,      // "in-progress" status
+        "scheduled": 120,  // "scheduled" status
+        "completed": 20,   // "completed" status
+        "canceled": 5      // "canceled" or "no-show" status
+      }
+    },
+    "search": {
+      "term": "search term",
+      "resultsFound": 150,
+      "originalTotal": 200
+    }
+  },
+  "auditId": "unique-audit-id",
+  "timestamp": "2024-01-15T10:30:00.000Z"
+}
+```
+
+**Status Counts:**
+The `statusCounts` object in the pagination provides a breakdown of flight schedules by status for the filtered period:
+- `current`: Number of flights with "in-progress" status
+- `scheduled`: Number of flights with "scheduled" status  
+- `completed`: Number of flights with "completed" status
+- `canceled`: Number of flights with "canceled" or "no-show" status
 
 ### POST /api/organizations/{organizationId}/flight_schedule
 Create a new flight schedule.

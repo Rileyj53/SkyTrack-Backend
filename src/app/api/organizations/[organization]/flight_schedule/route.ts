@@ -188,7 +188,13 @@ export const GET = secureApiRoute(async (
             page,
             limit,
             total: 0,
-            pages: 0
+            pages: 0,
+            statusCounts: {
+              current: 0,
+              scheduled: 0,
+              completed: 0,
+              canceled: 0
+            }
           },
           search: null
         },
@@ -365,6 +371,33 @@ export const GET = secureApiRoute(async (
   // Get total count for pagination (after search filtering)
   const total = filteredSchedules.length;
 
+  // Calculate status counts for the filtered results
+  const statusCounts = {
+    current: 0,    // "in-progress"
+    scheduled: 0,  // "scheduled"
+    completed: 0,  // "completed"
+    canceled: 0    // "canceled" or "no-show"
+  };
+
+  filteredSchedules.forEach((schedule: any) => {
+    const status = schedule.status?.toLowerCase();
+    switch (status) {
+      case 'in-progress':
+        statusCounts.current++;
+        break;
+      case 'scheduled':
+        statusCounts.scheduled++;
+        break;
+      case 'completed':
+        statusCounts.completed++;
+        break;
+      case 'canceled':
+      case 'no-show':
+        statusCounts.canceled++;
+        break;
+    }
+  });
+
   console.log(JSON.stringify({
     level: 'INFO',
     message: 'Flight schedule list request completed successfully',
@@ -376,6 +409,7 @@ export const GET = secureApiRoute(async (
     schedulesReturned: schedules.length,
     totalSchedules: total,
     originalTotal: allSchedules.length,
+    statusCounts: statusCounts,
     processingTime: Date.now() - startTime,
     timestamp: new Date().toISOString()
   }));
@@ -389,7 +423,8 @@ export const GET = secureApiRoute(async (
         page,
         limit,
         total,
-        pages: Math.ceil(total / limit)
+        pages: Math.ceil(total / limit),
+        statusCounts
       },
       search: search ? {
         term: search,

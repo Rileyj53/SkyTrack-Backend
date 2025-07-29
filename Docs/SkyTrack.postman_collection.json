@@ -692,6 +692,23 @@
                                         "    const jsonData = pm.response.json();",
                                         "    pm.expect(jsonData.data.pagination).to.be.an('object');",
                                         "    pm.expect(jsonData.data.pagination.total).to.be.a('number');",
+                                        "});",
+                                        "",
+                                        "pm.test('Status counts present in pagination', function () {",
+                                        "    const jsonData = pm.response.json();",
+                                        "    pm.expect(jsonData.data.pagination.statusCounts).to.be.an('object');",
+                                        "    pm.expect(jsonData.data.pagination.statusCounts.current).to.be.a('number');",
+                                        "    pm.expect(jsonData.data.pagination.statusCounts.scheduled).to.be.a('number');",
+                                        "    pm.expect(jsonData.data.pagination.statusCounts.completed).to.be.a('number');",
+                                        "    pm.expect(jsonData.data.pagination.statusCounts.canceled).to.be.a('number');",
+                                        "});",
+                                        "",
+                                        "pm.test('Status counts sum equals total', function () {",
+                                        "    const jsonData = pm.response.json();",
+                                        "    const statusCounts = jsonData.data.pagination.statusCounts;",
+                                        "    const total = jsonData.data.pagination.total;",
+                                        "    const sum = statusCounts.current + statusCounts.scheduled + statusCounts.completed + statusCounts.canceled;",
+                                        "    pm.expect(sum).to.equal(total);",
                                         "});"
                                     ]
                                 }
@@ -820,6 +837,104 @@
                                         "        if (schedule.instructor_id) {",
                                         "            pm.expect(schedule.instructor_id._id).to.equal('687c55f3071a9fe822d337b0');",
                                         "        }",
+                                        "    });",
+                                        "});"
+                                    ]
+                                }
+                            }]
+                        },
+                        {
+                            "name": "List Flight Schedules - Date Range with Status Counts",
+                            "request": {
+                                "method": "GET",
+                                "header": [{
+                                        "key": "Authorization",
+                                        "value": "Bearer {{jwt_token}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "X-API-Key",
+                                        "value": "{{api_key}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "X-CSRF-Token",
+                                        "value": "{{csrf_token}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{base_url}}/api/organizations/:organizationId/flight_schedule?page=1&limit=5&start_date=2025-07-27&end_date=2025-07-28",
+                                    "host": ["{{base_url}}"],
+                                    "path": ["api", "organizations", ":organizationId", "flight_schedule"],
+                                    "query": [{
+                                            "key": "page",
+                                            "value": "1",
+                                            "description": "Page number for pagination"
+                                        },
+                                        {
+                                            "key": "limit",
+                                            "value": "5",
+                                            "description": "Number of records per page"
+                                        },
+                                        {
+                                            "key": "start_date",
+                                            "value": "2025-07-27",
+                                            "description": "Filter flights starting from this date (YYYY-MM-DD)"
+                                        },
+                                        {
+                                            "key": "end_date",
+                                            "value": "2025-07-28",
+                                            "description": "Filter flights ending before this date (YYYY-MM-DD)"
+                                        }
+                                    ],
+                                    "variable": [{
+                                        "key": "organizationId",
+                                        "value": "687c208d97e9217fc09e7c40"
+                                    }]
+                                },
+                                "description": "List flight schedules for a specific date range with status count breakdown in pagination"
+                            },
+                            "event": [{
+                                "listen": "test",
+                                "script": {
+                                    "exec": [
+                                        "pm.test('Status code is 200', function () {",
+                                        "    pm.response.to.have.status(200);",
+                                        "});",
+                                        "",
+                                        "pm.test('Flight schedules returned', function () {",
+                                        "    const jsonData = pm.response.json();",
+                                        "    pm.expect(jsonData.success).to.be.true;",
+                                        "    pm.expect(jsonData.data.schedules).to.be.an('array');",
+                                        "});",
+                                        "",
+                                        "pm.test('Status counts present in pagination', function () {",
+                                        "    const jsonData = pm.response.json();",
+                                        "    pm.expect(jsonData.data.pagination.statusCounts).to.be.an('object');",
+                                        "    pm.expect(jsonData.data.pagination.statusCounts.current).to.be.a('number');",
+                                        "    pm.expect(jsonData.data.pagination.statusCounts.scheduled).to.be.a('number');",
+                                        "    pm.expect(jsonData.data.pagination.statusCounts.completed).to.be.a('number');",
+                                        "    pm.expect(jsonData.data.pagination.statusCounts.canceled).to.be.a('number');",
+                                        "});",
+                                        "",
+                                        "pm.test('Status counts sum equals total', function () {",
+                                        "    const jsonData = pm.response.json();",
+                                        "    const statusCounts = jsonData.data.pagination.statusCounts;",
+                                        "    const total = jsonData.data.pagination.total;",
+                                        "    const sum = statusCounts.current + statusCounts.scheduled + statusCounts.completed + statusCounts.canceled;",
+                                        "    pm.expect(sum).to.equal(total);",
+                                        "});",
+                                        "",
+                                        "pm.test('All flights within date range', function () {",
+                                        "    const jsonData = pm.response.json();",
+                                        "    const schedules = jsonData.data.schedules;",
+                                        "    const startDate = new Date('2025-07-27T00:00:00.000Z');",
+                                        "    const endDate = new Date('2025-07-28T23:59:59.999Z');",
+                                        "    schedules.forEach(schedule => {",
+                                        "        const scheduleDate = new Date(schedule.scheduled_start_time);",
+                                        "        pm.expect(scheduleDate.getTime()).to.be.at.least(startDate.getTime());",
+                                        "        pm.expect(scheduleDate.getTime()).to.be.at.most(endDate.getTime());",
                                         "    });",
                                         "});"
                                     ]
