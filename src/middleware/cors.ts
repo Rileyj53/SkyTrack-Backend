@@ -27,12 +27,35 @@ function isOriginAllowed(origin: string | null): boolean {
   if (ALLOWED_ORIGINS.includes(origin)) {
     return true;
   }
-  
+
+  // Normalize hostnames so that 'www.example.com' and 'example.com' are treated the same.
+  // This allows deploying the frontend on 'https://www.albatrossflight.com' while keeping
+  // the canonical allowed origin 'https://albatrossflight.com' in the list.
+  try {
+    const incoming = new URL(origin);
+    const incomingHost = incoming.hostname.replace(/^www\./i, '');
+
+    for (const allowed of ALLOWED_ORIGINS) {
+      try {
+        const allowedUrl = new URL(allowed);
+        const allowedHost = allowedUrl.hostname.replace(/^www\./i, '');
+
+        if (incoming.protocol === allowedUrl.protocol && incomingHost === allowedHost) {
+          return true;
+        }
+      } catch (e) {
+        // ignore malformed allowed entries
+      }
+    }
+  } catch (e) {
+    // ignore malformed origin
+  }
+
   // Check pattern: any URL ending with -sky-track.vercel.app
   if (origin.endsWith('-sky-track.vercel.app') && origin.startsWith('https://')) {
     return true;
   }
-  
+
   return false;
 }
 
