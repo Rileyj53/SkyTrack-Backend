@@ -1,0 +1,684 @@
+{
+    "info": {
+        "name": "Debug API",
+        "description": "Debug and testing endpoints for the API. These endpoints are designed for development, testing, and troubleshooting purposes.",
+        "version": "1.0.0",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "auth": {
+        "type": "apikey",
+        "apikey": [{
+                "key": "key",
+                "value": "X-API-Key",
+                "type": "string"
+            },
+            {
+                "key": "value",
+                "value": "{{api_key}}",
+                "type": "string"
+            }
+        ]
+    },
+    "variable": [{
+            "key": "base_url",
+            "value": "http://localhost:3000/api/debug",
+            "type": "string",
+            "description": "Base URL for debug endpoints"
+        },
+        {
+            "key": "api_key",
+            "value": "your-api-key-here",
+            "type": "string",
+            "description": "Your API key for authentication"
+        },
+        {
+            "key": "jwt_token",
+            "value": "your-jwt-token-here",
+            "type": "string",
+            "description": "Your JWT token for authenticated endpoints"
+        },
+        {
+            "key": "csrf_token",
+            "value": "your-csrf-token-here",
+            "type": "string",
+            "description": "CSRF token for POST requests"
+        },
+        {
+            "key": "test_email",
+            "value": "test@example.com",
+            "type": "string",
+            "description": "Email address for testing email functionality"
+        }
+    ],
+    "item": [{
+            "name": "Basic Testing",
+            "item": [{
+                    "name": "General API Test",
+                    "request": {
+                        "method": "GET",
+                        "header": [{
+                            "key": "X-API-Key",
+                            "value": "{{api_key}}",
+                            "type": "text"
+                        }],
+                        "url": {
+                            "raw": "{{base_url}}/test",
+                            "host": ["{{base_url}}"],
+                            "path": ["test"]
+                        },
+                        "description": "Test basic API functionality and connectivity."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "API Key Validation Test",
+                    "request": {
+                        "method": "GET",
+                        "header": [{
+                            "key": "X-API-Key",
+                            "value": "{{api_key}}",
+                            "type": "text"
+                        }],
+                        "url": {
+                            "raw": "{{base_url}}/test-api-key",
+                            "host": ["{{base_url}}"],
+                            "path": ["test-api-key"]
+                        },
+                        "description": "Test API key validation and user authentication flow."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "General Test - GET",
+                    "request": {
+                        "method": "GET",
+                        "header": [{
+                            "key": "X-API-Key",
+                            "value": "{{api_key}}",
+                            "type": "text"
+                        }],
+                        "url": {
+                            "raw": "{{base_url}}/test-general",
+                            "host": ["{{base_url}}"],
+                            "path": ["test-general"]
+                        },
+                        "description": "General purpose testing endpoint for basic functionality."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "General Test - POST",
+                    "request": {
+                        "method": "POST",
+                        "header": [{
+                                "key": "X-API-Key",
+                                "value": "{{api_key}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"testData\": \"sample_value\",\n  \"nested\": {\n    \"field\": \"value\"\n  }\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/test-general",
+                            "host": ["{{base_url}}"],
+                            "path": ["test-general"]
+                        },
+                        "description": "General purpose testing endpoint with POST data."
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Security & Authentication",
+            "item": [{
+                    "name": "MFA Debug Information",
+                    "request": {
+                        "method": "GET",
+                        "header": [{
+                                "key": "Authorization",
+                                "value": "Bearer {{jwt_token}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-API-Key",
+                                "value": "{{api_key}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/mfa",
+                            "host": ["{{base_url}}"],
+                            "path": ["mfa"]
+                        },
+                        "description": "Get detailed MFA configuration and status for debugging. Requires authentication."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "JWT Token Analysis - GET",
+                    "request": {
+                        "method": "GET",
+                        "header": [{
+                            "key": "X-API-Key",
+                            "value": "{{api_key}}",
+                            "type": "text"
+                        }],
+                        "url": {
+                            "raw": "{{base_url}}/jwt",
+                            "host": ["{{base_url}}"],
+                            "path": ["jwt"]
+                        },
+                        "description": "Get JWT debug information and sample token."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "JWT Token Analysis - POST",
+                    "request": {
+                        "method": "POST",
+                        "header": [{
+                                "key": "X-API-Key",
+                                "value": "{{api_key}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n  \"action\": \"validate\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/jwt",
+                            "host": ["{{base_url}}"],
+                            "path": ["jwt"]
+                        },
+                        "description": "Analyze and validate JWT tokens."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Protected Endpoint - GET",
+                    "request": {
+                        "method": "GET",
+                        "header": [{
+                                "key": "Authorization",
+                                "value": "Bearer {{jwt_token}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-API-Key",
+                                "value": "{{api_key}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/protected",
+                            "host": ["{{base_url}}"],
+                            "path": ["protected"]
+                        },
+                        "description": "Test protected endpoint functionality with authentication."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Protected Endpoint - POST",
+                    "request": {
+                        "method": "POST",
+                        "header": [{
+                                "key": "Authorization",
+                                "value": "Bearer {{jwt_token}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-API-Key",
+                                "value": "{{api_key}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"testData\": \"debug_value\",\n  \"timestamp\": \"2024-01-15T10:30:00.000Z\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/protected",
+                            "host": ["{{base_url}}"],
+                            "path": ["protected"]
+                        },
+                        "description": "Test protected endpoint with POST data."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "System Admin Protected Test",
+                    "request": {
+                        "method": "GET",
+                        "header": [{
+                                "key": "Authorization",
+                                "value": "Bearer {{jwt_token}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-API-Key",
+                                "value": "{{api_key}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/protected/test",
+                            "host": ["{{base_url}}"],
+                            "path": ["protected", "test"]
+                        },
+                        "description": "Test system administrator role-based access control. Requires sys_admin role."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "API Key Header Test",
+                    "request": {
+                        "method": "GET",
+                        "header": [{
+                            "key": "X-API-Key",
+                            "value": "{{api_key}}",
+                            "type": "text"
+                        }],
+                        "url": {
+                            "raw": "{{base_url}}/protected/test-with-key",
+                            "host": ["{{base_url}}"],
+                            "path": ["protected", "test-with-key"]
+                        },
+                        "description": "Test different API key header formats."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "CSRF Protection Test - GET",
+                    "request": {
+                        "method": "GET",
+                        "header": [{
+                            "key": "X-API-Key",
+                            "value": "{{api_key}}",
+                            "type": "text"
+                        }],
+                        "url": {
+                            "raw": "{{base_url}}/test-csrf",
+                            "host": ["{{base_url}}"],
+                            "path": ["test-csrf"]
+                        },
+                        "description": "Test CSRF token validation and cookie handling (GET method)."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "CSRF Protection Test - POST",
+                    "request": {
+                        "method": "POST",
+                        "header": [{
+                                "key": "X-API-Key",
+                                "value": "{{api_key}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-CSRF-Token",
+                                "value": "{{csrf_token}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/test-csrf",
+                            "host": ["{{base_url}}"],
+                            "path": ["test-csrf"]
+                        },
+                        "description": "Test CSRF token validation (POST method)."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Security Headers Test",
+                    "request": {
+                        "method": "GET",
+                        "header": [{
+                            "key": "X-API-Key",
+                            "value": "{{api_key}}",
+                            "type": "text"
+                        }],
+                        "url": {
+                            "raw": "{{base_url}}/security-headers",
+                            "host": ["{{base_url}}"],
+                            "path": ["security-headers"]
+                        },
+                        "description": "Test and verify security headers implementation."
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "System Health",
+            "item": [{
+                    "name": "Health Check",
+                    "request": {
+                        "method": "GET",
+                        "header": [{
+                            "key": "X-API-Key",
+                            "value": "{{api_key}}",
+                            "type": "text"
+                        }],
+                        "url": {
+                            "raw": "{{base_url}}/health",
+                            "host": ["{{base_url}}"],
+                            "path": ["health"]
+                        },
+                        "description": "Comprehensive system health check including database, memory, and performance metrics."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Database Testing",
+                    "request": {
+                        "method": "GET",
+                        "header": [{
+                            "key": "X-API-Key",
+                            "value": "{{api_key}}",
+                            "type": "text"
+                        }],
+                        "url": {
+                            "raw": "{{base_url}}/database",
+                            "host": ["{{base_url}}"],
+                            "path": ["database"]
+                        },
+                        "description": "Comprehensive database testing including collection access, CRUD operations, and performance metrics."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Performance Benchmarking - GET",
+                    "request": {
+                        "method": "GET",
+                        "header": [{
+                            "key": "X-API-Key",
+                            "value": "{{api_key}}",
+                            "type": "text"
+                        }],
+                        "url": {
+                            "raw": "{{base_url}}/performance",
+                            "host": ["{{base_url}}"],
+                            "path": ["performance"]
+                        },
+                        "description": "Performance testing and benchmarking utilities."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Performance Benchmarking - POST",
+                    "request": {
+                        "method": "POST",
+                        "header": [{
+                                "key": "X-API-Key",
+                                "value": "{{api_key}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"iterations\": 5,\n  \"includeDatabase\": true,\n  \"includeComputation\": true\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/performance",
+                            "host": ["{{base_url}}"],
+                            "path": ["performance"]
+                        },
+                        "description": "Performance stress testing with configurable parameters."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Environment Configuration",
+                    "request": {
+                        "method": "GET",
+                        "header": [{
+                                "key": "Authorization",
+                                "value": "Bearer {{jwt_token}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-API-Key",
+                                "value": "{{api_key}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/environment",
+                            "host": ["{{base_url}}"],
+                            "path": ["environment"]
+                        },
+                        "description": "Get environment configuration and system information. Requires sys_admin role."
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Services",
+            "item": [{
+                    "name": "Email Service Testing - GET",
+                    "request": {
+                        "method": "GET",
+                        "header": [{
+                            "key": "X-API-Key",
+                            "value": "{{api_key}}",
+                            "type": "text"
+                        }],
+                        "url": {
+                            "raw": "{{base_url}}/email",
+                            "host": ["{{base_url}}"],
+                            "path": ["email"]
+                        },
+                        "description": "Test email service configuration and functionality."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Email Service Testing - POST",
+                    "request": {
+                        "method": "POST",
+                        "header": [{
+                                "key": "Authorization",
+                                "value": "Bearer {{jwt_token}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-API-Key",
+                                "value": "{{api_key}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"to\": \"{{test_email}}\",\n  \"subject\": \"Email Service Test\",\n  \"message\": \"This is a test email from the API debug endpoint.\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/email",
+                            "host": ["{{base_url}}"],
+                            "path": ["email"]
+                        },
+                        "description": "Send test email. Requires authentication."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "API Keys Debug Information",
+                    "request": {
+                        "method": "GET",
+                        "header": [{
+                                "key": "Authorization",
+                                "value": "Bearer {{jwt_token}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-API-Key",
+                                "value": "{{api_key}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api-keys",
+                            "host": ["{{base_url}}"],
+                            "path": ["api-keys"]
+                        },
+                        "description": "Get information about all API keys in the system. Requires sys_admin role."
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Development",
+            "item": [{
+                    "name": "Middleware Testing",
+                    "request": {
+                        "method": "GET",
+                        "header": [{
+                            "key": "X-API-Key",
+                            "value": "{{api_key}}",
+                            "type": "text"
+                        }],
+                        "url": {
+                            "raw": "{{base_url}}/middleware",
+                            "host": ["{{base_url}}"],
+                            "path": ["middleware"]
+                        },
+                        "description": "Test middleware functionality and error handling."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Middleware Testing - Error",
+                    "request": {
+                        "method": "GET",
+                        "header": [{
+                            "key": "X-API-Key",
+                            "value": "{{api_key}}",
+                            "type": "text"
+                        }],
+                        "url": {
+                            "raw": "{{base_url}}/middleware?error=true",
+                            "host": ["{{base_url}}"],
+                            "path": ["middleware"],
+                            "query": [{
+                                "key": "error",
+                                "value": "true"
+                            }]
+                        },
+                        "description": "Test middleware error handling by triggering a test error."
+                    },
+                    "response": []
+                }
+            ]
+        }
+    ],
+    "event": [{
+            "listen": "prerequest",
+            "script": {
+                "type": "text/javascript",
+                "exec": [
+                    "// Auto-set base URL if not configured",
+                    "if (!pm.collectionVariables.get('base_url')) {",
+                    "    pm.collectionVariables.set('base_url', 'http://localhost:3000/api/debug');",
+                    "}",
+                    "",
+                    "// Log request for debugging",
+                    "console.log('Request URL:', pm.request.url.toString());",
+                    "console.log('API Key:', pm.collectionVariables.get('api_key') ? 'Set' : 'Not Set');",
+                    "console.log('JWT Token:', pm.collectionVariables.get('jwt_token') ? 'Set' : 'Not Set');"
+                ]
+            }
+        },
+        {
+            "listen": "test",
+            "script": {
+                "type": "text/javascript",
+                "exec": [
+                    "// Basic response validation",
+                    "pm.test('Response status code is valid', function () {",
+                    "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 400, 401, 403, 404, 429, 500]);",
+                    "});",
+                    "",
+                    "// Check if response is JSON",
+                    "pm.test('Response is JSON', function () {",
+                    "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                    "});",
+                    "",
+                    "// Log response for debugging",
+                    "console.log('Response Status:', pm.response.status);",
+                    "console.log('Response Time:', pm.response.responseTime + 'ms');",
+                    "",
+                    "// Success response validation",
+                    "if (pm.response.code === 200 || pm.response.code === 201) {",
+                    "    pm.test('Response has required fields', function () {",
+                    "        const responseJson = pm.response.json();",
+                    "        pm.expect(responseJson).to.have.property('success');",
+                    "        pm.expect(responseJson).to.have.property('timestamp');",
+                    "        if (responseJson.auditId) {",
+                    "            pm.expect(responseJson.auditId).to.be.a('string');",
+                    "        }",
+                    "    });",
+                    "",
+                    "    // Auto-extract audit ID for debugging",
+                    "    try {",
+                    "        const responseJson = pm.response.json();",
+                    "        if (responseJson.auditId) {",
+                    "            pm.collectionVariables.set('last_audit_id', responseJson.auditId);",
+                    "        }",
+                    "    } catch (e) {",
+                    "        console.log('Could not extract audit ID');",
+                    "    }",
+                    "}",
+                    "",
+                    "// Error response validation",
+                    "if (pm.response.code >= 400) {",
+                    "    pm.test('Error response has error field', function () {",
+                    "        const responseJson = pm.response.json();",
+                    "        pm.expect(responseJson).to.have.property('error');",
+                    "    });",
+                    "}"
+                ]
+            }
+        }
+    ]
+}

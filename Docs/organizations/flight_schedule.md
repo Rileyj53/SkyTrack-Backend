@@ -1,0 +1,539 @@
+# Flight Schedule Management API
+
+## 🎯 Overview
+This document covers the **direct flight schedule management** endpoints. For the **student request system** (where students request schedules that need admin approval), see [Flight Schedule Requests API](./flight_schedule_requests.md).
+
+### Two Schedule Creation Methods:
+1. **Direct Creation** (this document): Admins/instructors create schedules immediately
+2. **Request-Based Creation** ([see here](./flight_schedule_requests.md)): Students request schedules that need approval
+
+---
+
+# GET /api/organizations/{organizationId}/flight_schedule
+
+## 🎯 Overview
+Retrieves a list of **confirmed flight schedules** for the specified organization with comprehensive filtering, search, and pagination capabilities.
+
+## 🔐 Security
+- **Requires Auth**: ✅ (JWT Bearer token)
+- **Requires API Key**: ✅ (X-API-Key header)
+- **Requires CSRF Token**: ✅ (X-CSRF-Token header)
+- **Allowed Roles**: `['sys_admin', 'school_admin', 'instructor', 'student']`
+- **Organization Access Required**: ✅ (must have access to specified organization)
+- **Fraud Detection**: ✅ Enabled
+- **Risk Scoring**: ✅ Enabled
+- **Data Classification**: `confidential`
+- **Rate Limiting**: 100 requests per minute
+
+## 📥 Request
+
+**Method**: `GET`  
+**Path**: `/api/organizations/{organizationId}/flight_schedule`
+
+### Path Parameters
+- `organizationId` (string, required): The unique identifier of the organization
+
+### Query Parameters
+- `page` (number, optional): Page number for pagination (default: 1)
+- `limit` (number, optional): Number of records per page (default: 50, max: 100)
+- `status` (string, optional): Filter by flight status (e.g., "scheduled", "completed", "canceled")
+- `start_date` (string, optional): Filter flights starting from this date (YYYY-MM-DD format)
+- `end_date` (string, optional): Filter flights ending before this date (YYYY-MM-DD format)
+- `plane_id` (string, optional): Filter by specific plane ID
+- `instructor_id` (string, optional): Filter by specific instructor ID
+- `student_id` (string, optional): Filter by specific student ID
+- `user_id` (string, optional): **NEW** - Filter by user ID to get all schedules where the user is either the student or instructor
+- `search` (string, optional): **NEW** - Search across all flight schedule data including plane, student, and instructor information
+- `sortField` (string, optional): Field to sort by (default: "scheduled_start_time")
+- `sortDirection` (string, optional): Sort direction - "asc" or "desc" (default: "asc")
+- `statusOrder` (string, optional): Custom status ordering (default: "In-progress,Scheduled,Completed,Canceled")
+
+### Headers
+- `Authorization: Bearer <token>` (required): JWT authentication token
+- `X-API-Key: <key>` (required): Valid API key
+- `X-CSRF-Token: <token>` (required): CSRF protection token
+
+## 📤 Response
+
+### Success Response (200)
+```json
+{
+  "success": true,
+  "message": "Flight schedules retrieved successfully",
+  "data": {
+    "schedules": [
+      {
+        "_id": "string",
+        "organization_id": {
+          "_id": "string",
+          "name": "string",
+          "address": "string",
+          "airport": "string",
+          "phone": "string",
+          "email": "string"
+        },
+        "plane_id": {
+          "_id": "string",
+          "registration": "string",
+          "type": "string",
+          "aircraftModel": "string",
+          "status": "string"
+        },
+        "instructor_id": {
+          "_id": "string",
+          "contact_email": "string",
+          "status": "string",
+          "flightHours": "number",
+          "user_id": {
+            "_id": "string",
+            "first_name": "string",
+            "last_name": "string",
+            "email": "string"
+          }
+        },
+        "student_id": {
+          "_id": "string",
+          "contact_email": "string",
+          "program": "string",
+          "status": "string",
+          "enrollmentDate": "string",
+          "user_id": {
+            "_id": "string",
+            "first_name": "string",
+            "last_name": "string",
+            "email": "string"
+          }
+        },
+        "scheduled_start_time": "string (ISO date)",
+        "scheduled_end_time": "string (ISO date)",
+        "actual_start_time": "string (ISO date, optional)",
+        "actual_end_time": "string (ISO date, optional)",
+        "flight_type": "string",
+        "status": "string",
+        "notes": "string (optional)",
+        "createdAt": "string (ISO date)",
+        "updatedAt": "string (ISO date)"
+      }
+    ],
+    "pagination": {
+      "page": "number",
+      "limit": "number",
+      "total": "number",
+      "pages": "number"
+    },
+    "search": {
+      "term": "string",
+      "resultsFound": "number",
+      "originalTotal": "number"
+    }
+  },
+  "auditId": "string",
+  "timestamp": "string (ISO date)"
+}
+```
+
+### Error Responses
+
+#### 400 - Bad Request
+```json
+{
+  "error": {
+    "message": "Invalid organization ID format",
+    "code": "INVALID_ORGANIZATION_ID",
+    "requestId": "string",
+    "timestamp": "string (ISO date)"
+  }
+}
+```
+
+#### 401 - Unauthorized
+```json
+{
+  "error": {
+    "message": "Invalid or expired authentication token",
+    "code": "AUTHENTICATION_FAILED",
+    "requestId": "string",
+    "timestamp": "string (ISO date)"
+  }
+}
+```
+
+#### 403 - Forbidden
+```json
+{
+  "error": {
+    "message": "Insufficient permissions or high risk score",
+    "code": "ACCESS_DENIED",
+    "requestId": "string",
+    "timestamp": "string (ISO date)"
+  }
+}
+```
+
+#### 404 - Not Found
+```json
+{
+  "error": {
+    "message": "Student/Instructor record not found",
+    "code": "STUDENT_NOT_FOUND|INSTRUCTOR_NOT_FOUND",
+    "requestId": "string",
+    "timestamp": "string (ISO date)"
+  }
+}
+```
+
+## 🔍 Search Functionality
+
+The `search` parameter performs a comprehensive text search across all flight schedule data:
+
+### **Searchable Fields:**
+- **Flight Schedule**: `flight_type`, `status`, `notes`
+- **Plane Information**: `registration`, `type`, `aircraftModel`, `status`
+- **Instructor Information**: `contact_email`, `status`, `flightHours`, `first_name`, `last_name`, `email`
+- **Student Information**: `contact_email`, `program`, `status`, `enrollmentDate`, `first_name`, `last_name`, `email`
+- **Organization Information**: `name`, `address`, `airport`, `phone`, `email`
+
+### **Search Examples:**
+```bash
+# Search for flights with "Training" in flight type or notes
+GET /api/organizations/687c208d97e9217fc09e7c40/flight_schedule?search=Training
+
+# Search for flights involving a specific student by name
+GET /api/organizations/687c208d97e9217fc09e7c40/flight_schedule?search=David Brown
+
+# Search for flights with a specific plane registration
+GET /api/organizations/687c208d97e9217fc09e7c40/flight_schedule?search=N12345
+
+# Search for flights with a specific instructor by email
+GET /api/organizations/687c208d97e9217fc09e7c40/flight_schedule?search=instructor1@albatrossflight.com
+
+# Search for flights with "Solo" in flight type
+GET /api/organizations/687c208d97e9217fc09e7c40/flight_schedule?search=Solo
+```
+
+## 👤 User ID Filter Functionality
+
+The `user_id` parameter allows you to filter flight schedules by a specific user, regardless of whether they are the student or instructor. This is particularly useful when you have a user ID but need to find all flight schedules associated with that user.
+
+### **How It Works:**
+1. **Student Lookup**: First checks if the user ID corresponds to a student record
+2. **Instructor Lookup**: Then checks if the user ID corresponds to an instructor record
+3. **Combined Results**: Returns all schedules where the user is either the student OR the instructor
+4. **Empty Results**: If the user is neither a student nor instructor, returns empty results
+
+### **Use Cases:**
+- **User Dashboard**: Show all flight schedules for a logged-in user
+- **Audit Trails**: Find all flight activity for a specific user
+- **Cross-Role Access**: Users who are both students and instructors can see all their schedules
+- **Administrative Views**: Admins can quickly view all schedules for any user
+
+### **User ID Filter Examples:**
+```bash
+# Get all flight schedules for a specific user (as student or instructor)
+GET /api/organizations/687c208d97e9217fc09e7c40/flight_schedule?user_id=687c4f0c071a9fe822d33620
+
+# Combine user_id filter with other filters
+GET /api/organizations/687c208d97e9217fc09e7c40/flight_schedule?user_id=687c4f0c071a9fe822d33620&status=scheduled
+
+# User ID filter with date range
+GET /api/organizations/687c208d97e9217fc09e7c40/flight_schedule?user_id=687c4f0c071a9fe822d33620&start_date=2025-07-21&end_date=2025-07-31
+```
+
+### **Response Behavior:**
+- **User Found**: Returns all schedules where the user is student or instructor
+- **User Not Found**: Returns empty results with success message
+- **Invalid User ID**: Returns 400 error for invalid ObjectId format
+
+### **Filtering Examples:**
+```bash
+# Filter by specific student ID
+GET /api/organizations/687c208d97e9217fc09e7c40/flight_schedule?student_id=687c4f0c071a9fe822d33620
+
+# Filter by specific instructor ID
+GET /api/organizations/687c208d97e9217fc09e7c40/flight_schedule?instructor_id=687c55f3071a9fe822d337b0
+
+# Filter by specific plane ID
+GET /api/organizations/687c208d97e9217fc09e7c40/flight_schedule?plane_id=687efa9e3d4c554ecf7ee538
+
+# Filter by flight status
+GET /api/organizations/687c208d97e9217fc09e7c40/flight_schedule?status=scheduled
+
+# Combine multiple filters
+GET /api/organizations/687c208d97e9217fc09e7c40/flight_schedule?student_id=687c4f0c071a9fe822d33620&status=scheduled&start_date=2025-07-21
+```
+
+## 🔍 Example Requests
+
+### Basic Request
+```bash
+curl -X GET "https://api.skytrack.com/api/organizations/687c208d97e9217fc09e7c40/flight_schedule" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
+  -H "X-API-Key: your-api-key" \
+  -H "X-CSRF-Token: csrf-token"
+```
+
+### Request with Search
+```bash
+curl -X GET "https://api.skytrack.com/api/organizations/687c208d97e9217fc09e7c40/flight_schedule?search=Training&page=1&limit=20" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
+  -H "X-API-Key: your-api-key" \
+  -H "X-CSRF-Token: csrf-token"
+```
+
+### Request with Date Filtering
+```bash
+curl -X GET "https://api.skytrack.com/api/organizations/687c208d97e9217fc09e7c40/flight_schedule?start_date=2025-07-21&end_date=2025-07-22&status=scheduled" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
+  -H "X-API-Key: your-api-key" \
+  -H "X-CSRF-Token: csrf-token"
+```
+
+### Request with User ID Filter
+```bash
+curl -X GET "https://api.skytrack.com/api/organizations/687c208d97e9217fc09e7c40/flight_schedule?user_id=687c4f0c071a9fe822d33620&status=scheduled" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
+  -H "X-API-Key: your-api-key" \
+  -H "X-CSRF-Token: csrf-token"
+```
+
+## 🚨 Error Codes Reference
+- `INVALID_ORGANIZATION_ID`: Invalid organization ID format
+- `AUTHENTICATION_FAILED`: Invalid or expired token
+- `ACCESS_DENIED`: Insufficient permissions or blocked by security policy
+- `STUDENT_NOT_FOUND`: Student record not found for authenticated user
+- `INSTRUCTOR_NOT_FOUND`: Instructor record not found for authenticated user
+- `RATE_LIMIT_EXCEEDED`: Too many requests
+- `HIGH_RISK_BLOCKED`: Request blocked due to high risk score
+
+## 📋 Role-Based Access Control
+
+- **Students**: Can only view their own flight schedules
+- **Instructors**: Can view schedules they're assigned to
+- **School Admins**: Can view all schedules in their organization
+- **System Admins**: Can view all schedules across all organizations
+
+---
+
+# POST /api/organizations/{organizationId}/flight_schedule
+
+## 🎯 Overview
+Creates a **confirmed flight schedule directly** - available to admins and instructors only.
+
+## ⚠️ Important Note for Students
+**Students cannot use this endpoint directly.** Students must use the [Flight Schedule Request System](./flight_schedule_requests.md) instead.
+
+If a student attempts to use this endpoint, they will receive:
+```json
+{
+  "error": {
+    "message": "Students must use the flight schedule request system. Please create a request at /flight_schedule/requests instead.",
+    "code": "INSUFFICIENT_PERMISSIONS",
+    "requestId": "string",
+    "timestamp": "string (ISO date)"
+  }
+}
+```
+
+## 🔐 Security
+- **Requires Auth**: ✅ (JWT Bearer token)
+- **Requires API Key**: ✅ (X-API-Key header)
+- **Requires CSRF Token**: ✅ (X-CSRF-Token header)
+- **Allowed Roles**: `['sys_admin', 'school_admin', 'instructor']` **only**
+- **Organization Access Required**: ✅
+- **Rate Limiting**: 100 requests per minute
+
+## 📥 Request
+
+**Method**: `POST`  
+**Path**: `/api/organizations/{organizationId}/flight_schedule`
+
+### Path Parameters
+- `organizationId` (string, required): The unique identifier of the organization
+
+### Headers
+- `Authorization: Bearer <token>` (required)
+- `X-API-Key: <key>` (required)
+- `X-CSRF-Token: <token>` (required)
+- `Content-Type: application/json` (required)
+
+### Request Body
+```json
+{
+  "plane_id": "string (required)",
+  "student_id": "string (required)",
+  "instructor_id": "string (optional)",
+  "scheduled_start_time": "string (required, ISO date)",
+  "scheduled_end_time": "string (required, ISO date)",
+  "actual_start_time": "string (optional, ISO date)",
+  "actual_end_time": "string (optional, ISO date)",
+  "flight_type": "string (required)",
+  "status": "string (optional, defaults to 'scheduled')",
+  "notes": "string (optional)"
+}
+```
+
+### Field Descriptions
+- `plane_id`: MongoDB ObjectId of the aircraft
+- `student_id`: MongoDB ObjectId of the student
+- `instructor_id`: MongoDB ObjectId of the instructor (optional for solo flights)
+- `scheduled_start_time`: When the flight is scheduled to start (ISO 8601 format)
+- `scheduled_end_time`: When the flight is scheduled to end (ISO 8601 format)
+- `actual_start_time`: When the flight actually started (optional, for completed flights)
+- `actual_end_time`: When the flight actually ended (optional, for completed flights)
+- `flight_type`: Type of flight (e.g., "Training", "Solo", "Commercial Training", "Checkride")
+- `status`: Flight status ("scheduled", "confirmed", "in-progress", "completed", "canceled", "no-show")
+- `notes`: Additional notes about the flight
+
+## 📤 Response
+
+### Success Response (201)
+```json
+{
+  "success": true,
+  "message": "Flight schedule created successfully",
+  "data": {
+    "schedule": {
+      "_id": "string",
+      "organization_id": {
+        "_id": "string",
+        "name": "string",
+        "address": "string",
+        "airport": "string",
+        "phone": "string",
+        "email": "string"
+      },
+      "plane_id": {
+        "_id": "string",
+        "registration": "string",
+        "type": "string",
+        "aircraftModel": "string",
+        "status": "string"
+      },
+      "instructor_id": {
+        "_id": "string",
+        "contact_email": "string",
+        "status": "string",
+        "flightHours": "number",
+        "user_id": {
+          "_id": "string",
+          "first_name": "string",
+          "last_name": "string",
+          "email": "string"
+        }
+      },
+      "student_id": {
+        "_id": "string",
+        "contact_email": "string",
+        "program": "string",
+        "status": "string",
+        "enrollmentDate": "string",
+        "user_id": {
+          "_id": "string",
+          "first_name": "string",
+          "last_name": "string",
+          "email": "string"
+        }
+      },
+      "scheduled_start_time": "string (ISO date)",
+      "scheduled_end_time": "string (ISO date)",
+      "scheduled_duration": "number (calculated in hours)",
+      "actual_start_time": "string (ISO date, optional)",
+      "actual_end_time": "string (ISO date, optional)",
+      "actual_duration": "number (calculated in hours, optional)",
+      "flight_type": "string",
+      "status": "string",
+      "notes": "string (optional)",
+      "created_at": "string (ISO date)",
+      "updated_at": "string (ISO date)"
+    }
+  },
+  "auditId": "string",
+  "timestamp": "string (ISO date)"
+}
+```
+
+### Error Responses
+
+#### 400 - Bad Request
+```json
+{
+  "error": {
+    "message": "Aircraft selection is required",
+    "code": "MISSING_REQUIRED_FIELD",
+    "field": "plane_id",
+    "requestId": "string",
+    "timestamp": "string (ISO date)"
+  }
+}
+```
+
+#### 403 - Insufficient Permissions (Students)
+```json
+{
+  "error": {
+    "message": "Students must use the flight schedule request system. Please create a request at /flight_schedule/requests instead.",
+    "code": "INSUFFICIENT_PERMISSIONS",
+    "requestId": "string",
+    "timestamp": "string (ISO date)"
+  }
+}
+```
+
+#### 409 - Conflict
+```json
+{
+  "error": {
+    "message": "Aircraft N12345 (Cessna 172) is already scheduled from 10:00 AM to 12:00 PM",
+    "code": "AIRCRAFT_CONFLICT",
+    "requestId": "string",
+    "timestamp": "string (ISO date)",
+    "conflictDetails": {
+      "type": "aircraft",
+      "resource": "N12345",
+      "conflictStart": "2024-01-15T10:00:00.000Z",
+      "conflictEnd": "2024-01-15T12:00:00.000Z",
+      "conflictingScheduleId": "string"
+    }
+  }
+}
+```
+
+## 🚨 Validation Rules
+- All required fields must be provided
+- Aircraft, student, and instructor (if provided) must exist and be valid ObjectIds  
+- Flight end time must be after start time
+- No scheduling conflicts with existing flights for the same aircraft, student, or instructor
+- Only active/available resources can be scheduled
+
+## 🔍 Conflict Detection
+The system automatically checks for conflicts:
+- **Aircraft conflicts**: Same plane scheduled at overlapping times
+- **Student conflicts**: Same student scheduled for multiple flights at once
+- **Instructor conflicts**: Same instructor assigned to multiple flights at once
+
+Conflicts are detected across all non-canceled and non-completed flights.
+
+## 📋 Example Request
+```bash
+curl -X POST "https://api.skytrack.com/api/organizations/687c208d97e9217fc09e7c40/flight_schedule" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
+  -H "X-API-Key: your-api-key" \
+  -H "X-CSRF-Token: csrf-token" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "plane_id": "687efa9e3d4c554ecf7ee538",
+    "student_id": "687c4f0c071a9fe822d33620",
+    "instructor_id": "687c55f3071a9fe822d337b0",
+    "scheduled_start_time": "2024-01-15T10:00:00.000Z",
+    "scheduled_end_time": "2024-01-15T12:00:00.000Z",
+    "flight_type": "Training Flight",
+    "status": "scheduled",
+    "notes": "Focus on crosswind landing techniques"
+  }'
+```
+
+---
+
+# PUT and DELETE Endpoints
+
+For details on updating and deleting flight schedules, see the existing documentation. These endpoints follow the same role-based access control (admins and instructors only). 

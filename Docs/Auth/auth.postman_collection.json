@@ -1,0 +1,749 @@
+{
+    "info": {
+        "_postman_id": "skytrack-auth-collection-2024",
+        "name": "Authentication API Collection",
+        "description": "Comprehensive collection for authentication endpoints in the SkyTrack system with enterprise-grade security. Includes endpoints for registration, login, MFA, magic links, password management, and account security.",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+        "_exporter_id": "skytrack-auth"
+    },
+    "item": [{
+            "name": "Authentication",
+            "item": [{
+                    "name": "User Registration",
+                    "request": {
+                        "method": "POST",
+                        "header": [{
+                                "key": "X-API-Key",
+                                "value": "{{api_key}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"{{user_email}}\",\n  \"password\": \"{{user_password}}\",\n  \"first_name\": \"{{first_name}}\",\n  \"last_name\": \"{{last_name}}\",\n  \"role\": \"student\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/auth/register",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "auth", "register"]
+                        }
+                    }
+                },
+                {
+                    "name": "User Login",
+                    "request": {
+                        "method": "POST",
+                        "header": [{
+                                "key": "X-API-Key",
+                                "value": "{{api_key}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"{{user_email}}\",\n  \"password\": \"{{user_password}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/auth/login",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "auth", "login"]
+                        }
+                    }
+                },
+                {
+                    "name": "User Login with MFA",
+                    "request": {
+                        "method": "POST",
+                        "header": [{
+                                "key": "X-API-Key",
+                                "value": "{{api_key}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"{{user_email}}\",\n  \"password\": \"{{user_password}}\",\n  \"token\": \"{{mfa_token}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/auth/login",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "auth", "login"]
+                        }
+                    }
+                },
+                {
+                    "name": "User Logout",
+                    "request": {
+                        "method": "POST",
+                        "header": [{
+                                "key": "Authorization",
+                                "value": "Bearer {{jwt_token}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-API-Key",
+                                "value": "{{api_key}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-CSRF-Token",
+                                "value": "{{csrf_token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/auth/logout",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "auth", "logout"]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Current User",
+                    "request": {
+                        "method": "GET",
+                        "header": [{
+                                "key": "Authorization",
+                                "value": "Bearer {{jwt_token}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-API-Key",
+                                "value": "{{api_key}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-CSRF-Token",
+                                "value": "{{csrf_token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/auth/me",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "auth", "me"]
+                        }
+                    }
+                },
+                {
+                    "name": "Get CSRF Token",
+                    "request": {
+                        "method": "GET",
+                        "header": [{
+                            "key": "X-API-Key",
+                            "value": "{{api_key}}",
+                            "type": "text"
+                        }],
+                        "url": {
+                            "raw": "{{base_url}}/api/auth/csrf-token",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "auth", "csrf-token"]
+                        }
+                    }
+                },
+                {
+                    "name": "Complete Registration",
+                    "request": {
+                        "method": "POST",
+                        "header": [{
+                                "key": "X-API-Key",
+                                "value": "{{api_key}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-CSRF-Token",
+                                "value": "{{csrf_token}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"invitation_token\": \"{{invitation_token}}\",\n  \"email\": \"{{user_email}}\",\n  \"password\": \"{{user_password}}\",\n  \"first_name\": \"{{first_name}}\",\n  \"last_name\": \"{{last_name}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/auth/complete-registration",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "auth", "complete-registration"]
+                        }
+                    }
+                },
+                {
+                    "name": "Validate Invitation",
+                    "request": {
+                        "method": "GET",
+                        "header": [{
+                            "key": "X-API-Key",
+                            "value": "{{api_key}}",
+                            "type": "text"
+                        }],
+                        "url": {
+                            "raw": "{{base_url}}/api/auth/complete-registration?token={{invitation_token}}&email={{user_email}}",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "auth", "complete-registration"],
+                            "query": [{
+                                    "key": "token",
+                                    "value": "{{invitation_token}}"
+                                },
+                                {
+                                    "key": "email",
+                                    "value": "{{user_email}}"
+                                }
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Multi-Factor Authentication",
+            "item": [{
+                    "name": "MFA Setup",
+                    "request": {
+                        "method": "POST",
+                        "header": [{
+                                "key": "Authorization",
+                                "value": "Bearer {{jwt_token}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-API-Key",
+                                "value": "{{api_key}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-CSRF-Token",
+                                "value": "{{csrf_token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/auth/mfa/setup",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "auth", "mfa", "setup"]
+                        }
+                    }
+                },
+                {
+                    "name": "MFA Verify",
+                    "request": {
+                        "method": "POST",
+                        "header": [{
+                                "key": "Authorization",
+                                "value": "Bearer {{jwt_token}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-API-Key",
+                                "value": "{{api_key}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-CSRF-Token",
+                                "value": "{{csrf_token}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"token\": \"{{mfa_token}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/auth/mfa/verify",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "auth", "mfa", "verify"]
+                        }
+                    }
+                },
+                {
+                    "name": "MFA Status",
+                    "request": {
+                        "method": "GET",
+                        "header": [{
+                                "key": "Authorization",
+                                "value": "Bearer {{jwt_token}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-API-Key",
+                                "value": "{{api_key}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/auth/mfa/status",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "auth", "mfa", "status"]
+                        }
+                    }
+                },
+                {
+                    "name": "MFA Disable",
+                    "request": {
+                        "method": "POST",
+                        "header": [{
+                                "key": "Authorization",
+                                "value": "Bearer {{jwt_token}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-API-Key",
+                                "value": "{{api_key}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-CSRF-Token",
+                                "value": "{{csrf_token}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"token\": \"{{mfa_token}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/auth/mfa/disable",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "auth", "mfa", "disable"]
+                        }
+                    }
+                },
+                {
+                    "name": "MFA Verify Login",
+                    "request": {
+                        "method": "POST",
+                        "header": [{
+                                "key": "Authorization",
+                                "value": "Bearer {{jwt_token}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-API-Key",
+                                "value": "{{api_key}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"token\": \"{{mfa_token}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/auth/mfa/verify-login",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "auth", "mfa", "verify-login"]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Magic Link Authentication",
+            "item": [{
+                    "name": "Request Magic Link",
+                    "request": {
+                        "method": "POST",
+                        "header": [{
+                                "key": "X-API-Key",
+                                "value": "{{api_key}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"{{user_email}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/auth/magic-link/request",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "auth", "magic-link", "request"]
+                        }
+                    }
+                },
+                {
+                    "name": "Magic Link Login",
+                    "request": {
+                        "method": "POST",
+                        "header": [{
+                                "key": "X-API-Key",
+                                "value": "{{api_key}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"token\": \"{{magic_link_token}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/auth/magic-link/login",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "auth", "magic-link", "login"]
+                        }
+                    }
+                },
+                {
+                    "name": "Magic Code Login",
+                    "request": {
+                        "method": "POST",
+                        "header": [{
+                                "key": "X-API-Key",
+                                "value": "{{api_key}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"code\": \"{{magic_code}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/auth/magic-link/login",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "auth", "magic-link", "login"]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Password Management",
+            "item": [{
+                    "name": "Request Password Reset",
+                    "request": {
+                        "method": "POST",
+                        "header": [{
+                                "key": "X-API-Key",
+                                "value": "{{api_key}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"{{user_email}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/auth/reset-password/request",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "auth", "reset-password", "request"]
+                        }
+                    }
+                },
+                {
+                    "name": "Complete Password Reset",
+                    "request": {
+                        "method": "POST",
+                        "header": [{
+                                "key": "X-API-Key",
+                                "value": "{{api_key}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"token\": \"{{reset_token}}\",\n  \"password\": \"{{new_password}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/auth/reset-password/complete",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "auth", "reset-password", "complete"]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Account Management",
+            "item": [{
+                "name": "Unlock Account",
+                "request": {
+                    "method": "POST",
+                    "header": [{
+                            "key": "X-API-Key",
+                            "value": "{{api_key}}",
+                            "type": "text"
+                        },
+                        {
+                            "key": "Content-Type",
+                            "value": "application/json",
+                            "type": "text"
+                        }
+                    ],
+                    "body": {
+                        "mode": "raw",
+                        "raw": "{\n  \"email\": \"{{user_email}}\"\n}"
+                    },
+                    "url": {
+                        "raw": "{{base_url}}/api/auth/unlock-account",
+                        "host": ["{{base_url}}"],
+                        "path": ["api", "auth", "unlock-account"]
+                    }
+                }
+            }]
+        }
+    ],
+    "event": [{
+            "listen": "prerequest",
+            "script": {
+                "type": "text/javascript",
+                "exec": [
+                    "// Set current timestamp for dynamic values",
+                    "pm.environment.set('current_timestamp', new Date().toISOString());",
+                    "",
+                    "// Generate random values for testing",
+                    "pm.environment.set('random_suffix', Math.random().toString(36).substring(7));",
+                    "",
+                    "// Set default values if not already set",
+                    "if (!pm.environment.get('csrf_token')) {",
+                    "    pm.environment.set('csrf_token', 'your_csrf_token_here');",
+                    "}",
+                    "",
+                    "if (!pm.environment.get('api_key')) {",
+                    "    pm.environment.set('api_key', 'your_api_key_here');",
+                    "}"
+                ]
+            }
+        },
+        {
+            "listen": "test",
+            "script": {
+                "type": "text/javascript",
+                "exec": [
+                    "// Enhanced response validation",
+                    "pm.test('Status code is successful or expected error', function () {",
+                    "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 400, 401, 403, 404, 428, 429]);",
+                    "});",
+                    "",
+                    "pm.test('Response time is reasonable', function () {",
+                    "    pm.expect(pm.response.responseTime).to.be.below(5000);",
+                    "});",
+                    "",
+                    "pm.test('Response has JSON content-type', function () {",
+                    "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                    "});",
+                    "",
+                    "// Validate success response format",
+                    "if (pm.response.code === 200 || pm.response.code === 201) {",
+                    "    pm.test('Success response has correct format', function () {",
+                    "        const response = pm.response.json();",
+                    "        if (response.success !== undefined) {",
+                    "            pm.expect(response).to.have.property('success', true);",
+                    "        }",
+                    "        if (response.auditId) {",
+                    "            pm.expect(response).to.have.property('auditId');",
+                    "        }",
+                    "        if (response.timestamp) {",
+                    "            pm.expect(response).to.have.property('timestamp');",
+                    "        }",
+                    "    });",
+                    "}",
+                    "",
+                    "// Validate error response format",
+                    "if (pm.response.code >= 400) {",
+                    "    pm.test('Error response has correct format', function () {",
+                    "        const response = pm.response.json();",
+                    "        pm.expect(response).to.have.property('error');",
+                    "        pm.expect(response.error).to.have.property('message');",
+                    "        pm.expect(response.error).to.have.property('code');",
+                    "        if (response.error.requestId) {",
+                    "            pm.expect(response.error).to.have.property('requestId');",
+                    "        }",
+                    "        if (response.error.timestamp) {",
+                    "            pm.expect(response.error).to.have.property('timestamp');",
+                    "        }",
+                    "    });",
+                    "}",
+                    "",
+                    "// Extract tokens from responses",
+                    "if (pm.response.code === 200 || pm.response.code === 201) {",
+                    "    try {",
+                    "        const response = pm.response.json();",
+                    "        ",
+                    "        // Extract JWT token",
+                    "        if (response.data && response.data.token) {",
+                    "            pm.environment.set('jwt_token', response.data.token);",
+                    "            console.log('JWT token saved to environment');",
+                    "        } else if (response.token) {",
+                    "            pm.environment.set('jwt_token', response.token);",
+                    "            console.log('JWT token saved to environment');",
+                    "        }",
+                    "        ",
+                    "        // Extract CSRF token",
+                    "        if (response.data && response.data.csrfToken) {",
+                    "            pm.environment.set('csrf_token', response.data.csrfToken);",
+                    "            console.log('CSRF token saved to environment');",
+                    "        } else if (response.csrfToken) {",
+                    "            pm.environment.set('csrf_token', response.csrfToken);",
+                    "            console.log('CSRF token saved to environment');",
+                    "        } else if (response.data && response.data.token && pm.request.url.path.includes('csrf-token')) {",
+                    "            pm.environment.set('csrf_token', response.data.token);",
+                    "            console.log('CSRF token saved to environment');",
+                    "        }",
+                    "        ",
+                    "        // Save audit ID for tracking",
+                    "        if (response.auditId) {",
+                    "            pm.environment.set('last_audit_id', response.auditId);",
+                    "        }",
+                    "    } catch (e) {",
+                    "        console.log('Could not parse response for token extraction');",
+                    "    }",
+                    "}",
+                    "",
+                    "// Log security context for monitoring",
+                    "if (pm.response.code === 200 || pm.response.code === 201) {",
+                    "    try {",
+                    "        const response = pm.response.json();",
+                    "        if (response.securityContext) {",
+                    "            console.log('Security Context:', JSON.stringify(response.securityContext, null, 2));",
+                    "        }",
+                    "    } catch (e) {",
+                    "        // Ignore parsing errors",
+                    "    }",
+                    "}"
+                ]
+            }
+        }
+    ],
+    "variable": [{
+            "key": "base_url",
+            "value": "https://api.skytrack.com",
+            "type": "string"
+        },
+        {
+            "key": "api_key",
+            "value": "your_api_key_here",
+            "type": "string"
+        },
+        {
+            "key": "jwt_token",
+            "value": "your_jwt_token_here",
+            "type": "string"
+        },
+        {
+            "key": "csrf_token",
+            "value": "your_csrf_token_here",
+            "type": "string"
+        },
+        {
+            "key": "user_email",
+            "value": "test@example.com",
+            "type": "string"
+        },
+        {
+            "key": "user_password",
+            "value": "SecurePassword123!",
+            "type": "string"
+        },
+        {
+            "key": "first_name",
+            "value": "John",
+            "type": "string"
+        },
+        {
+            "key": "last_name",
+            "value": "Doe",
+            "type": "string"
+        },
+        {
+            "key": "mfa_token",
+            "value": "123456",
+            "type": "string"
+        },
+        {
+            "key": "magic_link_token",
+            "value": "your_magic_link_token_here",
+            "type": "string"
+        },
+        {
+            "key": "magic_code",
+            "value": "123456",
+            "type": "string"
+        },
+        {
+            "key": "reset_token",
+            "value": "your_reset_token_here",
+            "type": "string"
+        },
+        {
+            "key": "new_password",
+            "value": "NewSecurePassword123!",
+            "type": "string"
+        },
+        {
+            "key": "invitation_token",
+            "value": "your_invitation_token_here",
+            "type": "string"
+        },
+        {
+            "key": "current_timestamp",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "random_suffix",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "last_audit_id",
+            "value": "",
+            "type": "string"
+        }
+    ]
+}

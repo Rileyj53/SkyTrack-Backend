@@ -1,0 +1,869 @@
+{
+    "info": {
+        "_postman_id": "skytrack-users-collection-2024",
+        "name": "Users API Collection",
+        "description": "Comprehensive collection for user management endpoints in the SkyTrack system with enterprise-grade security. Includes endpoints for user profile retrieval, user updates, and role-based access control.",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+        "_exporter_id": "skytrack-users"
+    },
+    "item": [{
+            "name": "User Management",
+            "item": [{
+                    "name": "Get User Profile",
+                    "request": {
+                        "method": "GET",
+                        "header": [{
+                                "key": "Authorization",
+                                "value": "Bearer {{jwt_token}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-API-Key",
+                                "value": "{{api_key}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/users/:userId",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "users", ":userId"],
+                            "variable": [{
+                                "key": "userId",
+                                "value": "{{user_id}}",
+                                "description": "The unique identifier of the user"
+                            }]
+                        },
+                        "description": "Retrieve detailed information about a specific user account with role-based access control. Users can view their own profile, while administrators can view users within their scope."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Own Profile",
+                    "request": {
+                        "method": "GET",
+                        "header": [{
+                                "key": "Authorization",
+                                "value": "Bearer {{jwt_token}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-API-Key",
+                                "value": "{{api_key}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/users/:userId",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "users", ":userId"],
+                            "variable": [{
+                                "key": "userId",
+                                "value": "{{current_user_id}}",
+                                "description": "The ID of the currently authenticated user"
+                            }]
+                        },
+                        "description": "Retrieve the authenticated user's own profile information. This is a common use case for profile display in applications."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Update User Profile",
+                    "request": {
+                        "method": "PUT",
+                        "header": [{
+                                "key": "Authorization",
+                                "value": "Bearer {{jwt_token}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-API-Key",
+                                "value": "{{api_key}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-CSRF-Token",
+                                "value": "{{csrf_token}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"first_name\": \"{{first_name}}\",\n  \"last_name\": \"{{last_name}}\",\n  \"email\": \"{{updated_email}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/users/:userId",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "users", ":userId"],
+                            "variable": [{
+                                "key": "userId",
+                                "value": "{{user_id}}",
+                                "description": "The unique identifier of the user to update"
+                            }]
+                        },
+                        "description": "Update user profile information. Users can update their own profile, while administrators can update users within their scope."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Update Own Profile",
+                    "request": {
+                        "method": "PUT",
+                        "header": [{
+                                "key": "Authorization",
+                                "value": "Bearer {{jwt_token}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-API-Key",
+                                "value": "{{api_key}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-CSRF-Token",
+                                "value": "{{csrf_token}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"first_name\": \"{{first_name}}\",\n  \"last_name\": \"{{last_name}}\",\n  \"email\": \"{{updated_email}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/users/:userId",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "users", ":userId"],
+                            "variable": [{
+                                "key": "userId",
+                                "value": "{{current_user_id}}",
+                                "description": "The ID of the currently authenticated user"
+                            }]
+                        },
+                        "description": "Update the authenticated user's own profile information. This is a common self-service use case."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Update User Email",
+                    "request": {
+                        "method": "PUT",
+                        "header": [{
+                                "key": "Authorization",
+                                "value": "Bearer {{jwt_token}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-API-Key",
+                                "value": "{{api_key}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-CSRF-Token",
+                                "value": "{{csrf_token}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"{{new_email}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/users/:userId",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "users", ":userId"],
+                            "variable": [{
+                                "key": "userId",
+                                "value": "{{user_id}}",
+                                "description": "The unique identifier of the user"
+                            }]
+                        },
+                        "description": "Update a user's email address. The system will validate uniqueness and email format."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Update User Status",
+                    "request": {
+                        "method": "PUT",
+                        "header": [{
+                                "key": "Authorization",
+                                "value": "Bearer {{jwt_token}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-API-Key",
+                                "value": "{{api_key}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-CSRF-Token",
+                                "value": "{{csrf_token}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"isActive\": {{is_active}},\n  \"emailVerified\": {{email_verified}}\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/users/:userId",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "users", ":userId"],
+                            "variable": [{
+                                "key": "userId",
+                                "value": "{{user_id}}",
+                                "description": "The unique identifier of the user"
+                            }]
+                        },
+                        "description": "Update user account status and verification flags. Typically used by administrators."
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Role Management",
+            "item": [{
+                    "name": "Update User Role (System Admin Only)",
+                    "request": {
+                        "method": "PUT",
+                        "header": [{
+                                "key": "Authorization",
+                                "value": "Bearer {{jwt_token}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-API-Key",
+                                "value": "{{api_key}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-CSRF-Token",
+                                "value": "{{csrf_token}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"role\": \"{{new_role}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/users/:userId",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "users", ":userId"],
+                            "variable": [{
+                                "key": "userId",
+                                "value": "{{user_id}}",
+                                "description": "The unique identifier of the user"
+                            }]
+                        },
+                        "description": "Update a user's role. Only system administrators can change user roles. Valid roles: sys_admin, school_admin, instructor, student."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Assign User to School",
+                    "request": {
+                        "method": "PUT",
+                        "header": [{
+                                "key": "Authorization",
+                                "value": "Bearer {{jwt_token}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-API-Key",
+                                "value": "{{api_key}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-CSRF-Token",
+                                "value": "{{csrf_token}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"school_id\": \"{{school_id}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/users/:userId",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "users", ":userId"],
+                            "variable": [{
+                                "key": "userId",
+                                "value": "{{user_id}}",
+                                "description": "The unique identifier of the user"
+                            }]
+                        },
+                        "description": "Assign a user to a specific school. Used for school-scoped access control."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Update MFA Settings",
+                    "request": {
+                        "method": "PUT",
+                        "header": [{
+                                "key": "Authorization",
+                                "value": "Bearer {{jwt_token}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-API-Key",
+                                "value": "{{api_key}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-CSRF-Token",
+                                "value": "{{csrf_token}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"mfaEnabled\": {{mfa_enabled}},\n  \"mfaVerified\": {{mfa_verified}}\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/users/:userId",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "users", ":userId"],
+                            "variable": [{
+                                "key": "userId",
+                                "value": "{{user_id}}",
+                                "description": "The unique identifier of the user"
+                            }]
+                        },
+                        "description": "Update multi-factor authentication settings for a user. Typically used by administrators or during MFA setup/disable flows."
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Admin Operations",
+            "item": [{
+                    "name": "Get Student Profile (Instructor)",
+                    "request": {
+                        "method": "GET",
+                        "header": [{
+                                "key": "Authorization",
+                                "value": "Bearer {{instructor_jwt_token}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-API-Key",
+                                "value": "{{api_key}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/users/:userId",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "users", ":userId"],
+                            "variable": [{
+                                "key": "userId",
+                                "value": "{{student_id}}",
+                                "description": "The unique identifier of the student"
+                            }]
+                        },
+                        "description": "Instructor viewing a student's profile within their school. Demonstrates school-scoped access control."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Update Student Profile (School Admin)",
+                    "request": {
+                        "method": "PUT",
+                        "header": [{
+                                "key": "Authorization",
+                                "value": "Bearer {{school_admin_jwt_token}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-API-Key",
+                                "value": "{{api_key}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-CSRF-Token",
+                                "value": "{{csrf_token}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"first_name\": \"{{updated_first_name}}\",\n  \"last_name\": \"{{updated_last_name}}\",\n  \"isActive\": {{is_active}}\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/users/:userId",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "users", ":userId"],
+                            "variable": [{
+                                "key": "userId",
+                                "value": "{{student_id}}",
+                                "description": "The unique identifier of the student"
+                            }]
+                        },
+                        "description": "School administrator updating a student's profile within their school. Demonstrates role-based access control."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Manage User (System Admin)",
+                    "request": {
+                        "method": "PUT",
+                        "header": [{
+                                "key": "Authorization",
+                                "value": "Bearer {{system_admin_jwt_token}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-API-Key",
+                                "value": "{{api_key}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-CSRF-Token",
+                                "value": "{{csrf_token}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"role\": \"{{new_role}}\",\n  \"school_id\": \"{{school_id}}\",\n  \"isActive\": {{is_active}},\n  \"emailVerified\": {{email_verified}}\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/users/:userId",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "users", ":userId"],
+                            "variable": [{
+                                "key": "userId",
+                                "value": "{{user_id}}",
+                                "description": "The unique identifier of the user"
+                            }]
+                        },
+                        "description": "System administrator with full user management capabilities. Can update any user field including roles."
+                    },
+                    "response": []
+                }
+            ]
+        }
+    ],
+    "event": [{
+            "listen": "prerequest",
+            "script": {
+                "type": "text/javascript",
+                "exec": [
+                    "// Set current timestamp for dynamic values",
+                    "pm.environment.set('current_timestamp', new Date().toISOString());",
+                    "",
+                    "// Generate random values for testing",
+                    "pm.environment.set('random_suffix', Math.random().toString(36).substring(7));",
+                    "",
+                    "// Auto-inject CSRF token for PUT requests",
+                    "if (pm.request.method === 'PUT' && !pm.request.headers.has('X-CSRF-Token')) {",
+                    "    pm.request.headers.add({",
+                    "        key: 'X-CSRF-Token',",
+                    "        value: pm.environment.get('csrf_token') || 'your_csrf_token_here'",
+                    "    });",
+                    "}",
+                    "",
+                    "// Auto-inject API key if missing",
+                    "if (!pm.request.headers.has('X-API-Key')) {",
+                    "    pm.request.headers.add({",
+                    "        key: 'X-API-Key',",
+                    "        value: pm.environment.get('api_key') || 'your_api_key_here'",
+                    "    });",
+                    "}",
+                    "",
+                    "// Set default values if not already set",
+                    "if (!pm.environment.get('user_id')) {",
+                    "    pm.environment.set('user_id', '674a1b2c3d4e5f6789012345');",
+                    "}",
+                    "",
+                    "if (!pm.environment.get('current_user_id')) {",
+                    "    pm.environment.set('current_user_id', pm.environment.get('user_id'));",
+                    "}",
+                    "",
+                    "// Generate test data",
+                    "pm.environment.set('updated_email', 'updated_' + pm.environment.get('random_suffix') + '@example.com');",
+                    "pm.environment.set('new_email', 'new_' + pm.environment.get('random_suffix') + '@example.com');"
+                ]
+            }
+        },
+        {
+            "listen": "test",
+            "script": {
+                "type": "text/javascript",
+                "exec": [
+                    "// Enhanced response validation",
+                    "pm.test('Status code is successful or expected error', function () {",
+                    "    pm.expect(pm.response.code).to.be.oneOf([200, 400, 401, 403, 404, 409, 429, 500]);",
+                    "});",
+                    "",
+                    "pm.test('Response time is reasonable', function () {",
+                    "    pm.expect(pm.response.responseTime).to.be.below(5000);",
+                    "});",
+                    "",
+                    "pm.test('Response has JSON content-type', function () {",
+                    "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                    "});",
+                    "",
+                    "// Validate success response format",
+                    "if (pm.response.code === 200) {",
+                    "    pm.test('Success response has correct format', function () {",
+                    "        const response = pm.response.json();",
+                    "        pm.expect(response).to.have.property('success', true);",
+                    "        pm.expect(response).to.have.property('message');",
+                    "        pm.expect(response).to.have.property('data');",
+                    "        pm.expect(response.data).to.have.property('user');",
+                    "        pm.expect(response).to.have.property('auditId');",
+                    "        pm.expect(response).to.have.property('timestamp');",
+                    "    });",
+                    "    ",
+                    "    pm.test('User object has required fields', function () {",
+                    "        const response = pm.response.json();",
+                    "        const user = response.data.user;",
+                    "        pm.expect(user).to.have.property('_id');",
+                    "        pm.expect(user).to.have.property('email');",
+                    "        pm.expect(user).to.have.property('first_name');",
+                    "        pm.expect(user).to.have.property('last_name');",
+                    "        pm.expect(user).to.have.property('role');",
+                    "        pm.expect(user).to.have.property('isActive');",
+                    "        pm.expect(user).to.have.property('emailVerified');",
+                    "        pm.expect(user).to.have.property('createdAt');",
+                    "        pm.expect(user).to.have.property('updatedAt');",
+                    "    });",
+                    "    ",
+                    "    pm.test('User role is valid', function () {",
+                    "        const response = pm.response.json();",
+                    "        const validRoles = ['sys_admin', 'school_admin', 'instructor', 'student', 'mechanic', 'member'];",
+                    "        pm.expect(validRoles).to.include(response.data.user.role);",
+                    "    });",
+                    "}",
+                    "",
+                    "// Validate error response format",
+                    "if (pm.response.code >= 400) {",
+                    "    pm.test('Error response has correct format', function () {",
+                    "        const response = pm.response.json();",
+                    "        pm.expect(response).to.have.property('error');",
+                    "        pm.expect(response.error).to.have.property('message');",
+                    "        pm.expect(response.error).to.have.property('code');",
+                    "        pm.expect(response.error).to.have.property('requestId');",
+                    "        pm.expect(response.error).to.have.property('timestamp');",
+                    "    });",
+                    "    ",
+                    "    pm.test('Error code is valid', function () {",
+                    "        const response = pm.response.json();",
+                    "        const validErrorCodes = [",
+                    "            'INVALID_USER_ID', 'INVALID_EMAIL_FORMAT', 'INVALID_ROLE', 'INVALID_SCHOOL_ID',",
+                    "            'AUTHENTICATION_FAILED', 'INSUFFICIENT_PERMISSIONS', 'ROLE_CHANGE_FORBIDDEN',",
+                    "            'USER_NOT_FOUND', 'EMAIL_ALREADY_EXISTS', 'UPDATE_FAILED', 'RATE_LIMIT_EXCEEDED'",
+                    "        ];",
+                    "        pm.expect(validErrorCodes).to.include(response.error.code);",
+                    "    });",
+                    "}",
+                    "",
+                    "// Extract and save user data for subsequent requests",
+                    "if (pm.response.code === 200) {",
+                    "    try {",
+                    "        const response = pm.response.json();",
+                    "        ",
+                    "        // Save user data for subsequent requests",
+                    "        if (response.data && response.data.user) {",
+                    "            pm.environment.set('last_user_id', response.data.user._id);",
+                    "            pm.environment.set('last_user_email', response.data.user.email);",
+                    "            pm.environment.set('last_user_role', response.data.user.role);",
+                    "            pm.environment.set('last_user_school_id', response.data.user.school_id || '');",
+                    "            console.log('User data saved:', {",
+                    "                id: response.data.user._id,",
+                    "                email: response.data.user.email,",
+                    "                role: response.data.user.role",
+                    "            });",
+                    "        }",
+                    "        ",
+                    "        // Save audit ID for tracking",
+                    "        if (response.auditId) {",
+                    "            pm.environment.set('last_audit_id', response.auditId);",
+                    "        }",
+                    "    } catch (e) {",
+                    "        console.log('Could not parse response for data extraction');",
+                    "    }",
+                    "}",
+                    "",
+                    "// Security and access control tests",
+                    "if (pm.response.code === 403) {",
+                    "    pm.test('Access denied error is properly handled', function () {",
+                    "        const response = pm.response.json();",
+                    "        pm.expect(response.error.code).to.be.oneOf([",
+                    "            'INSUFFICIENT_PERMISSIONS', 'ROLE_CHANGE_FORBIDDEN'",
+                    "        ]);",
+                    "    });",
+                    "}",
+                    "",
+                    "// Rate limiting tests",
+                    "if (pm.response.code === 429) {",
+                    "    pm.test('Rate limiting response includes retry information', function () {",
+                    "        const response = pm.response.json();",
+                    "        pm.expect(response.error.code).to.equal('RATE_LIMIT_EXCEEDED');",
+                    "        // Check if retryAfter is present (optional field)",
+                    "        if (response.error.retryAfter) {",
+                    "            pm.expect(response.error.retryAfter).to.be.a('number');",
+                    "        }",
+                    "    });",
+                    "}",
+                    "",
+                    "// Validation error tests",
+                    "if (pm.response.code === 400) {",
+                    "    pm.test('Validation error has appropriate code', function () {",
+                    "        const response = pm.response.json();",
+                    "        pm.expect(response.error.code).to.be.oneOf([",
+                    "            'INVALID_USER_ID', 'INVALID_EMAIL_FORMAT', 'INVALID_ROLE', 'INVALID_SCHOOL_ID'",
+                    "        ]);",
+                    "    });",
+                    "}",
+                    "",
+                    "// Conflict error tests",
+                    "if (pm.response.code === 409) {",
+                    "    pm.test('Conflict error is for email uniqueness', function () {",
+                    "        const response = pm.response.json();",
+                    "        pm.expect(response.error.code).to.equal('EMAIL_ALREADY_EXISTS');",
+                    "    });",
+                    "}",
+                    "",
+                    "// Log security context for monitoring",
+                    "if (pm.response.code === 200) {",
+                    "    try {",
+                    "        const response = pm.response.json();",
+                    "        if (response.securityContext) {",
+                    "            console.log('Security Context:', JSON.stringify(response.securityContext, null, 2));",
+                    "        }",
+                    "    } catch (e) {",
+                    "        // Ignore parsing errors",
+                    "    }",
+                    "}",
+                    "",
+                    "// Performance monitoring",
+                    "pm.test('Response time is within acceptable limits', function () {",
+                    "    if (pm.request.method === 'GET') {",
+                    "        pm.expect(pm.response.responseTime).to.be.below(2000); // 2s for GET requests",
+                    "    } else {",
+                    "        pm.expect(pm.response.responseTime).to.be.below(5000); // 5s for POST/PUT requests",
+                    "    }",
+                    "});",
+                    "",
+                    "// Log request details for debugging",
+                    "console.log('Request Method:', pm.request.method);",
+                    "console.log('Request URL:', pm.request.url.toString());",
+                    "console.log('Response Status:', pm.response.code);",
+                    "console.log('Response Time:', pm.response.responseTime + 'ms');"
+                ]
+            }
+        }
+    ],
+    "variable": [{
+            "key": "base_url",
+            "value": "https://api.skytrack.com",
+            "type": "string"
+        },
+        {
+            "key": "api_key",
+            "value": "your_api_key_here",
+            "type": "string"
+        },
+        {
+            "key": "jwt_token",
+            "value": "your_jwt_token_here",
+            "type": "string"
+        },
+        {
+            "key": "csrf_token",
+            "value": "your_csrf_token_here",
+            "type": "string"
+        },
+        {
+            "key": "user_id",
+            "value": "674a1b2c3d4e5f6789012345",
+            "type": "string"
+        },
+        {
+            "key": "current_user_id",
+            "value": "674a1b2c3d4e5f6789012345",
+            "type": "string"
+        },
+        {
+            "key": "student_id",
+            "value": "674a1b2c3d4e5f6789012346",
+            "type": "string"
+        },
+        {
+            "key": "school_id",
+            "value": "674a1b2c3d4e5f6789012347",
+            "type": "string"
+        },
+        {
+            "key": "first_name",
+            "value": "John",
+            "type": "string"
+        },
+        {
+            "key": "last_name",
+            "value": "Doe",
+            "type": "string"
+        },
+        {
+            "key": "updated_first_name",
+            "value": "John",
+            "type": "string"
+        },
+        {
+            "key": "updated_last_name",
+            "value": "Smith",
+            "type": "string"
+        },
+        {
+            "key": "updated_email",
+            "value": "updated@example.com",
+            "type": "string"
+        },
+        {
+            "key": "new_email",
+            "value": "new@example.com",
+            "type": "string"
+        },
+        {
+            "key": "new_role",
+            "value": "instructor",
+            "type": "string"
+        },
+        {
+            "key": "is_active",
+            "value": "true",
+            "type": "string"
+        },
+        {
+            "key": "email_verified",
+            "value": "true",
+            "type": "string"
+        },
+        {
+            "key": "mfa_enabled",
+            "value": "false",
+            "type": "string"
+        },
+        {
+            "key": "mfa_verified",
+            "value": "false",
+            "type": "string"
+        },
+        {
+            "key": "instructor_jwt_token",
+            "value": "instructor_jwt_token_here",
+            "type": "string"
+        },
+        {
+            "key": "school_admin_jwt_token",
+            "value": "school_admin_jwt_token_here",
+            "type": "string"
+        },
+        {
+            "key": "system_admin_jwt_token",
+            "value": "system_admin_jwt_token_here",
+            "type": "string"
+        },
+        {
+            "key": "current_timestamp",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "random_suffix",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "last_user_id",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "last_user_email",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "last_user_role",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "last_user_school_id",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "last_audit_id",
+            "value": "",
+            "type": "string"
+        }
+    ]
+}

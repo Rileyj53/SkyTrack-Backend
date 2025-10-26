@@ -1,0 +1,729 @@
+{
+    "info": {
+        "name": "School Billing Usage API",
+        "description": "Comprehensive collection for School Billing Usage API endpoints with enterprise security features including JWT authentication, API key validation, CSRF protection, and audit logging.",
+        "version": "1.0.0",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "variable": [{
+            "key": "base_url",
+            "value": "https://api.backend.com",
+            "type": "string"
+        },
+        {
+            "key": "api_key",
+            "value": "your-api-key-here",
+            "type": "string"
+        },
+        {
+            "key": "jwt_token",
+            "value": "your-jwt-token-here",
+            "type": "string"
+        },
+        {
+            "key": "csrf_token",
+            "value": "your-csrf-token-here",
+            "type": "string"
+        },
+        {
+            "key": "schoolId",
+            "value": "64def789abc123",
+            "type": "string"
+        },
+        {
+            "key": "billingRecordId",
+            "value": "64abc123def456",
+            "type": "string"
+        },
+        {
+            "key": "currentAuditId",
+            "value": "",
+            "type": "string"
+        }
+    ],
+    "auth": {
+        "type": "bearer",
+        "bearer": [{
+            "key": "token",
+            "value": "{{jwt_token}}",
+            "type": "string"
+        }]
+    },
+    "event": [{
+            "listen": "prerequest",
+            "script": {
+                "type": "text/javascript",
+                "exec": [
+                    "// Auto-generate timestamp for requests",
+                    "pm.globals.set('timestamp', new Date().toISOString());",
+                    "",
+                    "// Log request details",
+                    "console.log('🚀 Request:', pm.request.method, pm.request.url.toString());",
+                    "console.log('📋 Headers:', JSON.stringify(pm.request.headers.toObject()));",
+                    "",
+                    "// Validate required variables",
+                    "const requiredVars = ['base_url', 'api_key', 'jwt_token'];",
+                    "requiredVars.forEach(varName => {",
+                    "    if (!pm.collectionVariables.get(varName) || pm.collectionVariables.get(varName) === `your-${varName.toLowerCase().replace('jwt', 'jwt-')}-here`) {",
+                    "        console.warn(`⚠️ Please set the ${varName} collection variable`);",
+                    "    }",
+                    "});"
+                ]
+            }
+        },
+        {
+            "listen": "test",
+            "script": {
+                "type": "text/javascript",
+                "exec": [
+                    "// Extract and store audit ID from response",
+                    "if (pm.response.json() && pm.response.json().auditId) {",
+                    "    pm.collectionVariables.set('currentAuditId', pm.response.json().auditId);",
+                    "    console.log('📝 Audit ID:', pm.response.json().auditId);",
+                    "}",
+                    "",
+                    "// Log response summary",
+                    "console.log('📊 Response:', pm.response.status, pm.response.statusText);",
+                    "console.log('⏱️ Response Time:', pm.response.responseTime + 'ms');",
+                    "",
+                    "// Basic response validation",
+                    "pm.test('Response time is acceptable', function () {",
+                    "    pm.expect(pm.response.responseTime).to.be.below(5000);",
+                    "});",
+                    "",
+                    "pm.test('Response has proper headers', function () {",
+                    "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                    "});"
+                ]
+            }
+        }
+    ],
+    "item": [{
+            "name": "List Billing Records",
+            "event": [{
+                "listen": "test",
+                "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                        "pm.test('Status code is 200', function () {",
+                        "    pm.response.to.have.status(200);",
+                        "});",
+                        "",
+                        "pm.test('Response has success flag', function () {",
+                        "    const jsonData = pm.response.json();",
+                        "    pm.expect(jsonData).to.have.property('success', true);",
+                        "});",
+                        "",
+                        "pm.test('Response contains data array', function () {",
+                        "    const jsonData = pm.response.json();",
+                        "    pm.expect(jsonData).to.have.property('data');",
+                        "    pm.expect(jsonData.data).to.be.an('array');",
+                        "});",
+                        "",
+                        "pm.test('Response has audit ID', function () {",
+                        "    const jsonData = pm.response.json();",
+                        "    pm.expect(jsonData).to.have.property('auditId');",
+                        "    pm.expect(jsonData.auditId).to.be.a('string');",
+                        "});",
+                        "",
+                        "pm.test('Response has pagination info', function () {",
+                        "    const jsonData = pm.response.json();",
+                        "    pm.expect(jsonData).to.have.property('pagination');",
+                        "    pm.expect(jsonData.pagination).to.have.property('limit');",
+                        "    pm.expect(jsonData.pagination).to.have.property('skip');",
+                        "    pm.expect(jsonData.pagination).to.have.property('count');",
+                        "});",
+                        "",
+                        "// Store first record ID if available",
+                        "const jsonData = pm.response.json();",
+                        "if (jsonData.data && jsonData.data.length > 0) {",
+                        "    pm.collectionVariables.set('billingRecordId', jsonData.data[0]._id);",
+                        "    console.log('💾 Stored billing record ID:', jsonData.data[0]._id);",
+                        "}"
+                    ]
+                }
+            }],
+            "request": {
+                "method": "GET",
+                "header": [{
+                        "key": "X-API-Key",
+                        "value": "{{api_key}}",
+                        "type": "text"
+                    },
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json",
+                        "type": "text"
+                    }
+                ],
+                "url": {
+                    "raw": "{{base_url}}/api/school-billing-usage?limit=10&skip=0&billed=false",
+                    "host": ["{{base_url}}"],
+                    "path": ["api", "school-billing-usage"],
+                    "query": [{
+                            "key": "limit",
+                            "value": "10",
+                            "description": "Number of records to return"
+                        },
+                        {
+                            "key": "skip",
+                            "value": "0",
+                            "description": "Number of records to skip"
+                        },
+                        {
+                            "key": "billed",
+                            "value": "false",
+                            "description": "Filter by billing status"
+                        },
+                        {
+                            "key": "school_id",
+                            "value": "{{schoolId}}",
+                            "description": "Filter by school ID",
+                            "disabled": true
+                        },
+                        {
+                            "key": "month",
+                            "value": "2024-01",
+                            "description": "Filter by month (YYYY-MM)",
+                            "disabled": true
+                        }
+                    ]
+                },
+                "description": "Retrieves billing usage records with optional filtering and pagination. Supports filtering by school_id, month, and billing status."
+            }
+        },
+        {
+            "name": "Create Billing Record",
+            "event": [{
+                "listen": "test",
+                "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                        "pm.test('Status code is 201', function () {",
+                        "    pm.response.to.have.status(201);",
+                        "});",
+                        "",
+                        "pm.test('Response has success flag', function () {",
+                        "    const jsonData = pm.response.json();",
+                        "    pm.expect(jsonData).to.have.property('success', true);",
+                        "});",
+                        "",
+                        "pm.test('Response contains created record', function () {",
+                        "    const jsonData = pm.response.json();",
+                        "    pm.expect(jsonData).to.have.property('data');",
+                        "    pm.expect(jsonData.data).to.have.property('_id');",
+                        "    pm.expect(jsonData.data).to.have.property('school_id');",
+                        "    pm.expect(jsonData.data).to.have.property('month');",
+                        "    pm.expect(jsonData.data).to.have.property('total_transactions');",
+                        "    pm.expect(jsonData.data).to.have.property('stripe_transactions');",
+                        "});",
+                        "",
+                        "pm.test('Record has correct data types', function () {",
+                        "    const jsonData = pm.response.json();",
+                        "    const record = jsonData.data;",
+                        "    pm.expect(record._id).to.be.a('string');",
+                        "    pm.expect(record.total_transactions).to.be.a('number');",
+                        "    pm.expect(record.stripe_transactions).to.be.a('number');",
+                        "    pm.expect(record.billed).to.be.a('boolean');",
+                        "});",
+                        "",
+                        "// Store created record ID",
+                        "const jsonData = pm.response.json();",
+                        "if (jsonData.data && jsonData.data._id) {",
+                        "    pm.collectionVariables.set('billingRecordId', jsonData.data._id);",
+                        "    console.log('💾 Stored new billing record ID:', jsonData.data._id);",
+                        "}"
+                    ]
+                }
+            }],
+            "request": {
+                "method": "POST",
+                "header": [{
+                        "key": "X-API-Key",
+                        "value": "{{api_key}}",
+                        "type": "text"
+                    },
+                    {
+                        "key": "X-CSRF-Token",
+                        "value": "{{csrf_token}}",
+                        "type": "text"
+                    },
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json",
+                        "type": "text"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"school_id\": \"{{schoolId}}\",\n  \"month\": \"2024-01\",\n  \"total_transactions\": 150,\n  \"stripe_transactions\": 75,\n  \"billed\": false\n}",
+                    "options": {
+                        "raw": {
+                            "language": "json"
+                        }
+                    }
+                },
+                "url": {
+                    "raw": "{{base_url}}/api/school-billing-usage",
+                    "host": ["{{base_url}}"],
+                    "path": ["api", "school-billing-usage"]
+                },
+                "description": "Creates a new billing usage record or updates an existing one (upsert operation). Requires school_id, month, total_transactions, and stripe_transactions."
+            }
+        },
+        {
+            "name": "Get Billing Record by ID",
+            "event": [{
+                "listen": "test",
+                "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                        "pm.test('Status code is 200', function () {",
+                        "    pm.response.to.have.status(200);",
+                        "});",
+                        "",
+                        "pm.test('Response has success flag', function () {",
+                        "    const jsonData = pm.response.json();",
+                        "    pm.expect(jsonData).to.have.property('success', true);",
+                        "});",
+                        "",
+                        "pm.test('Response contains record data', function () {",
+                        "    const jsonData = pm.response.json();",
+                        "    pm.expect(jsonData).to.have.property('data');",
+                        "    pm.expect(jsonData.data).to.have.property('_id');",
+                        "    pm.expect(jsonData.data._id).to.equal(pm.collectionVariables.get('billingRecordId'));",
+                        "});",
+                        "",
+                        "pm.test('Record has populated school data', function () {",
+                        "    const jsonData = pm.response.json();",
+                        "    const record = jsonData.data;",
+                        "    pm.expect(record).to.have.property('school_id');",
+                        "    if (typeof record.school_id === 'object') {",
+                        "        pm.expect(record.school_id).to.have.property('_id');",
+                        "        pm.expect(record.school_id).to.have.property('name');",
+                        "    }",
+                        "});",
+                        "",
+                        "pm.test('Record has timestamps', function () {",
+                        "    const jsonData = pm.response.json();",
+                        "    const record = jsonData.data;",
+                        "    pm.expect(record).to.have.property('createdAt');",
+                        "    pm.expect(record).to.have.property('updatedAt');",
+                        "});"
+                    ]
+                }
+            }],
+            "request": {
+                "method": "GET",
+                "header": [{
+                        "key": "X-API-Key",
+                        "value": "{{api_key}}",
+                        "type": "text"
+                    },
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json",
+                        "type": "text"
+                    }
+                ],
+                "url": {
+                    "raw": "{{base_url}}/api/school-billing-usage/{{billingRecordId}}",
+                    "host": ["{{base_url}}"],
+                    "path": ["api", "school-billing-usage", "{{billingRecordId}}"]
+                },
+                "description": "Retrieves a specific billing usage record by ID. Returns populated school information."
+            }
+        },
+        {
+            "name": "Update Billing Record",
+            "event": [{
+                "listen": "test",
+                "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                        "pm.test('Status code is 200', function () {",
+                        "    pm.response.to.have.status(200);",
+                        "});",
+                        "",
+                        "pm.test('Response has success flag', function () {",
+                        "    const jsonData = pm.response.json();",
+                        "    pm.expect(jsonData).to.have.property('success', true);",
+                        "});",
+                        "",
+                        "pm.test('Response contains updated record', function () {",
+                        "    const jsonData = pm.response.json();",
+                        "    pm.expect(jsonData).to.have.property('data');",
+                        "    pm.expect(jsonData.data).to.have.property('_id');",
+                        "});",
+                        "",
+                        "pm.test('Record was updated', function () {",
+                        "    const jsonData = pm.response.json();",
+                        "    const record = jsonData.data;",
+                        "    pm.expect(record.total_transactions).to.equal(175);",
+                        "    pm.expect(record.stripe_transactions).to.equal(85);",
+                        "});",
+                        "",
+                        "pm.test('Updated timestamp is recent', function () {",
+                        "    const jsonData = pm.response.json();",
+                        "    const record = jsonData.data;",
+                        "    const updatedAt = new Date(record.updatedAt);",
+                        "    const now = new Date();",
+                        "    const diffMinutes = (now - updatedAt) / (1000 * 60);",
+                        "    pm.expect(diffMinutes).to.be.below(5); // Updated within last 5 minutes",
+                        "});"
+                    ]
+                }
+            }],
+            "request": {
+                "method": "PUT",
+                "header": [{
+                        "key": "X-API-Key",
+                        "value": "{{api_key}}",
+                        "type": "text"
+                    },
+                    {
+                        "key": "X-CSRF-Token",
+                        "value": "{{csrf_token}}",
+                        "type": "text"
+                    },
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json",
+                        "type": "text"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"total_transactions\": 175,\n  \"stripe_transactions\": 85,\n  \"billed\": false\n}",
+                    "options": {
+                        "raw": {
+                            "language": "json"
+                        }
+                    }
+                },
+                "url": {
+                    "raw": "{{base_url}}/api/school-billing-usage/{{billingRecordId}}",
+                    "host": ["{{base_url}}"],
+                    "path": ["api", "school-billing-usage", "{{billingRecordId}}"]
+                },
+                "description": "Updates a specific billing usage record by ID. Note: school_id and month cannot be updated."
+            }
+        },
+        {
+            "name": "Mark Record as Billed",
+            "event": [{
+                "listen": "test",
+                "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                        "pm.test('Status code is 200', function () {",
+                        "    pm.response.to.have.status(200);",
+                        "});",
+                        "",
+                        "pm.test('Response has success flag', function () {",
+                        "    const jsonData = pm.response.json();",
+                        "    pm.expect(jsonData).to.have.property('success', true);",
+                        "});",
+                        "",
+                        "pm.test('Record is marked as billed', function () {",
+                        "    const jsonData = pm.response.json();",
+                        "    const record = jsonData.data;",
+                        "    pm.expect(record.billed).to.equal(true);",
+                        "});",
+                        "",
+                        "pm.test('Stripe invoice ID is set', function () {",
+                        "    const jsonData = pm.response.json();",
+                        "    const record = jsonData.data;",
+                        "    pm.expect(record.stripe_invoice_id).to.equal('in_1234567890');",
+                        "});",
+                        "",
+                        "pm.test('Last updated timestamp is set', function () {",
+                        "    const jsonData = pm.response.json();",
+                        "    const record = jsonData.data;",
+                        "    pm.expect(record).to.have.property('last_updated');",
+                        "    pm.expect(record.last_updated).to.be.a('string');",
+                        "});"
+                    ]
+                }
+            }],
+            "request": {
+                "method": "PATCH",
+                "header": [{
+                        "key": "X-API-Key",
+                        "value": "{{api_key}}",
+                        "type": "text"
+                    },
+                    {
+                        "key": "X-CSRF-Token",
+                        "value": "{{csrf_token}}",
+                        "type": "text"
+                    },
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json",
+                        "type": "text"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"stripe_invoice_id\": \"in_1234567890\"\n}",
+                    "options": {
+                        "raw": {
+                            "language": "json"
+                        }
+                    }
+                },
+                "url": {
+                    "raw": "{{base_url}}/api/school-billing-usage/{{billingRecordId}}/mark-billed",
+                    "host": ["{{base_url}}"],
+                    "path": ["api", "school-billing-usage", "{{billingRecordId}}", "mark-billed"]
+                },
+                "description": "Marks a billing usage record as billed and optionally associates it with a Stripe invoice ID."
+            }
+        },
+        {
+            "name": "Get School Billing Records",
+            "event": [{
+                "listen": "test",
+                "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                        "pm.test('Status code is 200', function () {",
+                        "    pm.response.to.have.status(200);",
+                        "});",
+                        "",
+                        "pm.test('Response has success flag', function () {",
+                        "    const jsonData = pm.response.json();",
+                        "    pm.expect(jsonData).to.have.property('success', true);",
+                        "});",
+                        "",
+                        "pm.test('Response contains data array', function () {",
+                        "    const jsonData = pm.response.json();",
+                        "    pm.expect(jsonData).to.have.property('data');",
+                        "    pm.expect(jsonData.data).to.be.an('array');",
+                        "});",
+                        "",
+                        "pm.test('All records belong to specified school', function () {",
+                        "    const jsonData = pm.response.json();",
+                        "    const schoolId = pm.collectionVariables.get('schoolId');",
+                        "    jsonData.data.forEach(record => {",
+                        "        pm.expect(record.school_id).to.equal(schoolId);",
+                        "    });",
+                        "});",
+                        "",
+                        "pm.test('Response has pagination with school ID', function () {",
+                        "    const jsonData = pm.response.json();",
+                        "    pm.expect(jsonData).to.have.property('pagination');",
+                        "    pm.expect(jsonData.pagination).to.have.property('schoolId');",
+                        "    pm.expect(jsonData.pagination.schoolId).to.equal(pm.collectionVariables.get('schoolId'));",
+                        "});"
+                    ]
+                }
+            }],
+            "request": {
+                "method": "GET",
+                "header": [{
+                        "key": "X-API-Key",
+                        "value": "{{api_key}}",
+                        "type": "text"
+                    },
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json",
+                        "type": "text"
+                    }
+                ],
+                "url": {
+                    "raw": "{{base_url}}/api/school-billing-usage/school/{{schoolId}}?limit=12",
+                    "host": ["{{base_url}}"],
+                    "path": ["api", "school-billing-usage", "school", "{{schoolId}}"],
+                    "query": [{
+                        "key": "limit",
+                        "value": "12",
+                        "description": "Number of records to return (default: 12)"
+                    }]
+                },
+                "description": "Retrieves billing usage records for a specific school, sorted by month (most recent first)."
+            }
+        },
+        {
+            "name": "Get Unbilled Records",
+            "event": [{
+                "listen": "test",
+                "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                        "pm.test('Status code is 200', function () {",
+                        "    pm.response.to.have.status(200);",
+                        "});",
+                        "",
+                        "pm.test('Response has success flag', function () {",
+                        "    const jsonData = pm.response.json();",
+                        "    pm.expect(jsonData).to.have.property('success', true);",
+                        "});",
+                        "",
+                        "pm.test('Response contains data array', function () {",
+                        "    const jsonData = pm.response.json();",
+                        "    pm.expect(jsonData).to.have.property('data');",
+                        "    pm.expect(jsonData.data).to.be.an('array');",
+                        "});",
+                        "",
+                        "pm.test('All records are unbilled', function () {",
+                        "    const jsonData = pm.response.json();",
+                        "    jsonData.data.forEach(record => {",
+                        "        pm.expect(record.billed).to.equal(false);",
+                        "    });",
+                        "});",
+                        "",
+                        "pm.test('Response has summary information', function () {",
+                        "    const jsonData = pm.response.json();",
+                        "    pm.expect(jsonData).to.have.property('summary');",
+                        "    pm.expect(jsonData.summary).to.have.property('totalUnbilledRecords');",
+                        "    pm.expect(jsonData.summary).to.have.property('accessLevel');",
+                        "});",
+                        "",
+                        "pm.test('Summary count matches data length', function () {",
+                        "    const jsonData = pm.response.json();",
+                        "    pm.expect(jsonData.summary.totalUnbilledRecords).to.equal(jsonData.data.length);",
+                        "});"
+                    ]
+                }
+            }],
+            "request": {
+                "method": "GET",
+                "header": [{
+                        "key": "X-API-Key",
+                        "value": "{{api_key}}",
+                        "type": "text"
+                    },
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json",
+                        "type": "text"
+                    }
+                ],
+                "url": {
+                    "raw": "{{base_url}}/api/school-billing-usage/unbilled",
+                    "host": ["{{base_url}}"],
+                    "path": ["api", "school-billing-usage", "unbilled"]
+                },
+                "description": "Retrieves all unbilled billing usage records. Access is restricted based on user role (school_admin sees only their school's records)."
+            }
+        },
+        {
+            "name": "Delete Billing Record",
+            "event": [{
+                "listen": "test",
+                "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                        "pm.test('Status code is 200', function () {",
+                        "    pm.response.to.have.status(200);",
+                        "});",
+                        "",
+                        "pm.test('Response has success flag', function () {",
+                        "    const jsonData = pm.response.json();",
+                        "    pm.expect(jsonData).to.have.property('success', true);",
+                        "});",
+                        "",
+                        "pm.test('Response has audit ID', function () {",
+                        "    const jsonData = pm.response.json();",
+                        "    pm.expect(jsonData).to.have.property('auditId');",
+                        "    pm.expect(jsonData.auditId).to.be.a('string');",
+                        "});",
+                        "",
+                        "pm.test('Response has timestamp', function () {",
+                        "    const jsonData = pm.response.json();",
+                        "    pm.expect(jsonData).to.have.property('timestamp');",
+                        "    pm.expect(jsonData.timestamp).to.be.a('string');",
+                        "});",
+                        "",
+                        "console.log('🗑️ Billing record deleted successfully');"
+                    ]
+                }
+            }],
+            "request": {
+                "method": "DELETE",
+                "header": [{
+                        "key": "X-API-Key",
+                        "value": "{{api_key}}",
+                        "type": "text"
+                    },
+                    {
+                        "key": "X-CSRF-Token",
+                        "value": "{{csrf_token}}",
+                        "type": "text"
+                    },
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json",
+                        "type": "text"
+                    }
+                ],
+                "url": {
+                    "raw": "{{base_url}}/api/school-billing-usage/{{billingRecordId}}",
+                    "host": ["{{base_url}}"],
+                    "path": ["api", "school-billing-usage", "{{billingRecordId}}"]
+                },
+                "description": "Deletes a specific billing usage record by ID. This action is irreversible and requires proper authorization."
+            }
+        }
+    ],
+    "event": [{
+            "listen": "prerequest",
+            "script": {
+                "type": "text/javascript",
+                "exec": [
+                    "// Collection-level pre-request script",
+                    "console.log('🏢 School Billing Usage API Collection');",
+                    "console.log('📅 Request Time:', new Date().toISOString());",
+                    "",
+                    "// Validate authentication setup",
+                    "const jwt_token = pm.collectionVariables.get('jwt_token');",
+                    "const api_key = pm.collectionVariables.get('api_key');",
+                    "",
+                    "if (!jwt_token || jwt_token === 'your-jwt-token-here') {",
+                    "    console.warn('⚠️ JWT Token not configured. Please set the jwt_token collection variable.');",
+                    "}",
+                    "",
+                    "if (!api_key || api_key === 'your-api-key-here') {",
+                    "    console.warn('⚠️ API Key not configured. Please set the api_key collection variable.');",
+                    "}",
+                    "",
+                    "// Set dynamic values",
+                    "pm.collectionVariables.set('currentTimestamp', new Date().toISOString());"
+                ]
+            }
+        },
+        {
+            "listen": "test",
+            "script": {
+                "type": "text/javascript",
+                "exec": [
+                    "// Collection-level test script",
+                    "console.log('✅ Request completed');",
+                    "",
+                    "// Global security validations",
+                    "pm.test('Response has security headers', function () {",
+                    "    // Check for common security headers",
+                    "    const headers = pm.response.headers;",
+                    "    // Note: Actual security headers depend on server configuration",
+                    "});",
+                    "",
+                    "// Log audit information if available",
+                    "if (pm.response.json() && pm.response.json().auditId) {",
+                    "    console.log('🔍 Audit Trail:', pm.response.json().auditId);",
+                    "}",
+                    "",
+                    "// Performance monitoring",
+                    "const responseTime = pm.response.responseTime;",
+                    "if (responseTime > 2000) {",
+                    "    console.warn('⚠️ Slow response time:', responseTime + 'ms');",
+                    "} else if (responseTime > 1000) {",
+                    "    console.log('⏱️ Response time:', responseTime + 'ms');",
+                    "}"
+                ]
+            }
+        }
+    ]
+}

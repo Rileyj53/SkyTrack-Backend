@@ -1,0 +1,2349 @@
+{
+    "info": {
+        "name": "SkyTrack Backend API",
+        "description": "Comprehensive API collection for SkyTrack flight school management system",
+        "version": "1.0.0",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "auth": {
+        "type": "bearer",
+        "bearer": [{
+            "key": "token",
+            "value": "{{jwt_token}}",
+            "type": "string"
+        }]
+    },
+    "variable": [{
+            "key": "base_url",
+            "value": "https://api.skytrack.com",
+            "type": "string"
+        },
+        {
+            "key": "api_key",
+            "value": "your-api-key",
+            "type": "string"
+        },
+        {
+            "key": "csrf_token",
+            "value": "csrf-token-here",
+            "type": "string"
+        },
+        {
+            "key": "jwt_token",
+            "value": "jwt-token-here",
+            "type": "string"
+        },
+        {
+            "key": "request_id",
+            "value": "request-id-will-be-set-by-create-request",
+            "type": "string"
+        }
+    ],
+    "item": [{
+            "name": "Authentication",
+            "item": [{
+                    "name": "Get CSRF Token",
+                    "request": {
+                        "method": "GET",
+                        "header": [{
+                            "key": "X-API-Key",
+                            "value": "{{api_key}}",
+                            "type": "text"
+                        }],
+                        "url": {
+                            "raw": "{{base_url}}/api/auth/csrf-token",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "auth", "csrf-token"]
+                        },
+                        "description": "Generate and retrieve a CSRF token for secure form submissions"
+                    },
+                    "event": [{
+                        "listen": "test",
+                        "script": {
+                            "exec": [
+                                "pm.test('Status code is 200', function () {",
+                                "    pm.response.to.have.status(200);",
+                                "});",
+                                "",
+                                "pm.test('Response has CSRF token', function () {",
+                                "    const jsonData = pm.response.json();",
+                                "    pm.expect(jsonData.data.token).to.be.a('string');",
+                                "    pm.collectionVariables.set('csrf_token', jsonData.data.token);",
+                                "});"
+                            ]
+                        }
+                    }]
+                },
+                {
+                    "name": "Login",
+                    "request": {
+                        "method": "POST",
+                        "header": [{
+                            "key": "Content-Type",
+                            "value": "application/json",
+                            "type": "text"
+                        }],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"your-password\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/auth/login",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "auth", "login"]
+                        },
+                        "description": "Authenticate user with email and password"
+                    },
+                    "event": [{
+                        "listen": "test",
+                        "script": {
+                            "exec": [
+                                "pm.test('Status code is 200', function () {",
+                                "    pm.response.to.have.status(200);",
+                                "});",
+                                "",
+                                "pm.test('Response has JWT token', function () {",
+                                "    const jsonData = pm.response.json();",
+                                "    pm.expect(jsonData.data.token).to.be.a('string');",
+                                "    pm.collectionVariables.set('jwt_token', jsonData.data.token);",
+                                "    pm.collectionVariables.set('csrf_token', jsonData.data.csrfToken);",
+                                "});"
+                            ]
+                        }
+                    }]
+                },
+                {
+                    "name": "Get User Profile",
+                    "request": {
+                        "method": "GET",
+                        "header": [{
+                                "key": "Authorization",
+                                "value": "Bearer {{jwt_token}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-API-Key",
+                                "value": "{{api_key}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-CSRF-Token",
+                                "value": "{{csrf_token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/auth/me",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "auth", "me"]
+                        },
+                        "description": "Retrieve current authenticated user's profile information"
+                    },
+                    "event": [{
+                        "listen": "test",
+                        "script": {
+                            "exec": [
+                                "pm.test('Status code is 200', function () {",
+                                "    pm.response.to.have.status(200);",
+                                "});",
+                                "",
+                                "pm.test('Response has user data', function () {",
+                                "    const jsonData = pm.response.json();",
+                                "    pm.expect(jsonData.data.user).to.be.an('object');",
+                                "    pm.expect(jsonData.data.user.email).to.be.a('string');",
+                                "});"
+                            ]
+                        }
+                    }]
+                },
+                {
+                    "name": "Update Profile",
+                    "request": {
+                        "method": "PUT",
+                        "header": [{
+                                "key": "Authorization",
+                                "value": "Bearer {{jwt_token}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-API-Key",
+                                "value": "{{api_key}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-CSRF-Token",
+                                "value": "{{csrf_token}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"first_name\": \"John\",\n  \"last_name\": \"Doe\",\n  \"email\": \"john.doe.new@example.com\",\n  \"phone\": \"+1-555-123-4567\",\n  \"avatar\": \"https://example.com/avatars/john-doe.jpg\",\n  \"emergency_contact\": {\n    \"name\": \"Jane Doe\",\n    \"relationship\": \"spouse\",\n    \"phone\": \"+1-555-987-6543\",\n    \"email\": \"jane.doe@example.com\"\n  }\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/auth/update-profile",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "auth", "update-profile"]
+                        },
+                        "description": "Update authenticated user's profile information"
+                    },
+                    "event": [{
+                        "listen": "test",
+                        "script": {
+                            "exec": [
+                                "pm.test('Status code is 200', function () {",
+                                "    pm.response.to.have.status(200);",
+                                "});",
+                                "",
+                                "pm.test('Profile updated successfully', function () {",
+                                "    const jsonData = pm.response.json();",
+                                "    pm.expect(jsonData.success).to.be.true;",
+                                "    pm.expect(jsonData.data.user).to.be.an('object');",
+                                "});"
+                            ]
+                        }
+                    }]
+                },
+                {
+                    "name": "Request Magic Link",
+                    "request": {
+                        "method": "POST",
+                        "header": [{
+                                "key": "X-API-Key",
+                                "value": "{{api_key}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"user@example.com\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/auth/magic-link/request",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "auth", "magic-link", "request"]
+                        },
+                        "description": "Request a magic link for passwordless login"
+                    },
+                    "event": [{
+                        "listen": "test",
+                        "script": {
+                            "exec": [
+                                "pm.test('Status code is 200', function () {",
+                                "    pm.response.to.have.status(200);",
+                                "});",
+                                "",
+                                "pm.test('Magic link sent', function () {",
+                                "    const jsonData = pm.response.json();",
+                                "    pm.expect(jsonData.success).to.be.true;",
+                                "});"
+                            ]
+                        }
+                    }]
+                },
+                {
+                    "name": "Magic Link Login",
+                    "request": {
+                        "method": "POST",
+                        "header": [{
+                                "key": "X-API-Key",
+                                "value": "{{api_key}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"token\": \"magic-token-from-email\",\n  \"code\": \"123456\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/auth/magic-link/login",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "auth", "magic-link", "login"]
+                        },
+                        "description": "Login using magic link token or code"
+                    },
+                    "event": [{
+                        "listen": "test",
+                        "script": {
+                            "exec": [
+                                "pm.test('Status code is 200', function () {",
+                                "    pm.response.to.have.status(200);",
+                                "});",
+                                "",
+                                "pm.test('Login successful with token', function () {",
+                                "    const jsonData = pm.response.json();",
+                                "    pm.expect(jsonData.success).to.be.true;",
+                                "    pm.expect(jsonData.data.token).to.be.a('string');",
+                                "    pm.collectionVariables.set('jwt_token', jsonData.data.token);",
+                                "});"
+                            ]
+                        }
+                    }]
+                },
+                {
+                    "name": "Complete Registration",
+                    "request": {
+                        "method": "POST",
+                        "header": [{
+                                "key": "X-API-Key",
+                                "value": "{{api_key}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-CSRF-Token",
+                                "value": "{{csrf_token}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"invitation_token\": \"invitation-token-here\",\n  \"email\": \"user@example.com\",\n  \"password\": \"SecurePassword123!\",\n  \"first_name\": \"John\",\n  \"last_name\": \"Doe\",\n  \"phone\": \"+1-555-123-4567\",\n  \"emergency_contact\": {\n    \"name\": \"Jane Doe\",\n    \"relationship\": \"spouse\",\n    \"phone\": \"+1-555-987-6543\"\n  }\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/auth/complete-registration",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "auth", "complete-registration"]
+                        },
+                        "description": "Complete student/instructor registration with invitation token"
+                    },
+                    "event": [{
+                        "listen": "test",
+                        "script": {
+                            "exec": [
+                                "pm.test('Status code is 201', function () {",
+                                "    pm.response.to.have.status(201);",
+                                "});",
+                                "",
+                                "pm.test('Registration completed', function () {",
+                                "    const jsonData = pm.response.json();",
+                                "    pm.expect(jsonData.success).to.be.true;",
+                                "    pm.expect(jsonData.token).to.be.a('string');",
+                                "});"
+                            ]
+                        }
+                    }]
+                },
+                {
+                    "name": "Logout",
+                    "request": {
+                        "method": "POST",
+                        "header": [{
+                            "key": "Authorization",
+                            "value": "Bearer {{jwt_token}}",
+                            "type": "text"
+                        }],
+                        "url": {
+                            "raw": "{{base_url}}/api/auth/logout",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "auth", "logout"]
+                        },
+                        "description": "Logout and invalidate current session"
+                    },
+                    "event": [{
+                        "listen": "test",
+                        "script": {
+                            "exec": [
+                                "pm.test('Status code is 200', function () {",
+                                "    pm.response.to.have.status(200);",
+                                "});",
+                                "",
+                                "pm.test('Logout successful', function () {",
+                                "    const jsonData = pm.response.json();",
+                                "    pm.expect(jsonData.success).to.be.true;",
+                                "});"
+                            ]
+                        }
+                    }]
+                }
+            ]
+        },
+        {
+            "name": "Multi-Factor Authentication",
+            "item": [{
+                    "name": "Get MFA Status",
+                    "request": {
+                        "method": "GET",
+                        "header": [{
+                                "key": "Authorization",
+                                "value": "Bearer {{jwt_token}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-API-Key",
+                                "value": "{{api_key}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/auth/mfa/status",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "auth", "mfa", "status"]
+                        },
+                        "description": "Check current MFA status for authenticated user"
+                    },
+                    "event": [{
+                        "listen": "test",
+                        "script": {
+                            "exec": [
+                                "pm.test('Status code is 200', function () {",
+                                "    pm.response.to.have.status(200);",
+                                "});",
+                                "",
+                                "pm.test('MFA status returned', function () {",
+                                "    const jsonData = pm.response.json();",
+                                "    pm.expect(jsonData.data).to.have.property('mfaEnabled');",
+                                "    pm.expect(jsonData.data).to.have.property('mfaVerified');",
+                                "});"
+                            ]
+                        }
+                    }]
+                },
+                {
+                    "name": "Setup MFA",
+                    "request": {
+                        "method": "POST",
+                        "header": [{
+                                "key": "Authorization",
+                                "value": "Bearer {{jwt_token}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-API-Key",
+                                "value": "{{api_key}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-CSRF-Token",
+                                "value": "{{csrf_token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/auth/mfa/setup",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "auth", "mfa", "setup"]
+                        },
+                        "description": "Setup MFA and get QR code for authenticator app"
+                    },
+                    "event": [{
+                        "listen": "test",
+                        "script": {
+                            "exec": [
+                                "pm.test('Status code is 200', function () {",
+                                "    pm.response.to.have.status(200);",
+                                "});",
+                                "",
+                                "pm.test('MFA setup data returned', function () {",
+                                "    const jsonData = pm.response.json();",
+                                "    pm.expect(jsonData.data.qrCode).to.be.a('string');",
+                                "    pm.expect(jsonData.data.backupCodes).to.be.an('array');",
+                                "});"
+                            ]
+                        }
+                    }]
+                },
+                {
+                    "name": "Verify MFA Setup",
+                    "request": {
+                        "method": "POST",
+                        "header": [{
+                                "key": "Authorization",
+                                "value": "Bearer {{jwt_token}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-API-Key",
+                                "value": "{{api_key}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-CSRF-Token",
+                                "value": "{{csrf_token}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"token\": \"123456\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/auth/mfa/verify",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "auth", "mfa", "verify"]
+                        },
+                        "description": "Verify MFA setup with 6-digit code from authenticator app"
+                    },
+                    "event": [{
+                        "listen": "test",
+                        "script": {
+                            "exec": [
+                                "pm.test('Status code is 200', function () {",
+                                "    pm.response.to.have.status(200);",
+                                "});",
+                                "",
+                                "pm.test('MFA verification successful', function () {",
+                                "    const jsonData = pm.response.json();",
+                                "    pm.expect(jsonData.success).to.be.true;",
+                                "    pm.expect(jsonData.data.mfaVerified).to.be.true;",
+                                "});"
+                            ]
+                        }
+                    }]
+                },
+                {
+                    "name": "Verify MFA for Login",
+                    "request": {
+                        "method": "POST",
+                        "header": [{
+                                "key": "Authorization",
+                                "value": "Bearer {{jwt_token}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-API-Key",
+                                "value": "{{api_key}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"token\": \"123456\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/auth/mfa/verify-login",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "auth", "mfa", "verify-login"]
+                        },
+                        "description": "Complete MFA verification during login process"
+                    },
+                    "event": [{
+                        "listen": "test",
+                        "script": {
+                            "exec": [
+                                "pm.test('Status code is 200', function () {",
+                                "    pm.response.to.have.status(200);",
+                                "});",
+                                "",
+                                "pm.test('MFA login verification successful', function () {",
+                                "    const jsonData = pm.response.json();",
+                                "    pm.expect(jsonData.success).to.be.true;",
+                                "    pm.expect(jsonData.data.token).to.be.a('string');",
+                                "    pm.collectionVariables.set('jwt_token', jsonData.data.token);",
+                                "});"
+                            ]
+                        }
+                    }]
+                },
+                {
+                    "name": "Disable MFA",
+                    "request": {
+                        "method": "POST",
+                        "header": [{
+                                "key": "Authorization",
+                                "value": "Bearer {{jwt_token}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-API-Key",
+                                "value": "{{api_key}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-CSRF-Token",
+                                "value": "{{csrf_token}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"token\": \"123456\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/auth/mfa/disable",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "auth", "mfa", "disable"]
+                        },
+                        "description": "Disable MFA with verification code"
+                    },
+                    "event": [{
+                        "listen": "test",
+                        "script": {
+                            "exec": [
+                                "pm.test('Status code is 200', function () {",
+                                "    pm.response.to.have.status(200);",
+                                "});",
+                                "",
+                                "pm.test('MFA disabled successfully', function () {",
+                                "    const jsonData = pm.response.json();",
+                                "    pm.expect(jsonData.success).to.be.true;",
+                                "});"
+                            ]
+                        }
+                    }]
+                }
+            ]
+        },
+        {
+            "name": "Organizations",
+            "item": [{
+                    "name": "Flight Schedules",
+                    "item": [{
+                            "name": "List Flight Schedules",
+                            "request": {
+                                "method": "GET",
+                                "header": [{
+                                        "key": "Authorization",
+                                        "value": "Bearer {{jwt_token}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "X-API-Key",
+                                        "value": "{{api_key}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "X-CSRF-Token",
+                                        "value": "{{csrf_token}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{base_url}}/api/organizations/:organizationId/flight_schedule?search=Training&page=1&limit=20&status=scheduled",
+                                    "host": ["{{base_url}}"],
+                                    "path": ["api", "organizations", ":organizationId", "flight_schedule"],
+                                    "query": [{
+                                            "key": "search",
+                                            "value": "Training",
+                                            "description": "Search across plane, student, and instructor information"
+                                        },
+                                        {
+                                            "key": "page",
+                                            "value": "1",
+                                            "description": "Page number for pagination"
+                                        },
+                                        {
+                                            "key": "limit",
+                                            "value": "20",
+                                            "description": "Number of records per page (max 100)"
+                                        },
+                                        {
+                                            "key": "status",
+                                            "value": "scheduled",
+                                            "description": "Filter by flight status"
+                                        }
+                                    ],
+                                    "variable": [{
+                                        "key": "organizationId",
+                                        "value": "687c208d97e9217fc09e7c40"
+                                    }]
+                                },
+                                "description": "List all flight schedules for an organization with comprehensive search and filtering capabilities"
+                            },
+                            "event": [{
+                                "listen": "test",
+                                "script": {
+                                    "exec": [
+                                        "pm.test('Status code is 200', function () {",
+                                        "    pm.response.to.have.status(200);",
+                                        "});",
+                                        "",
+                                        "pm.test('Flight schedules returned', function () {",
+                                        "    const jsonData = pm.response.json();",
+                                        "    pm.expect(jsonData.success).to.be.true;",
+                                        "    pm.expect(jsonData.data.schedules).to.be.an('array');",
+                                        "});",
+                                        "",
+                                        "pm.test('Pagination info present', function () {",
+                                        "    const jsonData = pm.response.json();",
+                                        "    pm.expect(jsonData.data.pagination).to.be.an('object');",
+                                        "    pm.expect(jsonData.data.pagination.total).to.be.a('number');",
+                                        "});",
+                                        "",
+                                        "pm.test('Status counts present in pagination', function () {",
+                                        "    const jsonData = pm.response.json();",
+                                        "    pm.expect(jsonData.data.pagination.statusCounts).to.be.an('object');",
+                                        "    pm.expect(jsonData.data.pagination.statusCounts.current).to.be.a('number');",
+                                        "    pm.expect(jsonData.data.pagination.statusCounts.scheduled).to.be.a('number');",
+                                        "    pm.expect(jsonData.data.pagination.statusCounts.completed).to.be.a('number');",
+                                        "    pm.expect(jsonData.data.pagination.statusCounts.canceled).to.be.a('number');",
+                                        "});",
+                                        "",
+                                        "pm.test('Status counts sum equals total', function () {",
+                                        "    const jsonData = pm.response.json();",
+                                        "    const statusCounts = jsonData.data.pagination.statusCounts;",
+                                        "    const total = jsonData.data.pagination.total;",
+                                        "    const sum = statusCounts.current + statusCounts.scheduled + statusCounts.completed + statusCounts.canceled;",
+                                        "    pm.expect(sum).to.equal(total);",
+                                        "});"
+                                    ]
+                                }
+                            }]
+                        },
+                        {
+                            "name": "List Flight Schedules - Filter by Student",
+                            "request": {
+                                "method": "GET",
+                                "header": [{
+                                        "key": "Authorization",
+                                        "value": "Bearer {{jwt_token}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "X-API-Key",
+                                        "value": "{{api_key}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "X-CSRF-Token",
+                                        "value": "{{csrf_token}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{base_url}}/api/organizations/:organizationId/flight_schedule?student_id=687c4f0c071a9fe822d33620&status=scheduled",
+                                    "host": ["{{base_url}}"],
+                                    "path": ["api", "organizations", ":organizationId", "flight_schedule"],
+                                    "query": [{
+                                            "key": "student_id",
+                                            "value": "687c4f0c071a9fe822d33620",
+                                            "description": "Filter by specific student ID"
+                                        },
+                                        {
+                                            "key": "status",
+                                            "value": "scheduled",
+                                            "description": "Filter by flight status"
+                                        }
+                                    ],
+                                    "variable": [{
+                                        "key": "organizationId",
+                                        "value": "687c208d97e9217fc09e7c40"
+                                    }]
+                                },
+                                "description": "List flight schedules filtered by specific student ID"
+                            },
+                            "event": [{
+                                "listen": "test",
+                                "script": {
+                                    "exec": [
+                                        "pm.test('Status code is 200', function () {",
+                                        "    pm.response.to.have.status(200);",
+                                        "});",
+                                        "",
+                                        "pm.test('All schedules belong to specified student', function () {",
+                                        "    const jsonData = pm.response.json();",
+                                        "    const schedules = jsonData.data.schedules;",
+                                        "    schedules.forEach(schedule => {",
+                                        "        pm.expect(schedule.student_id._id).to.equal('687c4f0c071a9fe822d33620');",
+                                        "    });",
+                                        "});"
+                                    ]
+                                }
+                            }]
+                        },
+                        {
+                            "name": "List Flight Schedules - Filter by Instructor",
+                            "request": {
+                                "method": "GET",
+                                "header": [{
+                                        "key": "Authorization",
+                                        "value": "Bearer {{jwt_token}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "X-API-Key",
+                                        "value": "{{api_key}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "X-CSRF-Token",
+                                        "value": "{{csrf_token}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{base_url}}/api/organizations/:organizationId/flight_schedule?instructor_id=687c55f3071a9fe822d337b0&start_date=2025-07-21&end_date=2025-07-22",
+                                    "host": ["{{base_url}}"],
+                                    "path": ["api", "organizations", ":organizationId", "flight_schedule"],
+                                    "query": [{
+                                            "key": "instructor_id",
+                                            "value": "687c55f3071a9fe822d337b0",
+                                            "description": "Filter by specific instructor ID"
+                                        },
+                                        {
+                                            "key": "start_date",
+                                            "value": "2025-07-21",
+                                            "description": "Filter flights starting from this date"
+                                        },
+                                        {
+                                            "key": "end_date",
+                                            "value": "2025-07-22",
+                                            "description": "Filter flights ending before this date"
+                                        }
+                                    ],
+                                    "variable": [{
+                                        "key": "organizationId",
+                                        "value": "687c208d97e9217fc09e7c40"
+                                    }]
+                                },
+                                "description": "List flight schedules filtered by specific instructor ID and date range"
+                            },
+                            "event": [{
+                                "listen": "test",
+                                "script": {
+                                    "exec": [
+                                        "pm.test('Status code is 200', function () {",
+                                        "    pm.response.to.have.status(200);",
+                                        "});",
+                                        "",
+                                        "pm.test('All schedules belong to specified instructor', function () {",
+                                        "    const jsonData = pm.response.json();",
+                                        "    const schedules = jsonData.data.schedules;",
+                                        "    schedules.forEach(schedule => {",
+                                        "        if (schedule.instructor_id) {",
+                                        "            pm.expect(schedule.instructor_id._id).to.equal('687c55f3071a9fe822d337b0');",
+                                        "        }",
+                                        "    });",
+                                        "});"
+                                    ]
+                                }
+                            }]
+                        },
+                        {
+                            "name": "List Flight Schedules - Date Range with Status Counts",
+                            "request": {
+                                "method": "GET",
+                                "header": [{
+                                        "key": "Authorization",
+                                        "value": "Bearer {{jwt_token}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "X-API-Key",
+                                        "value": "{{api_key}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "X-CSRF-Token",
+                                        "value": "{{csrf_token}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{base_url}}/api/organizations/:organizationId/flight_schedule?page=1&limit=5&start_date=2025-07-27&end_date=2025-07-28",
+                                    "host": ["{{base_url}}"],
+                                    "path": ["api", "organizations", ":organizationId", "flight_schedule"],
+                                    "query": [{
+                                            "key": "page",
+                                            "value": "1",
+                                            "description": "Page number for pagination"
+                                        },
+                                        {
+                                            "key": "limit",
+                                            "value": "5",
+                                            "description": "Number of records per page"
+                                        },
+                                        {
+                                            "key": "start_date",
+                                            "value": "2025-07-27",
+                                            "description": "Filter flights starting from this date (YYYY-MM-DD)"
+                                        },
+                                        {
+                                            "key": "end_date",
+                                            "value": "2025-07-28",
+                                            "description": "Filter flights ending before this date (YYYY-MM-DD)"
+                                        }
+                                    ],
+                                    "variable": [{
+                                        "key": "organizationId",
+                                        "value": "687c208d97e9217fc09e7c40"
+                                    }]
+                                },
+                                "description": "List flight schedules for a specific date range with status count breakdown in pagination"
+                            },
+                            "event": [{
+                                "listen": "test",
+                                "script": {
+                                    "exec": [
+                                        "pm.test('Status code is 200', function () {",
+                                        "    pm.response.to.have.status(200);",
+                                        "});",
+                                        "",
+                                        "pm.test('Flight schedules returned', function () {",
+                                        "    const jsonData = pm.response.json();",
+                                        "    pm.expect(jsonData.success).to.be.true;",
+                                        "    pm.expect(jsonData.data.schedules).to.be.an('array');",
+                                        "});",
+                                        "",
+                                        "pm.test('Status counts present in pagination', function () {",
+                                        "    const jsonData = pm.response.json();",
+                                        "    pm.expect(jsonData.data.pagination.statusCounts).to.be.an('object');",
+                                        "    pm.expect(jsonData.data.pagination.statusCounts.current).to.be.a('number');",
+                                        "    pm.expect(jsonData.data.pagination.statusCounts.scheduled).to.be.a('number');",
+                                        "    pm.expect(jsonData.data.pagination.statusCounts.completed).to.be.a('number');",
+                                        "    pm.expect(jsonData.data.pagination.statusCounts.canceled).to.be.a('number');",
+                                        "});",
+                                        "",
+                                        "pm.test('Status counts sum equals total', function () {",
+                                        "    const jsonData = pm.response.json();",
+                                        "    const statusCounts = jsonData.data.pagination.statusCounts;",
+                                        "    const total = jsonData.data.pagination.total;",
+                                        "    const sum = statusCounts.current + statusCounts.scheduled + statusCounts.completed + statusCounts.canceled;",
+                                        "    pm.expect(sum).to.equal(total);",
+                                        "});",
+                                        "",
+                                        "pm.test('All flights within date range', function () {",
+                                        "    const jsonData = pm.response.json();",
+                                        "    const schedules = jsonData.data.schedules;",
+                                        "    const startDate = new Date('2025-07-27T00:00:00.000Z');",
+                                        "    const endDate = new Date('2025-07-28T23:59:59.999Z');",
+                                        "    schedules.forEach(schedule => {",
+                                        "        const scheduleDate = new Date(schedule.scheduled_start_time);",
+                                        "        pm.expect(scheduleDate.getTime()).to.be.at.least(startDate.getTime());",
+                                        "        pm.expect(scheduleDate.getTime()).to.be.at.most(endDate.getTime());",
+                                        "    });",
+                                        "});"
+                                    ]
+                                }
+                            }]
+                        },
+                        {
+                            "name": "Get Flight Schedule",
+                            "request": {
+                                "method": "GET",
+                                "header": [{
+                                        "key": "Authorization",
+                                        "value": "Bearer {{jwt_token}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "X-API-Key",
+                                        "value": "{{api_key}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "X-CSRF-Token",
+                                        "value": "{{csrf_token}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{base_url}}/api/organizations/:organizationId/flight_schedule/:scheduleId",
+                                    "host": ["{{base_url}}"],
+                                    "path": ["api", "organizations", ":organizationId", "flight_schedule", ":scheduleId"],
+                                    "variable": [{
+                                            "key": "organizationId",
+                                            "value": "organization-id-here"
+                                        },
+                                        {
+                                            "key": "scheduleId",
+                                            "value": "schedule-id-here"
+                                        }
+                                    ]
+                                },
+                                "description": "Get details of a specific flight schedule"
+                            },
+                            "event": [{
+                                "listen": "test",
+                                "script": {
+                                    "exec": [
+                                        "pm.test('Status code is 200', function () {",
+                                        "    pm.response.to.have.status(200);",
+                                        "});",
+                                        "",
+                                        "pm.test('Flight schedule returned', function () {",
+                                        "    const jsonData = pm.response.json();",
+                                        "    pm.expect(jsonData.data.schedule).to.be.an('object');",
+                                        "});"
+                                    ]
+                                }
+                            }]
+                        },
+                        {
+                            "name": "Update Flight Schedule",
+                            "request": {
+                                "method": "PUT",
+                                "header": [{
+                                        "key": "Authorization",
+                                        "value": "Bearer {{jwt_token}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "X-API-Key",
+                                        "value": "{{api_key}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "X-CSRF-Token",
+                                        "value": "{{csrf_token}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json",
+                                        "type": "text"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n  \"scheduled_start_time\": \"2024-01-15T10:00:00.000Z\",\n  \"scheduled_end_time\": \"2024-01-15T12:00:00.000Z\",\n  \"flight_type\": \"training\",\n  \"status\": \"scheduled\"\n}"
+                                },
+                                "url": {
+                                    "raw": "{{base_url}}/api/organizations/:organizationId/flight_schedule/:scheduleId",
+                                    "host": ["{{base_url}}"],
+                                    "path": ["api", "organizations", ":organizationId", "flight_schedule", ":scheduleId"],
+                                    "variable": [{
+                                            "key": "organizationId",
+                                            "value": "organization-id-here"
+                                        },
+                                        {
+                                            "key": "scheduleId",
+                                            "value": "schedule-id-here"
+                                        }
+                                    ]
+                                },
+                                "description": "Update a specific flight schedule"
+                            },
+                            "event": [{
+                                "listen": "test",
+                                "script": {
+                                    "exec": [
+                                        "pm.test('Status code is 200', function () {",
+                                        "    pm.response.to.have.status(200);",
+                                        "});",
+                                        "",
+                                        "pm.test('Flight schedule updated', function () {",
+                                        "    const jsonData = pm.response.json();",
+                                        "    pm.expect(jsonData.success).to.be.true;",
+                                        "    pm.expect(jsonData.data.schedule).to.be.an('object');",
+                                        "});"
+                                    ]
+                                }
+                            }]
+                        },
+                        {
+                            "name": "Delete Flight Schedule",
+                            "request": {
+                                "method": "DELETE",
+                                "header": [{
+                                        "key": "Authorization",
+                                        "value": "Bearer {{jwt_token}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "X-API-Key",
+                                        "value": "{{api_key}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "X-CSRF-Token",
+                                        "value": "{{csrf_token}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{base_url}}/api/organizations/:organizationId/flight_schedule/:scheduleId",
+                                    "host": ["{{base_url}}"],
+                                    "path": ["api", "organizations", ":organizationId", "flight_schedule", ":scheduleId"],
+                                    "variable": [{
+                                            "key": "organizationId",
+                                            "value": "organization-id-here"
+                                        },
+                                        {
+                                            "key": "scheduleId",
+                                            "value": "schedule-id-here"
+                                        }
+                                    ]
+                                },
+                                "description": "Delete a specific flight schedule"
+                            },
+                            "event": [{
+                                "listen": "test",
+                                "script": {
+                                    "exec": [
+                                        "pm.test('Status code is 200', function () {",
+                                        "    pm.response.to.have.status(200);",
+                                        "});",
+                                        "",
+                                        "pm.test('Flight schedule deleted', function () {",
+                                        "    const jsonData = pm.response.json();",
+                                        "    pm.expect(jsonData.success).to.be.true;",
+                                        "});"
+                                    ]
+                                }
+                            }]
+                        },
+                        {
+                            "name": "Create Flight Schedule (Admin/Instructor Only)",
+                            "request": {
+                                "method": "POST",
+                                "header": [{
+                                        "key": "Authorization",
+                                        "value": "Bearer {{jwt_token}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "X-API-Key",
+                                        "value": "{{api_key}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "X-CSRF-Token",
+                                        "value": "{{csrf_token}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json",
+                                        "type": "text"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n  \"plane_id\": \"687efa9e3d4c554ecf7ee538\",\n  \"student_id\": \"687c4f0c071a9fe822d33620\",\n  \"instructor_id\": \"687c55f3071a9fe822d337b0\",\n  \"scheduled_start_time\": \"2024-01-15T10:00:00.000Z\",\n  \"scheduled_end_time\": \"2024-01-15T12:00:00.000Z\",\n  \"flight_type\": \"Training Flight\",\n  \"status\": \"scheduled\",\n  \"notes\": \"Focus on crosswind landing techniques\"\n}"
+                                },
+                                "url": {
+                                    "raw": "{{base_url}}/api/organizations/:organizationId/flight_schedule",
+                                    "host": ["{{base_url}}"],
+                                    "path": ["api", "organizations", ":organizationId", "flight_schedule"],
+                                    "variable": [{
+                                        "key": "organizationId",
+                                        "value": "687c208d97e9217fc09e7c40"
+                                    }]
+                                },
+                                "description": "Create a confirmed flight schedule directly (admins and instructors only). Students must use the request system instead."
+                            },
+                            "event": [{
+                                "listen": "test",
+                                "script": {
+                                    "exec": [
+                                        "pm.test('Status code is 201', function () {",
+                                        "    pm.response.to.have.status(201);",
+                                        "});",
+                                        "",
+                                        "pm.test('Flight schedule created', function () {",
+                                        "    const jsonData = pm.response.json();",
+                                        "    pm.expect(jsonData.success).to.be.true;",
+                                        "    pm.expect(jsonData.data.schedule).to.be.an('object');",
+                                        "});"
+                                    ]
+                                }
+                            }]
+                        }
+                    ]
+                },
+                {
+                    "name": "Flight Schedule Requests",
+                    "item": [{
+                            "name": "List Flight Schedule Requests",
+                            "request": {
+                                "method": "GET",
+                                "header": [{
+                                        "key": "Authorization",
+                                        "value": "Bearer {{jwt_token}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "X-API-Key",
+                                        "value": "{{api_key}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "X-CSRF-Token",
+                                        "value": "{{csrf_token}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{base_url}}/api/organizations/:organizationId/flight_schedule/requests?status=pending&page=1&limit=20",
+                                    "host": ["{{base_url}}"],
+                                    "path": ["api", "organizations", ":organizationId", "flight_schedule", "requests"],
+                                    "query": [{
+                                            "key": "status",
+                                            "value": "pending",
+                                            "description": "Filter by request status (pending, approved, rejected)"
+                                        },
+                                        {
+                                            "key": "page",
+                                            "value": "1",
+                                            "description": "Page number for pagination"
+                                        },
+                                        {
+                                            "key": "limit",
+                                            "value": "20",
+                                            "description": "Number of records per page (max 100)"
+                                        }
+                                    ],
+                                    "variable": [{
+                                        "key": "organizationId",
+                                        "value": "687c208d97e9217fc09e7c40"
+                                    }]
+                                },
+                                "description": "List flight schedule requests with filtering and pagination. Students see only their requests, admins see all."
+                            },
+                            "event": [{
+                                "listen": "test",
+                                "script": {
+                                    "exec": [
+                                        "pm.test('Status code is 200', function () {",
+                                        "    pm.response.to.have.status(200);",
+                                        "});",
+                                        "",
+                                        "pm.test('Flight schedule requests returned', function () {",
+                                        "    const jsonData = pm.response.json();",
+                                        "    pm.expect(jsonData.success).to.be.true;",
+                                        "    pm.expect(jsonData.data.requests).to.be.an('array');",
+                                        "});",
+                                        "",
+                                        "pm.test('Pagination info present', function () {",
+                                        "    const jsonData = pm.response.json();",
+                                        "    pm.expect(jsonData.data.pagination).to.be.an('object');",
+                                        "    pm.expect(jsonData.data.pagination.total).to.be.a('number');",
+                                        "});"
+                                    ]
+                                }
+                            }]
+                        },
+                        {
+                            "name": "Create Flight Schedule Request (Student)",
+                            "request": {
+                                "method": "POST",
+                                "header": [{
+                                        "key": "Authorization",
+                                        "value": "Bearer {{jwt_token}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "X-API-Key",
+                                        "value": "{{api_key}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "X-CSRF-Token",
+                                        "value": "{{csrf_token}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json",
+                                        "type": "text"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n  \"plane_id\": \"687efa9e3d4c554ecf7ee538\",\n  \"student_id\": \"687c4f0c071a9fe822d33620\",\n  \"instructor_id\": \"687c55f3071a9fe822d337b0\",\n  \"scheduled_start_time\": \"2024-01-15T10:00:00.000Z\",\n  \"scheduled_end_time\": \"2024-01-15T12:00:00.000Z\",\n  \"flight_type\": \"Training Flight\",\n  \"request_notes\": \"Need to practice crosswind landings\"\n}"
+                                },
+                                "url": {
+                                    "raw": "{{base_url}}/api/organizations/:organizationId/flight_schedule/requests",
+                                    "host": ["{{base_url}}"],
+                                    "path": ["api", "organizations", ":organizationId", "flight_schedule", "requests"],
+                                    "variable": [{
+                                        "key": "organizationId",
+                                        "value": "687c208d97e9217fc09e7c40"
+                                    }]
+                                },
+                                "description": "Create a flight schedule request that requires admin approval. Students can only request for themselves."
+                            },
+                            "event": [{
+                                "listen": "test",
+                                "script": {
+                                    "exec": [
+                                        "pm.test('Status code is 201', function () {",
+                                        "    pm.response.to.have.status(201);",
+                                        "});",
+                                        "",
+                                        "pm.test('Flight schedule request created', function () {",
+                                        "    const jsonData = pm.response.json();",
+                                        "    pm.expect(jsonData.success).to.be.true;",
+                                        "    pm.expect(jsonData.data.request).to.be.an('object');",
+                                        "    pm.expect(jsonData.data.request.status).to.equal('pending');",
+                                        "});",
+                                        "",
+                                        "pm.test('Save request ID for approval test', function () {",
+                                        "    const jsonData = pm.response.json();",
+                                        "    pm.collectionVariables.set('request_id', jsonData.data.request._id);",
+                                        "});"
+                                    ]
+                                }
+                            }]
+                        },
+                        {
+                            "name": "Get Flight Schedule Request Details",
+                            "request": {
+                                "method": "GET",
+                                "header": [{
+                                        "key": "Authorization",
+                                        "value": "Bearer {{jwt_token}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "X-API-Key",
+                                        "value": "{{api_key}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "X-CSRF-Token",
+                                        "value": "{{csrf_token}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{base_url}}/api/organizations/:organizationId/flight_schedule/requests/:requestId",
+                                    "host": ["{{base_url}}"],
+                                    "path": ["api", "organizations", ":organizationId", "flight_schedule", "requests", ":requestId"],
+                                    "variable": [{
+                                            "key": "organizationId",
+                                            "value": "687c208d97e9217fc09e7c40"
+                                        },
+                                        {
+                                            "key": "requestId",
+                                            "value": "{{request_id}}"
+                                        }
+                                    ]
+                                },
+                                "description": "Get details of a specific flight schedule request"
+                            },
+                            "event": [{
+                                "listen": "test",
+                                "script": {
+                                    "exec": [
+                                        "pm.test('Status code is 200', function () {",
+                                        "    pm.response.to.have.status(200);",
+                                        "});",
+                                        "",
+                                        "pm.test('Flight schedule request returned', function () {",
+                                        "    const jsonData = pm.response.json();",
+                                        "    pm.expect(jsonData.success).to.be.true;",
+                                        "    pm.expect(jsonData.data.request).to.be.an('object');",
+                                        "});"
+                                    ]
+                                }
+                            }]
+                        },
+                        {
+                            "name": "Approve Flight Schedule Request (Admin)",
+                            "request": {
+                                "method": "PUT",
+                                "header": [{
+                                        "key": "Authorization",
+                                        "value": "Bearer {{jwt_token}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "X-API-Key",
+                                        "value": "{{api_key}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "X-CSRF-Token",
+                                        "value": "{{csrf_token}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json",
+                                        "type": "text"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n  \"status\": \"approved\",\n  \"admin_notes\": \"Approved - weather conditions look good for crosswind practice\"\n}"
+                                },
+                                "url": {
+                                    "raw": "{{base_url}}/api/organizations/:organizationId/flight_schedule/requests/:requestId",
+                                    "host": ["{{base_url}}"],
+                                    "path": ["api", "organizations", ":organizationId", "flight_schedule", "requests", ":requestId"],
+                                    "variable": [{
+                                            "key": "organizationId",
+                                            "value": "687c208d97e9217fc09e7c40"
+                                        },
+                                        {
+                                            "key": "requestId",
+                                            "value": "{{request_id}}"
+                                        }
+                                    ]
+                                },
+                                "description": "Approve a flight schedule request (admin/instructor only). This creates the actual flight schedule."
+                            },
+                            "event": [{
+                                "listen": "test",
+                                "script": {
+                                    "exec": [
+                                        "pm.test('Status code is 200', function () {",
+                                        "    pm.response.to.have.status(200);",
+                                        "});",
+                                        "",
+                                        "pm.test('Flight schedule request approved', function () {",
+                                        "    const jsonData = pm.response.json();",
+                                        "    pm.expect(jsonData.success).to.be.true;",
+                                        "    pm.expect(jsonData.data.request.status).to.equal('approved');",
+                                        "    pm.expect(jsonData.data.request.admin_notes).to.be.a('string');",
+                                        "    pm.expect(jsonData.data.request.approved_by).to.be.an('object');",
+                                        "});"
+                                    ]
+                                }
+                            }]
+                        },
+                        {
+                            "name": "Reject Flight Schedule Request (Admin)",
+                            "request": {
+                                "method": "PUT",
+                                "header": [{
+                                        "key": "Authorization",
+                                        "value": "Bearer {{jwt_token}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "X-API-Key",
+                                        "value": "{{api_key}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "X-CSRF-Token",
+                                        "value": "{{csrf_token}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json",
+                                        "type": "text"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n  \"status\": \"rejected\",\n  \"admin_notes\": \"Rejected - aircraft maintenance scheduled during requested time\"\n}"
+                                },
+                                "url": {
+                                    "raw": "{{base_url}}/api/organizations/:organizationId/flight_schedule/requests/:requestId",
+                                    "host": ["{{base_url}}"],
+                                    "path": ["api", "organizations", ":organizationId", "flight_schedule", "requests", ":requestId"],
+                                    "variable": [{
+                                            "key": "organizationId",
+                                            "value": "687c208d97e9217fc09e7c40"
+                                        },
+                                        {
+                                            "key": "requestId",
+                                            "value": "request-id-here"
+                                        }
+                                    ]
+                                },
+                                "description": "Reject a flight schedule request (admin/instructor only)."
+                            },
+                            "event": [{
+                                "listen": "test",
+                                "script": {
+                                    "exec": [
+                                        "pm.test('Status code is 200', function () {",
+                                        "    pm.response.to.have.status(200);",
+                                        "});",
+                                        "",
+                                        "pm.test('Flight schedule request rejected', function () {",
+                                        "    const jsonData = pm.response.json();",
+                                        "    pm.expect(jsonData.success).to.be.true;",
+                                        "    pm.expect(jsonData.data.request.status).to.equal('rejected');",
+                                        "    pm.expect(jsonData.data.request.admin_notes).to.be.a('string');",
+                                        "});"
+                                    ]
+                                }
+                            }]
+                        },
+                        {
+                            "name": "Delete Flight Schedule Request",
+                            "request": {
+                                "method": "DELETE",
+                                "header": [{
+                                        "key": "Authorization",
+                                        "value": "Bearer {{jwt_token}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "X-API-Key",
+                                        "value": "{{api_key}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "X-CSRF-Token",
+                                        "value": "{{csrf_token}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{base_url}}/api/organizations/:organizationId/flight_schedule/requests/:requestId",
+                                    "host": ["{{base_url}}"],
+                                    "path": ["api", "organizations", ":organizationId", "flight_schedule", "requests", ":requestId"],
+                                    "variable": [{
+                                            "key": "organizationId",
+                                            "value": "687c208d97e9217fc09e7c40"
+                                        },
+                                        {
+                                            "key": "requestId",
+                                            "value": "request-id-here"
+                                        }
+                                    ]
+                                },
+                                "description": "Delete a flight schedule request. Students can delete their own pending requests, admins can delete any."
+                            },
+                            "event": [{
+                                "listen": "test",
+                                "script": {
+                                    "exec": [
+                                        "pm.test('Status code is 200', function () {",
+                                        "    pm.response.to.have.status(200);",
+                                        "});",
+                                        "",
+                                        "pm.test('Flight schedule request deleted', function () {",
+                                        "    const jsonData = pm.response.json();",
+                                        "    pm.expect(jsonData.success).to.be.true;",
+                                        "});"
+                                    ]
+                                }
+                            }]
+                        }
+                    ]
+                },
+                {
+                    "name": "Planes",
+                    "item": [{
+                            "name": "List Planes",
+                            "request": {
+                                "method": "GET",
+                                "header": [{
+                                        "key": "Authorization",
+                                        "value": "Bearer {{jwt_token}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "X-API-Key",
+                                        "value": "{{api_key}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{base_url}}/api/organizations/:organizationId/planes?search=Cessna&status=Active&page=1&limit=20",
+                                    "host": ["{{base_url}}"],
+                                    "path": ["api", "organizations", ":organizationId", "planes"],
+                                    "query": [{
+                                            "key": "search",
+                                            "value": "Cessna",
+                                            "description": "Search across registration, type, model, location, notes, status"
+                                        },
+                                        {
+                                            "key": "status",
+                                            "value": "Active",
+                                            "description": "Filter by plane status"
+                                        },
+                                        {
+                                            "key": "page",
+                                            "value": "1",
+                                            "description": "Page number for pagination"
+                                        },
+                                        {
+                                            "key": "limit",
+                                            "value": "20",
+                                            "description": "Number of records per page (max 200)"
+                                        }
+                                    ],
+                                    "variable": [{
+                                        "key": "organizationId",
+                                        "value": "687c208d97e9217fc09e7c40"
+                                    }]
+                                },
+                                "description": "List all planes for an organization with comprehensive search and filtering capabilities"
+                            },
+                            "event": [{
+                                "listen": "test",
+                                "script": {
+                                    "exec": [
+                                        "pm.test('Status code is 200', function () {",
+                                        "    pm.response.to.have.status(200);",
+                                        "});",
+                                        "",
+                                        "pm.test('Planes returned', function () {",
+                                        "    const jsonData = pm.response.json();",
+                                        "    pm.expect(jsonData.success).to.be.true;",
+                                        "    pm.expect(jsonData.data.planes).to.be.an('array');",
+                                        "});",
+                                        "",
+                                        "pm.test('Pagination info present', function () {",
+                                        "    const jsonData = pm.response.json();",
+                                        "    pm.expect(jsonData.data.pagination).to.be.an('object');",
+                                        "    pm.expect(jsonData.data.pagination.total).to.be.a('number');",
+                                        "});",
+                                        "",
+                                        "pm.test('Unique locations and types present', function () {",
+                                        "    const jsonData = pm.response.json();",
+                                        "    pm.expect(jsonData.data.pagination.uniqueLocations).to.be.an('array');",
+                                        "    pm.expect(jsonData.data.pagination.uniqueTypes).to.be.an('array');",
+                                        "});"
+                                    ]
+                                }
+                            }]
+                        },
+                        {
+                            "name": "List Planes - Filter by Type and Engine Hours",
+                            "request": {
+                                "method": "GET",
+                                "header": [{
+                                        "key": "Authorization",
+                                        "value": "Bearer {{jwt_token}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "X-API-Key",
+                                        "value": "{{api_key}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{base_url}}/api/organizations/:organizationId/planes?type=Cessna&minEngineHours=1000&maxEngineHours=3000&sortField=engineHours&sortDirection=asc",
+                                    "host": ["{{base_url}}"],
+                                    "path": ["api", "organizations", ":organizationId", "planes"],
+                                    "query": [{
+                                            "key": "type",
+                                            "value": "Cessna",
+                                            "description": "Filter by aircraft type"
+                                        },
+                                        {
+                                            "key": "minEngineHours",
+                                            "value": "1000",
+                                            "description": "Minimum engine hours"
+                                        },
+                                        {
+                                            "key": "maxEngineHours",
+                                            "value": "3000",
+                                            "description": "Maximum engine hours"
+                                        },
+                                        {
+                                            "key": "sortField",
+                                            "value": "engineHours",
+                                            "description": "Sort by engine hours"
+                                        },
+                                        {
+                                            "key": "sortDirection",
+                                            "value": "asc",
+                                            "description": "Sort in ascending order"
+                                        }
+                                    ],
+                                    "variable": [{
+                                        "key": "organizationId",
+                                        "value": "687c208d97e9217fc09e7c40"
+                                    }]
+                                },
+                                "description": "List planes filtered by type and engine hours range, sorted by engine hours"
+                            },
+                            "event": [{
+                                "listen": "test",
+                                "script": {
+                                    "exec": [
+                                        "pm.test('Status code is 200', function () {",
+                                        "    pm.response.to.have.status(200);",
+                                        "});",
+                                        "",
+                                        "pm.test('All planes are Cessna type', function () {",
+                                        "    const jsonData = pm.response.json();",
+                                        "    const planes = jsonData.data.planes;",
+                                        "    planes.forEach(plane => {",
+                                        "        pm.expect(plane.type.toLowerCase()).to.include('cessna');",
+                                        "    });",
+                                        "});"
+                                    ]
+                                }
+                            }]
+                        },
+                        {
+                            "name": "List Planes - Filter by Year and Location",
+                            "request": {
+                                "method": "GET",
+                                "header": [{
+                                        "key": "Authorization",
+                                        "value": "Bearer {{jwt_token}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "X-API-Key",
+                                        "value": "{{api_key}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{base_url}}/api/organizations/:organizationId/planes?year=2020&location=Hangar&has_notes=true&sortField=registration&sortDirection=asc",
+                                    "host": ["{{base_url}}"],
+                                    "path": ["api", "organizations", ":organizationId", "planes"],
+                                    "query": [{
+                                            "key": "year",
+                                            "value": "2020",
+                                            "description": "Filter by plane year"
+                                        },
+                                        {
+                                            "key": "location",
+                                            "value": "Hangar",
+                                            "description": "Filter by location (partial match)"
+                                        },
+                                        {
+                                            "key": "has_notes",
+                                            "value": "true",
+                                            "description": "Filter planes with notes"
+                                        },
+                                        {
+                                            "key": "sortField",
+                                            "value": "registration",
+                                            "description": "Sort by registration"
+                                        },
+                                        {
+                                            "key": "sortDirection",
+                                            "value": "asc",
+                                            "description": "Sort in ascending order"
+                                        }
+                                    ],
+                                    "variable": [{
+                                        "key": "organizationId",
+                                        "value": "687c208d97e9217fc09e7c40"
+                                    }]
+                                },
+                                "description": "List planes from 2020 in hangar locations with notes, sorted by registration"
+                            },
+                            "event": [{
+                                "listen": "test",
+                                "script": {
+                                    "exec": [
+                                        "pm.test('Status code is 200', function () {",
+                                        "    pm.response.to.have.status(200);",
+                                        "});",
+                                        "",
+                                        "pm.test('All planes are from 2020', function () {",
+                                        "    const jsonData = pm.response.json();",
+                                        "    const planes = jsonData.data.planes;",
+                                        "    planes.forEach(plane => {",
+                                        "        pm.expect(plane.year).to.equal(2020);",
+                                        "    });",
+                                        "});"
+                                    ]
+                                }
+                            }]
+                        },
+                        {
+                            "name": "Get Plane Statistics",
+                            "request": {
+                                "method": "GET",
+                                "header": [{
+                                        "key": "X-API-Key",
+                                        "value": "{{api_key}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{jwt_token}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{base_url}}/api/organizations/:organizationId/planes/stats?range=30&include_financials=true&include_maintenance=true",
+                                    "host": ["{{base_url}}"],
+                                    "path": ["api", "organizations", ":organizationId", "planes", "stats"],
+                                    "query": [{
+                                            "key": "range",
+                                            "value": "30"
+                                        },
+                                        {
+                                            "key": "include_financials",
+                                            "value": "true"
+                                        },
+                                        {
+                                            "key": "include_maintenance",
+                                            "value": "true"
+                                        }
+                                    ],
+                                    "variable": [{
+                                        "key": "organizationId",
+                                        "value": "your-organization-id"
+                                    }]
+                                },
+                                "description": "Retrieve comprehensive statistics for all planes in an organization"
+                            },
+                            "event": [{
+                                "listen": "test",
+                                "script": {
+                                    "exec": [
+                                        "pm.test('Status code is 200', function () {",
+                                        "    pm.response.to.have.status(200);",
+                                        "});",
+                                        "",
+                                        "pm.test('Response has planes data', function () {",
+                                        "    const jsonData = pm.response.json();",
+                                        "    pm.expect(jsonData.success).to.be.true;",
+                                        "    pm.expect(jsonData.data.planes).to.be.an('array');",
+                                        "});"
+                                    ]
+                                }
+                            }]
+                        },
+                        {
+                            "name": "Get Detailed Plane Statistics",
+                            "request": {
+                                "method": "POST",
+                                "header": [{
+                                        "key": "X-API-Key",
+                                        "value": "{{api_key}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{jwt_token}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "X-CSRF-Token",
+                                        "value": "{{csrf_token}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json",
+                                        "type": "text"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n    \"planeIds\": [\"60a7c3d4e5f6789012345678\", \"60b8d4e5f6789012345678a9\"],\n    \"timeRange\": 60,\n    \"includeInactive\": false\n}"
+                                },
+                                "url": {
+                                    "raw": "{{base_url}}/api/organizations/:organizationId/planes/stats",
+                                    "host": ["{{base_url}}"],
+                                    "path": ["api", "organizations", ":organizationId", "planes", "stats"],
+                                    "variable": [{
+                                        "key": "organizationId",
+                                        "value": "your-organization-id"
+                                    }]
+                                },
+                                "description": "Retrieve detailed statistics for specific planes in an organization"
+                            },
+                            "event": [{
+                                "listen": "test",
+                                "script": {
+                                    "exec": [
+                                        "pm.test('Status code is 200', function () {",
+                                        "    pm.response.to.have.status(200);",
+                                        "});",
+                                        "",
+                                        "pm.test('Response has planes data', function () {",
+                                        "    const jsonData = pm.response.json();",
+                                        "    pm.expect(jsonData.success).to.be.true;",
+                                        "    pm.expect(jsonData.data.planes).to.be.an('array');",
+                                        "});"
+                                    ]
+                                }
+                            }]
+                        }
+                    ]
+                },
+                {
+                    "name": "Instructors",
+                    "item": [{
+                            "name": "List Instructors",
+                            "request": {
+                                "method": "GET",
+                                "header": [{
+                                        "key": "Authorization",
+                                        "value": "Bearer {{jwt_token}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "X-API-Key",
+                                        "value": "{{api_key}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{base_url}}/api/organizations/:organizationId/instructors?search=john.doe@example.com&status=Active&page=1&limit=20",
+                                    "host": ["{{base_url}}"],
+                                    "path": ["api", "organizations", ":organizationId", "instructors"],
+                                    "query": [{
+                                            "key": "search",
+                                            "value": "john.doe@example.com",
+                                            "description": "Search across email, license number, name, status, certifications, specialties"
+                                        },
+                                        {
+                                            "key": "status",
+                                            "value": "Active",
+                                            "description": "Filter by instructor status"
+                                        },
+                                        {
+                                            "key": "page",
+                                            "value": "1",
+                                            "description": "Page number for pagination"
+                                        },
+                                        {
+                                            "key": "limit",
+                                            "value": "20",
+                                            "description": "Number of records per page (max 200)"
+                                        }
+                                    ],
+                                    "variable": [{
+                                        "key": "organizationId",
+                                        "value": "687c208d97e9217fc09e7c40"
+                                    }]
+                                },
+                                "description": "List all instructors for an organization with comprehensive search and filtering capabilities"
+                            },
+                            "event": [{
+                                "listen": "test",
+                                "script": {
+                                    "exec": [
+                                        "pm.test('Status code is 200', function () {",
+                                        "    pm.response.to.have.status(200);",
+                                        "});",
+                                        "",
+                                        "pm.test('Instructors returned', function () {",
+                                        "    const jsonData = pm.response.json();",
+                                        "    pm.expect(jsonData.success).to.be.true;",
+                                        "    pm.expect(jsonData.data.instructors).to.be.an('array');",
+                                        "});",
+                                        "",
+                                        "pm.test('Pagination info present', function () {",
+                                        "    const jsonData = pm.response.json();",
+                                        "    pm.expect(jsonData.data.pagination).to.be.an('object');",
+                                        "    pm.expect(jsonData.data.pagination.totalCount).to.be.a('number');",
+                                        "});",
+                                        "",
+                                        "pm.test('Unique values present', function () {",
+                                        "    const jsonData = pm.response.json();",
+                                        "    pm.expect(jsonData.data.pagination.uniqueStatuses).to.be.an('array');",
+                                        "    pm.expect(jsonData.data.pagination.uniqueCertifications).to.be.an('array');",
+                                        "    pm.expect(jsonData.data.pagination.uniqueSpecialties).to.be.an('array');",
+                                        "    pm.expect(jsonData.data.pagination.uniqueAvailabilities).to.be.an('array');",
+                                        "});"
+                                    ]
+                                }
+                            }]
+                        },
+                        {
+                            "name": "List Instructors - Filter by Certification and Flight Hours",
+                            "request": {
+                                "method": "GET",
+                                "header": [{
+                                        "key": "Authorization",
+                                        "value": "Bearer {{jwt_token}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "X-API-Key",
+                                        "value": "{{api_key}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{base_url}}/api/organizations/:organizationId/instructors?certification=CFI&minFlightHours=1000&maxFlightHours=5000&sortField=flightHours&sortDirection=desc",
+                                    "host": ["{{base_url}}"],
+                                    "path": ["api", "organizations", ":organizationId", "instructors"],
+                                    "query": [{
+                                            "key": "certification",
+                                            "value": "CFI",
+                                            "description": "Filter by specific certification"
+                                        },
+                                        {
+                                            "key": "minFlightHours",
+                                            "value": "1000",
+                                            "description": "Minimum flight hours"
+                                        },
+                                        {
+                                            "key": "maxFlightHours",
+                                            "value": "5000",
+                                            "description": "Maximum flight hours"
+                                        },
+                                        {
+                                            "key": "sortField",
+                                            "value": "flightHours",
+                                            "description": "Field to sort by"
+                                        },
+                                        {
+                                            "key": "sortDirection",
+                                            "value": "desc",
+                                            "description": "Sort direction (asc/desc)"
+                                        }
+                                    ],
+                                    "variable": [{
+                                        "key": "organizationId",
+                                        "value": "687c208d97e9217fc09e7c40"
+                                    }]
+                                },
+                                "description": "Filter instructors by certification and flight hours range with sorting"
+                            },
+                            "event": [{
+                                "listen": "test",
+                                "script": {
+                                    "exec": [
+                                        "pm.test('Status code is 200', function () {",
+                                        "    pm.response.to.have.status(200);",
+                                        "});",
+                                        "",
+                                        "pm.test('Instructors returned', function () {",
+                                        "    const jsonData = pm.response.json();",
+                                        "    pm.expect(jsonData.success).to.be.true;",
+                                        "    pm.expect(jsonData.data.instructors).to.be.an('array');",
+                                        "});",
+                                        "",
+                                        "pm.test('All instructors have CFI certification', function () {",
+                                        "    const jsonData = pm.response.json();",
+                                        "    const instructors = jsonData.data.instructors;",
+                                        "    instructors.forEach(instructor => {",
+                                        "        pm.expect(instructor.certifications).to.include('CFI');",
+                                        "    });",
+                                        "});",
+                                        "",
+                                        "pm.test('Flight hours are within range', function () {",
+                                        "    const jsonData = pm.response.json();",
+                                        "    const instructors = jsonData.data.instructors;",
+                                        "    instructors.forEach(instructor => {",
+                                        "        pm.expect(instructor.flightHours).to.be.at.least(1000);",
+                                        "        pm.expect(instructor.flightHours).to.be.at.most(5000);",
+                                        "    });",
+                                        "});"
+                                    ]
+                                }
+                            }]
+                        },
+                        {
+                            "name": "List Instructors - Filter by Availability and Utilization",
+                            "request": {
+                                "method": "GET",
+                                "header": [{
+                                        "key": "Authorization",
+                                        "value": "Bearer {{jwt_token}}",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "X-API-Key",
+                                        "value": "{{api_key}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{base_url}}/api/organizations/:organizationId/instructors?availability=Full-time&minUtilization=80&has_emergency_contact=true&sortField=utilization&sortDirection=desc",
+                                    "host": ["{{base_url}}"],
+                                    "path": ["api", "organizations", ":organizationId", "instructors"],
+                                    "query": [{
+                                            "key": "availability",
+                                            "value": "Full-time",
+                                            "description": "Filter by availability type"
+                                        },
+                                        {
+                                            "key": "minUtilization",
+                                            "value": "80",
+                                            "description": "Minimum utilization percentage"
+                                        },
+                                        {
+                                            "key": "has_emergency_contact",
+                                            "value": "true",
+                                            "description": "Filter by presence of emergency contact"
+                                        },
+                                        {
+                                            "key": "sortField",
+                                            "value": "utilization",
+                                            "description": "Field to sort by"
+                                        },
+                                        {
+                                            "key": "sortDirection",
+                                            "value": "desc",
+                                            "description": "Sort direction (asc/desc)"
+                                        }
+                                    ],
+                                    "variable": [{
+                                        "key": "organizationId",
+                                        "value": "687c208d97e9217fc09e7c40"
+                                    }]
+                                },
+                                "description": "Filter instructors by availability, utilization, and emergency contact presence"
+                            },
+                            "event": [{
+                                "listen": "test",
+                                "script": {
+                                    "exec": [
+                                        "pm.test('Status code is 200', function () {",
+                                        "    pm.response.to.have.status(200);",
+                                        "});",
+                                        "",
+                                        "pm.test('Instructors returned', function () {",
+                                        "    const jsonData = pm.response.json();",
+                                        "    pm.expect(jsonData.success).to.be.true;",
+                                        "    pm.expect(jsonData.data.instructors).to.be.an('array');",
+                                        "});",
+                                        "",
+                                        "pm.test('All instructors are full-time', function () {",
+                                        "    const jsonData = pm.response.json();",
+                                        "    const instructors = jsonData.data.instructors;",
+                                        "    instructors.forEach(instructor => {",
+                                        "        pm.expect(instructor.availability).to.equal('Full-time');",
+                                        "    });",
+                                        "});",
+                                        "",
+                                        "pm.test('All instructors have high utilization', function () {",
+                                        "    const jsonData = pm.response.json();",
+                                        "    const instructors = jsonData.data.instructors;",
+                                        "    instructors.forEach(instructor => {",
+                                        "        pm.expect(instructor.utilization).to.be.at.least(80);",
+                                        "    });",
+                                        "});",
+                                        "",
+                                        "pm.test('All instructors have emergency contacts', function () {",
+                                        "    const jsonData = pm.response.json();",
+                                        "    const instructors = jsonData.data.instructors;",
+                                        "    instructors.forEach(instructor => {",
+                                        "        pm.expect(instructor.emergency_contact).to.be.an('object');",
+                                        "        pm.expect(instructor.emergency_contact.name).to.be.a('string');",
+                                        "    });",
+                                        "});"
+                                    ]
+                                }
+                            }]
+                        }
+                    ]
+                },
+                {
+                    "name": "Student Statistics",
+                    "request": {
+                        "method": "GET",
+                        "header": [{
+                                "key": "Authorization",
+                                "value": "Bearer {{jwt_token}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-API-Key",
+                                "value": "{{api_key}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/organizations/:organizationId/students/stats?include_financials=true&include_progress=true&range=30",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "organizations", ":organizationId", "students", "stats"],
+                            "query": [{
+                                    "key": "include_financials",
+                                    "value": "true",
+                                    "description": "Include financial metrics"
+                                },
+                                {
+                                    "key": "include_progress",
+                                    "value": "true",
+                                    "description": "Include detailed progress tracking"
+                                },
+                                {
+                                    "key": "range",
+                                    "value": "30",
+                                    "description": "Time range in days for statistics"
+                                }
+                            ],
+                            "variable": [{
+                                "key": "organizationId",
+                                "value": "687c208d97e9217fc09e7c40"
+                            }]
+                        },
+                        "description": "Get comprehensive student statistics including enrollment trends, progress tracking, performance metrics, and financial data"
+                    },
+                    "event": [{
+                        "listen": "test",
+                        "script": {
+                            "exec": [
+                                "pm.test('Status code is 200', function () {",
+                                "    pm.response.to.have.status(200);",
+                                "});",
+                                "",
+                                "pm.test('Student stats returned', function () {",
+                                "    const jsonData = pm.response.json();",
+                                "    pm.expect(jsonData.success).to.be.true;",
+                                "    pm.expect(jsonData.data.stats).to.be.an('object');",
+                                "});",
+                                "",
+                                "pm.test('Overview metrics present', function () {",
+                                "    const jsonData = pm.response.json();",
+                                "    pm.expect(jsonData.data.stats.overview).to.be.an('object');",
+                                "    pm.expect(jsonData.data.stats.overview.total_students).to.be.a('number');",
+                                "    pm.expect(jsonData.data.stats.overview.active_students).to.be.a('number');",
+                                "});",
+                                "",
+                                "pm.test('Status breakdown present', function () {",
+                                "    const jsonData = pm.response.json();",
+                                "    pm.expect(jsonData.data.stats.status_breakdown).to.be.an('array');",
+                                "});",
+                                "",
+                                "pm.test('Program breakdown present', function () {",
+                                "    const jsonData = pm.response.json();",
+                                "    pm.expect(jsonData.data.stats.program_breakdown).to.be.an('array');",
+                                "});",
+                                "",
+                                "pm.test('Flight activity present', function () {",
+                                "    const jsonData = pm.response.json();",
+                                "    pm.expect(jsonData.data.stats.flight_activity).to.be.an('object');",
+                                "    pm.expect(jsonData.data.stats.flight_activity.by_status).to.be.an('array');",
+                                "});",
+                                "",
+                                "pm.test('Financial metrics present', function () {",
+                                "    const jsonData = pm.response.json();",
+                                "    pm.expect(jsonData.data.stats.financial_metrics).to.be.an('object');",
+                                "});",
+                                "",
+                                "pm.test('Progress tracking present', function () {",
+                                "    const jsonData = pm.response.json();",
+                                "    pm.expect(jsonData.data.stats.progress_tracking).to.be.an('object');",
+                                "});",
+                                "",
+                                "pm.test('Metadata present', function () {",
+                                "    const jsonData = pm.response.json();",
+                                "    pm.expect(jsonData.data.metadata).to.be.an('object');",
+                                "    pm.expect(jsonData.data.metadata.organization_id).to.be.a('string');",
+                                "    pm.expect(jsonData.data.metadata.time_range_days).to.be.a('number');",
+                                "});"
+                            ]
+                        }
+                    }]
+                },
+                {
+                    "name": "Instructor Statistics",
+                    "request": {
+                        "method": "GET",
+                        "header": [{
+                                "key": "Authorization",
+                                "value": "Bearer {{jwt_token}}",
+                                "type": "text"
+                            },
+                            {
+                                "key": "X-API-Key",
+                                "value": "{{api_key}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/organizations/:organizationId/instructors/stats?include_financials=true&include_workload=true&range=30",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "organizations", ":organizationId", "instructors", "stats"],
+                            "query": [{
+                                    "key": "include_financials",
+                                    "value": "true",
+                                    "description": "Include financial metrics"
+                                },
+                                {
+                                    "key": "include_workload",
+                                    "value": "true",
+                                    "description": "Include detailed workload analysis"
+                                },
+                                {
+                                    "key": "range",
+                                    "value": "30",
+                                    "description": "Time range in days for statistics"
+                                }
+                            ],
+                            "variable": [{
+                                "key": "organizationId",
+                                "value": "687c208d97e9217fc09e7c40"
+                            }]
+                        },
+                        "description": "Get comprehensive instructor statistics including workload analysis, performance metrics, student assignments, and efficiency tracking"
+                    },
+                    "event": [{
+                        "listen": "test",
+                        "script": {
+                            "exec": [
+                                "pm.test('Status code is 200', function () {",
+                                "    pm.response.to.have.status(200);",
+                                "});",
+                                "",
+                                "pm.test('Instructor stats returned', function () {",
+                                "    const jsonData = pm.response.json();",
+                                "    pm.expect(jsonData.success).to.be.true;",
+                                "    pm.expect(jsonData.data.stats).to.be.an('object');",
+                                "});",
+                                "",
+                                "pm.test('Overview metrics present', function () {",
+                                "    const jsonData = pm.response.json();",
+                                "    pm.expect(jsonData.data.stats.overview).to.be.an('object');",
+                                "    pm.expect(jsonData.data.stats.overview.total_instructors).to.be.a('number');",
+                                "    pm.expect(jsonData.data.stats.overview.active_instructors).to.be.a('number');",
+                                "});",
+                                "",
+                                "pm.test('Status breakdown present', function () {",
+                                "    const jsonData = pm.response.json();",
+                                "    pm.expect(jsonData.data.stats.status_breakdown).to.be.an('array');",
+                                "});",
+                                "",
+                                "pm.test('Certification breakdown present', function () {",
+                                "    const jsonData = pm.response.json();",
+                                "    pm.expect(jsonData.data.stats.certification_breakdown).to.be.an('object');",
+                                "});",
+                                "",
+                                "pm.test('Flight activity present', function () {",
+                                "    const jsonData = pm.response.json();",
+                                "    pm.expect(jsonData.data.stats.flight_activity).to.be.an('object');",
+                                "    pm.expect(jsonData.data.stats.flight_activity.by_status).to.be.an('array');",
+                                "});",
+                                "",
+                                "pm.test('Student assignments present', function () {",
+                                "    const jsonData = pm.response.json();",
+                                "    pm.expect(jsonData.data.stats.student_assignments).to.be.an('object');",
+                                "    pm.expect(jsonData.data.stats.student_assignments.assignments).to.be.an('array');",
+                                "});",
+                                "",
+                                "pm.test('Efficiency metrics present', function () {",
+                                "    const jsonData = pm.response.json();",
+                                "    pm.expect(jsonData.data.stats.efficiency_metrics).to.be.an('object');",
+                                "    pm.expect(jsonData.data.stats.efficiency_metrics.top_performers).to.be.an('array');",
+                                "});",
+                                "",
+                                "pm.test('Workload analysis present', function () {",
+                                "    const jsonData = pm.response.json();",
+                                "    pm.expect(jsonData.data.stats.workload_analysis).to.be.an('object');",
+                                "    pm.expect(jsonData.data.stats.workload_analysis.by_instructor).to.be.an('array');",
+                                "});",
+                                "",
+                                "pm.test('Financial metrics present', function () {",
+                                "    const jsonData = pm.response.json();",
+                                "    pm.expect(jsonData.data.stats.financial_metrics).to.be.an('object');",
+                                "});",
+                                "",
+                                "pm.test('Metadata present', function () {",
+                                "    const jsonData = pm.response.json();",
+                                "    pm.expect(jsonData.data.metadata).to.be.an('object');",
+                                "    pm.expect(jsonData.data.metadata.organization_id).to.be.a('string');",
+                                "    pm.expect(jsonData.data.metadata.time_range_days).to.be.a('number');",
+                                "});"
+                            ]
+                        }
+                    }]
+                }
+            ]
+        }
+    ]
+}
