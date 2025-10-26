@@ -71,7 +71,3 @@ Make sure all of the above values are set before running the project.
 Import `SkyTrack.postman_collection.json` into Postman to try the various
 endpoints. Refer to `API_ENDPOINTS.md` for detailed request and response
 information.
-
-## License
-
-This project is provided as-is for demonstration purposes.
